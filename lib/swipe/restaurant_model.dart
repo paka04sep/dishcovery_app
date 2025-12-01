@@ -1,9 +1,12 @@
+enum SwipeStatus { yum, pass }
+
 class RestaurantCardData {
   final String name;
   final String imageUrl;
   final String type;
   final String priceRate;
   final String location;
+  final SwipeStatus status;
 
   RestaurantCardData({
     required this.name,
@@ -11,6 +14,7 @@ class RestaurantCardData {
     required this.type,
     required this.priceRate,
     required this.location,
+    required this.status,
   });
 }
 
@@ -18,25 +22,82 @@ class RestaurantCardData {
 final List<RestaurantCardData> mockRestaurants = [
   RestaurantCardData(
     name: "RESTAURANT NAME1",
-    imageUrl: "assets/images/r1.jpg",
+    imageUrl: "assets/images/res/r1.jpg",
     type: "Italian/Pizza",
     priceRate: "\$\$\$",
     location: "Downtown, City A",
+    status: SwipeStatus.yum,
   ),
   RestaurantCardData(
-    name: "The Fusion Spot",
-    imageUrl:
-        "https://images.unsplash.com/photo-1555513560-5a3d4d42b6a2?q=80&w=1740&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D", // ภาพร้านอาหารแนวเอเชียน
+    name: "RESTAURANT NAME2",
+    imageUrl: "assets/images/res/r2.jpg",
     type: "Fusion/Asian",
     priceRate: "\$\$",
     location: "Uptown, City B",
+    status: SwipeStatus.pass,
   ),
   RestaurantCardData(
-    name: "Steak House Elite",
-    imageUrl:
-        "https://images.unsplash.com/photo-1585577678996-51e44f8f4115?q=80&w=1740&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D", // ภาพร้านสเต็ก
+    name: "RESTAURANT NAME3",
+    imageUrl: "assets/images/res/r3.jpg",
     type: "Steak/Grill",
     priceRate: "\$\$\$\$",
     location: "Midtown, City C",
+    status: SwipeStatus.pass,
+  ),
+  RestaurantCardData(
+    name: "RESTAURANT NAME4",
+    imageUrl: "assets/images/res/r4.jpg",
+    type: "Steak/Grill",
+    priceRate: "\$\$\$\$",
+    location: "Midtown, City C",
+    status: SwipeStatus.pass,
+  ),
+  RestaurantCardData(
+    name: "RESTAURANT NAME5",
+    imageUrl: "assets/images/res/r5.jpg",
+    type: "Steak/Grill",
+    priceRate: "\$\$\$\$",
+    location: "Midtown, City C",
+    status: SwipeStatus.pass,
+  ),
+  RestaurantCardData(
+    name: "RESTAURANT NAME6",
+    imageUrl: "assets/images/res/r6.jpg",
+    type: "Steak/Grill",
+    priceRate: "\$\$\$\$",
+    location: "Midtown, City C",
+    status: SwipeStatus.pass,
+  ),
+  RestaurantCardData(
+    name: "RESTAURANT NAME7",
+    imageUrl: "assets/images/res/r7.jpg",
+    type: "Steak/Grill",
+    priceRate: "\$\$\$\$",
+    location: "Midtown, City C",
+    status: SwipeStatus.pass,
+  ),
+  RestaurantCardData(
+    name: "RESTAURANT NAME8",
+    imageUrl: "assets/images/res/r8.jpg",
+    type: "Steak/Grill",
+    priceRate: "\$\$\$\$",
+    location: "Midtown, City C",
+    status: SwipeStatus.yum,
+  ),
+  RestaurantCardData(
+    name: "RESTAURANT NAME9",
+    imageUrl: "assets/images/res/r9.jpg",
+    type: "Steak/Grill",
+    priceRate: "\$\$\$\$",
+    location: "Midtown, City C",
+    status: SwipeStatus.yum,
+  ),
+  RestaurantCardData(
+    name: "RESTAURANT NAME10",
+    imageUrl: "assets/images/res/r10.jpg",
+    type: "Steak/Grill",
+    priceRate: "\$\$\$\$",
+    location: "Midtown, City C",
+    status: SwipeStatus.pass,
   ),
 ];
