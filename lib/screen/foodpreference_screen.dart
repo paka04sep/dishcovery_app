@@ -1,7 +1,6 @@
 import 'package:dishcovery_app/constants/app_constants.dart';
 import 'package:dishcovery_app/constants/gradient_text.dart';
-import 'package:dishcovery_app/mainscreen.dart';
-import 'package:dishcovery_app/swipe/swipescreen.dart';
+import 'package:dishcovery_app/screen/swipescreen.dart';
 import 'package:flutter/material.dart';
 
 class FoodPreferenceScreen extends StatefulWidget {

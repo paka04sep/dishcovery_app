@@ -1,10 +1,8 @@
 import 'package:dishcovery_app/constants/app_constants.dart';
 import 'package:dishcovery_app/constants/gradient_text.dart';
-import 'package:dishcovery_app/foodpreferencescreen.dart';
+import 'package:dishcovery_app/screen/foodpreference_screen.dart';
 import 'package:flutter/material.dart';
-import '../mainscreen.dart';
 
-// 💡 เปลี่ยนจาก StatelessWidget เป็น StatefulWidget 💡
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
 

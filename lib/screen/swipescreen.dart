@@ -1,12 +1,11 @@
-// lib/swipscreen.dart
-
 import 'package:dishcovery_app/constants/app_constants.dart';
 import 'package:dishcovery_app/constants/gradient_text.dart';
+import 'package:dishcovery_app/screen/favorite_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
-import '../history_screen.dart';
-import 'restaurant_model.dart';
-import '/UserProfile/user_profile_screen.dart';
+import 'history_screen.dart';
+import '../models/restaurant_model.dart';
+import 'user_profile_screen.dart';
 
 class SwipScreen extends StatefulWidget {
   const SwipScreen({super.key});
@@ -62,6 +61,9 @@ class _SwipScreenState extends State<SwipScreen>
     int? currentIndex,
     CardSwiperDirection direction,
   ) {
+    debugPrint(
+      'Card ${restaurantCards[previousIndex].name} swiped to: ${direction.name}',
+    );
     // Logic การบันทึก/ส่งข้อมูลหลังการปัดเสร็จสิ้น
     // ...
     return true;
@@ -85,6 +87,8 @@ class _SwipScreenState extends State<SwipScreen>
     } else {
       return;
     }
+
+    // debugPrint('Action Button Pressed: $text');
 
     setState(() {
       _buttonOverlayText = text;
@@ -120,10 +124,18 @@ class _SwipScreenState extends State<SwipScreen>
             ),
           ],
         ),
-        actions: const [
+        actions: [
           Padding(
-            padding: EdgeInsets.only(right: 16.0),
-            child: Icon(Icons.star, color: Colors.amber, size: 30),
+            padding: const EdgeInsets.only(right: 16.0),
+            child: IconButton(
+              icon: const Icon(Icons.star, color: Colors.amber, size: 30),
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (context) => FavoriteScreen()),
+                );
+              },
+            ),
           ),
         ],
         backgroundColor: Colors.transparent,
@@ -135,10 +147,7 @@ class _SwipScreenState extends State<SwipScreen>
           children: [
             // 1. Card Swiper (ขยายให้ใหญ่ที่สุด)
             Padding(
-              padding: EdgeInsets.only(
-                top: appBarHeight,
-                bottom: 10, // 👈 เพิ่มพื้นที่ด้านล่างมากขึ้นสำหรับปุ่ม
-              ),
+              padding: EdgeInsets.only(top: appBarHeight, bottom: 10),
               child: CardSwiper(
                 controller: _controller,
                 // 💡 แก้ไข: ใช้ restaurantCards.length
@@ -200,48 +209,10 @@ class _SwipScreenState extends State<SwipScreen>
                       onPressed: () =>
                           _onActionButtonPressed(CardSwiperDirection.right),
                     ),
-                    // ❌ ปุ่ม UNDO ถูกนำออกแล้ว
                   ],
                 ),
               ),
             ),
-
-            // 3. Overlay สำหรับแสดงข้อความ YUM!/PASS/FAV! (เมื่อกดปุ่ม)
-            if (_buttonOverlayText.isNotEmpty)
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: FadeTransition(
-                    opacity: _buttonAnimationController,
-                    child: ScaleTransition(
-                      scale: Tween<double>(
-                        begin: 0.8,
-                        end: 1.2,
-                      ).animate(_buttonAnimationController),
-                      child: Center(
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 30,
-                            vertical: 15,
-                          ),
-                          decoration: BoxDecoration(
-                            color: _buttonOverlayColor,
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Text(
-                            _buttonOverlayText,
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 56,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 3,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
           ],
         ),
       ),
@@ -259,20 +230,30 @@ class _SwipScreenState extends State<SwipScreen>
     // Interactive Animation Logic
     // ----------------------------------------------------
     final double rotate = percentX.clamp(-0.5, 0.5) / 2;
-    final double threshold = 0.3; // จุดที่ Overlay เริ่มแสดง
+    final double threshold =
+        0.2; // จุดที่ Overlay เริ่มแสดง (ลดลงเพื่อให้แสดงเร็วขึ้น)
 
-    // YUM (ปัดขวา)
-    final double yumOpacity = percentX > 0
-        ? (percentX / threshold).clamp(0.0, 1.0)
-        : 0.0;
-    // PASS (ปัดซ้าย)
-    final double passOpacity = percentX < 0
-        ? (percentX.abs() / threshold).clamp(0.0, 1.0)
-        : 0.0;
-    // FAV (ปัดขึ้น)
-    final double favOpacity = percentY < 0
-        ? (percentY.abs() / threshold).clamp(0.0, 1.0)
-        : 0.0;
+    // Logic ป้องกันการแสดงซ้อนกัน (Priority: Vertical > Horizontal)
+    bool isVerticalSwipe = percentY.abs() > percentX.abs();
+
+    // คำนวณ Opacity และ Progress ตามทิศทางที่เด่นชัดที่สุด
+    double yumProgress = 0.0;
+    double passProgress = 0.0;
+    double favProgress = 0.0;
+
+    if (isVerticalSwipe) {
+      // ถ้าปัดขึ้นเป็นหลัก
+      if (percentY < 0) {
+        favProgress = (percentY.abs() / threshold).clamp(0.0, 1.0);
+      }
+    } else {
+      // ถ้าปัดซ้าย/ขวาเป็นหลัก
+      if (percentX > 0) {
+        yumProgress = (percentX / threshold).clamp(0.0, 1.0);
+      } else if (percentX < 0) {
+        passProgress = (percentX.abs() / threshold).clamp(0.0, 1.0);
+      }
+    }
 
     // ----------------------------------------------------
 
@@ -328,32 +309,32 @@ class _SwipScreenState extends State<SwipScreen>
 
               // 2. Interactive Overlays (YUM, PASS, FAV)
               // YUM Overlay (สีเขียว, ขวา)
-              if (yumOpacity > 0)
+              if (yumProgress > 0)
                 _buildSwipeOverlay(
                   text: 'YUM!',
-                  color: Colors.green.withOpacity(0.8),
-                  opacity: yumOpacity,
-                  alignment: Alignment.centerRight,
-                  angle: -0.5, // หมุนเล็กน้อย
+                  color: Colors.green,
+                  progress: yumProgress,
+                  alignment: Alignment.center,
+                  angle: -0.2,
                 ),
 
               // PASS Overlay (สีแดง, ซ้าย)
-              if (passOpacity > 0)
+              if (passProgress > 0)
                 _buildSwipeOverlay(
                   text: 'PASS',
-                  color: Colors.red.withOpacity(0.8),
-                  opacity: passOpacity,
-                  alignment: Alignment.centerLeft,
-                  angle: 0.5, // หมุนเล็กน้อย
+                  color: Colors.red,
+                  progress: passProgress,
+                  alignment: Alignment.center,
+                  angle: 0.2,
                 ),
 
               // FAV Overlay (สีเหลือง, บน)
-              if (favOpacity > 0)
+              if (favProgress > 0)
                 _buildSwipeOverlay(
                   text: 'FAV!',
-                  color: Colors.amber.withOpacity(0.8),
-                  opacity: favOpacity,
-                  alignment: Alignment.topCenter,
+                  color: Colors.amber,
+                  progress: favProgress,
+                  alignment: Alignment.center,
                   angle: 0.0,
                 ),
 
@@ -403,38 +384,62 @@ class _SwipScreenState extends State<SwipScreen>
   Widget _buildSwipeOverlay({
     required String text,
     required Color color,
-    required double opacity,
+    required double progress, // รับค่า Progress (0.0 - 1.0) แทน Opacity
     required Alignment alignment,
     required double angle,
   }) {
+    // คำนวณ Scale: เริ่มจาก 0.5 ไปถึง 1.5
+    final double scale = 0.5 + (progress * 1.0);
+
+    // คำนวณ Opacity: เริ่มจาก 0 ไป 1 (แต่ให้เริ่มเห็นเร็วหน่อย)
+    final double opacity = (progress * 1.5).clamp(0.0, 1.0);
+
+    // คำนวณ Glow (Shadow): ยิ่ง Progress เยอะ ยิ่งฟุ้ง
+    final double blurRadius = 10 + (progress * 40);
+    final double spreadRadius = 2 + (progress * 10);
+
     return Positioned.fill(
       child: Opacity(
-        opacity: opacity, // ควบคุมความทึบตามการปัด
+        opacity: opacity,
         child: Align(
           alignment: alignment,
           child: Transform.rotate(
             angle: angle,
-            child: Container(
-              margin: const EdgeInsets.all(50),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(15),
-                boxShadow: [
-                  BoxShadow(
-                    color: color.withOpacity(0.5),
-                    blurRadius: 15,
-                    spreadRadius: 2,
+            child: Transform.scale(
+              scale: scale,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 10,
+                ),
+                decoration: BoxDecoration(
+                  // พื้นหลังโปร่งใส แต่มีขอบและเงาเรืองแสง
+                  color: Colors.transparent,
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(color: color, width: 4),
+                  boxShadow: [
+                    BoxShadow(
+                      color: color.withOpacity(0.6 * opacity),
+                      blurRadius: blurRadius,
+                      spreadRadius: spreadRadius,
+                    ),
+                  ],
+                ),
+                child: Text(
+                  text,
+                  style: TextStyle(
+                    color: color, // ตัวหนังสือสีเดียวกับธีม (หรือจะเอาขาวก็ได้)
+                    fontSize: 48,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 3,
+                    shadows: [
+                      Shadow(
+                        color: Colors.black.withOpacity(0.5),
+                        blurRadius: 5,
+                        offset: const Offset(2, 2),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              child: Text(
-                text,
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 48,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 3,
                 ),
               ),
             ),

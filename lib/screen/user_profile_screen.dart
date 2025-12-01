@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'business_screens.dart'; // อย่าลืมเช็คว่าไฟล์นี้วางอยู่ข้างๆ กันนะครับ
+import 'business_screen.dart';
 
 class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({super.key});
@@ -118,7 +118,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
               child: Column(
                 children: [
                   const SizedBox(height: 25),
-                  // 1. ส่วนสถิติ (Stats Row) - เปลี่ยนข้อมูลตามโหมด
+
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     child: Row(

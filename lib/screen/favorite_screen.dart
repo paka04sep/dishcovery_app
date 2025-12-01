@@ -1,20 +1,15 @@
-// lib/history_screen.dart
-
+import 'package:dishcovery_app/screen/history_screen.dart';
+import 'package:dishcovery_app/screen/swipescreen.dart';
+import 'package:dishcovery_app/screen/user_profile_screen.dart';
 import 'package:flutter/material.dart';
-import '../swipe/restaurant_model.dart';
-import 'swipe/swipescreen.dart';
+import 'package:dishcovery_app/constants/app_constants.dart';
+import 'package:dishcovery_app/models/restaurant_model.dart';
 
-class HistoryScreen extends StatelessWidget {
-  const HistoryScreen({super.key});
+class FavoriteScreen extends StatelessWidget {
+  const FavoriteScreen({super.key});
 
-  // Widget สำหรับสร้างการ์ดในหน้า History
-  Widget _buildHistoryCard(BuildContext context, RestaurantCardData data) {
-    // กำหนดสีและข้อความตามสถานะการปัด
-    final Color statusColor = data.status == SwipeStatus.yum
-        ? Colors.green.shade700
-        : Colors.red.shade700;
-    final String statusText = data.status == SwipeStatus.yum ? "YUM!" : "PASS";
-
+  // Widget สำหรับสร้างการ์ดในหน้า Favorite
+  Widget _buildFavoriteCard(BuildContext context, RestaurantCardData data) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
       child: Container(
@@ -38,9 +33,7 @@ class HistoryScreen extends StatelessWidget {
                 child: Image.asset(
                   data.imageUrl,
                   fit: BoxFit.cover,
-                  color: Colors.black.withOpacity(
-                    0.2,
-                  ), // เพิ่ม Overlay สีดำจาง ๆ
+                  color: Colors.black.withOpacity(0.2), // Overlay สีดำจาง ๆ
                   colorBlendMode: BlendMode.darken,
                   errorBuilder: (context, error, stackTrace) => Container(
                     color: Colors.grey.shade600,
@@ -51,13 +44,6 @@ class HistoryScreen extends StatelessWidget {
                       ),
                     ),
                   ),
-                ),
-              ),
-
-              // Overlay สีเขียว/แดง ตามสถานะ
-              Positioned.fill(
-                child: Container(
-                  color: statusColor.withOpacity(0.3), // สีโปร่งใสตามสถานะ
                 ),
               ),
 
@@ -90,28 +76,21 @@ class HistoryScreen extends StatelessWidget {
                 ),
               ),
 
-              // ข้อความสถานะ "YUM!" / "PASS"
+              // ไอคอนดาวมุมขวาล่าง
               Positioned(
-                right: -15, // เลื่อนออกจากขอบเล็กน้อย
-                bottom: -5,
-                child: Transform.rotate(
-                  angle: 0.3, // หมุนข้อความ
-                  child: Text(
-                    statusText,
-                    style: TextStyle(
-                      color: statusColor.withOpacity(0.8),
-                      fontSize: 50,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 2,
-                      shadows: [
-                        Shadow(
-                          color: Colors.black.withOpacity(0.5),
-                          blurRadius: 5,
-                          offset: const Offset(3, 3),
-                        ),
-                      ],
+                right: 20,
+                bottom: 20,
+                child: Icon(
+                  Icons.star,
+                  color: Colors.amber.shade600,
+                  size: 40,
+                  shadows: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.5),
+                      blurRadius: 5,
+                      offset: const Offset(2, 2),
                     ),
-                  ),
+                  ],
                 ),
               ),
             ],
@@ -121,7 +100,7 @@ class HistoryScreen extends StatelessWidget {
     );
   }
 
-  // Widget สำหรับ Bottom Navigation Bar (คัดลอกมาจาก SwipScreen)
+  // Widget สำหรับ Bottom Navigation Bar
   Widget _buildBottomNavBar(BuildContext context) {
     return Container(
       height: 70,
@@ -133,12 +112,13 @@ class HistoryScreen extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           IconButton(
-            icon: const Icon(
-              Icons.history,
-              color: Colors.black,
-              size: 32,
-            ), // เน้นไอคอน History
-            onPressed: () {},
+            icon: const Icon(Icons.history, color: Colors.grey, size: 30),
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(builder: (context) => const HistoryScreen()),
+              );
+            },
           ),
           IconButton(
             icon: const Icon(Icons.fork_right, color: Colors.grey, size: 30),
@@ -150,42 +130,74 @@ class HistoryScreen extends StatelessWidget {
             },
           ),
           IconButton(
-            icon: const Icon(Icons.person, color: Colors.grey, size: 30),
-            onPressed: () {},
+            icon: const Icon(
+              Icons.person,
+              color: Colors.grey,
+              size: 30,
+            ), // เน้นไอคอน Profile
+            onPressed: () {
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const UserProfileScreen(),
+                ),
+              );
+            },
           ),
         ],
       ),
     );
   }
 
-  // Widget สำหรับ AppBar ในหน้า History
+  // Widget สำหรับ AppBar ในหน้า Favorite
   PreferredSizeWidget _buildAppBar(BuildContext context) {
     return AppBar(
-      // เพื่อให้ Body อยู่ด้านหลัง AppBar
       backgroundColor: Colors.transparent,
       elevation: 0,
+
+      // ปุ่มย้อนกลับ
       leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios, color: Colors.white),
-        onPressed: () => Navigator.pop(context), // กลับไปหน้าก่อนหน้า
+        icon: const Icon(Icons.arrow_back_ios, color: AppColors.black),
+        onPressed: () => Navigator.pop(context),
       ),
-      title: Container(
-        // สร้างพื้นหลังสีเข้มสำหรับคำว่า HISTORY
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: const Color(0xFF1A384F), // สีเข้มตามรูป
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: const Text(
-          "HISTORY",
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 20,
-          ),
-        ),
-      ),
-      centerTitle: false, // จัด Title ไปทางซ้าย
+
+      // จัด Title ให้อยู่ทางขวา
+      centerTitle: false,
       titleSpacing: 0,
+      title: Align(
+        alignment: Alignment.centerRight,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1A384F),
+                borderRadius: BorderRadius.only(
+                  topLeft: Radius.circular(20),
+                  bottomLeft: Radius.circular(20),
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3),
+                    blurRadius: 5,
+                    spreadRadius: 1,
+                  ),
+                ],
+              ),
+              child: Text(
+                "FAVORITE RESTAURANT", // 💡 แก้ไขข้อความ
+                style: AppTextStyles.primaryTitle.copyWith(
+                  fontSize: 24, // ปรับขนาดข้อความให้พอดี
+                  color: Colors.white,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+      // ไม่ใช้ actions
     );
   }
 
@@ -195,25 +207,23 @@ class HistoryScreen extends StatelessWidget {
       extendBodyBehindAppBar: true,
       appBar: _buildAppBar(context),
       body: Container(
-        // พื้นหลังเป็น Gradient
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              const Color.fromARGB(255, 255, 255, 255), // สีอ่อนด้านบน
-              const Color.fromARGB(255, 218, 218, 218), // สีอ่อนลงมา
+              AppColors.white,
+              AppColors.white, // ใช้สีฟ้าอ่อนเพื่อความแตกต่าง
             ],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
         ),
         child: SafeArea(
-          // กำหนดให้เริ่มต้นด้านบนสูงกว่าปกติเล็กน้อย
           top: true,
           child: ListView.builder(
-            padding: const EdgeInsets.only(top: 20), // เพิ่ม padding ด้านบน
+            padding: const EdgeInsets.only(top: 20),
             itemCount: mockRestaurants.length,
             itemBuilder: (context, index) {
-              return _buildHistoryCard(context, mockRestaurants[index]);
+              return _buildFavoriteCard(context, mockRestaurants[index]);
             },
           ),
         ),
