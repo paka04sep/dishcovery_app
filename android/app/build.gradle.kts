@@ -42,3 +42,14 @@ android {
 flutter {
     source = "../.."
 }
+
+android {
+    applicationVariants.all {
+        outputs
+            .map { it as com.android.build.gradle.internal.api.BaseVariantOutputImpl }
+            .forEach { output ->
+                output.outputFileName = "dishcovery_release.apk"
+            }
+    }
+}
+
