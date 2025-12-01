@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 import '../history_screen.dart';
 import 'restaurant_model.dart';
+import '/UserProfile/user_profile_screen.dart';
 
 class SwipScreen extends StatefulWidget {
   const SwipScreen({super.key});
@@ -531,7 +532,15 @@ class _SwipScreenState extends State<SwipScreen>
           ),
           IconButton(
             icon: const Icon(Icons.person, color: Colors.grey, size: 30),
-            onPressed: () {},
+            onPressed: () {
+              // สั่งให้เปลี่ยนหน้าไปที่ UserProfileScreen
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const UserProfileScreen(),
+                ),
+              );
+            },
           ),
         ],
       ),
