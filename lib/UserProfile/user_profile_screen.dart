@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'business_screens.dart'; // อย่าลืมเช็คว่าไฟล์นี้วางอยู่ข้างๆ กันนะครับ
 
 class UserProfileScreen extends StatefulWidget {
   const UserProfileScreen({super.key});
@@ -11,7 +12,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
   // ตัวแปรเก็บสถานะ (Default = Consumer)
   String _currentAccountType = 'Consumer';
 
-  // กำหนดสีหลักตามรูปภาพ
+  // กำหนดสีหลักตามรูปภาพ UI
   final Color _mainBlue = const Color(0xFF64A0FF); // สีฟ้าพื้นหลัง
   final Color _lightOrange = const Color(0xFFFFEEDD); // สีพื้นหลังไอคอนส้ม
   final Color _iconOrange = const Color(0xFFFFAA55); // สีไอคอนส้ม
@@ -68,7 +69,6 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                           size: 110,
                           color: Colors.black,
                         ),
-                        // backgroundImage: NetworkImage('https://i.pravatar.cc/300'),
                       ),
                     ),
                     // ไอคอนแก้ไขเล็กๆ
@@ -162,6 +162,16 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                 "Edit info, Menu",
                                 _lightOrange,
                                 _iconOrange,
+                                onTap: () {
+                                  // ลิ้งค์ไปหน้า Restaurant Details
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const RestaurantDetailsScreen(),
+                                    ),
+                                  );
+                                },
                               ),
                               _buildMenuItem(
                                 Icons.analytics,
@@ -169,6 +179,16 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
                                 "Check performance",
                                 Colors.blue[50]!,
                                 Colors.blue,
+                                onTap: () {
+                                  // ลิ้งค์ไปหน้า Dashboard
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) =>
+                                          const BusinessDashboardScreen(),
+                                    ),
+                                  );
+                                },
                               ),
                               _buildMenuItem(
                                 Icons.campaign,
@@ -271,6 +291,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
     Color bgColor,
     Color iconColor, {
     bool isDestructive = false,
+    VoidCallback? onTap,
   }) {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
@@ -298,9 +319,7 @@ class _UserProfileScreenState extends State<UserProfileScreen> {
         size: 16,
         color: Colors.grey,
       ),
-      onTap: () {
-        // TODO: ใส่ Action เมื่อกดปุ่ม
-      },
+      onTap: onTap, // รับค่าการกดตรงนี้
     );
   }
 
