@@ -84,409 +84,448 @@ class RestaurantDetailsScreen extends StatefulWidget {
 }
 
 class _RestaurantDetailsScreenState extends State<RestaurantDetailsScreen> {
-  // สีเดียวกับหน้า Profile
-  final Color _mainBlue = const Color(0xFF64A0FF);
-  final Color _lightOrange = const Color(0xFFFFEEDD);
-  final Color _iconOrange = const Color(0xFFFFAA55);
-  final Color _lightRed = const Color(0xFFFFE5E5);
-  final Color _iconRed = const Color(0xFFFF5555);
+  bool isShopOpen = true;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: _mainBlue,
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings, color: Colors.black),
-            onPressed: () {
-              // ใช้ฟังก์ชันเดิมจาก UserProfileScreen ได้เลย (คัดลอกมา)
-              _showAccountTypeSelector(context);
-            },
-          ),
-        ],
-      ),
-      body: Column(
-        children: [
-          const SizedBox(height: 10),
+      backgroundColor: const Color(
+        0xFFF9F9F9,
+      ), // Light background match Profile
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // 1. Header Section
+            _buildHeader(),
 
-          // === ส่วนหัว: โลโก้ร้าน + ชื่อร้าน ===
-          Center(
-            child: Column(
-              children: [
-                Stack(
-                  alignment: Alignment.bottomRight,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(5),
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                      ),
-                      child: CircleAvatar(
-                        radius: 55,
-                        backgroundColor: Colors.white,
-                      ),
-                    ),
-                    // ปุ่มแก้ไขเล็ก ๆ
-                    Container(
-                      padding: const EdgeInsets.all(4),
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: Colors.grey.shade300),
-                      ),
-                      child: const Icon(
-                        Icons.edit,
-                        color: Colors.black,
-                        size: 16,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 15),
-                const Text(
-                  "MY RESTAURANT", // หรือดึงชื่อร้านจริง
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w900,
-                    color: Colors.black,
-                  ),
-                ),
-                const Text(
-                  "Fine Dining • Italian",
-                  style: TextStyle(fontSize: 14, color: Colors.black54),
-                ),
-              ],
+            // 2. Sales & Quality Card
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+              child: _buildSalesCard(),
             ),
-          ),
 
-          const SizedBox(height: 30),
-
-          // === การ์ดสีขาวด้านล่าง (เหมือนหน้า Profile เป๊ะ) ===
-          Expanded(
-            child: Container(
-              width: double.infinity,
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(30),
-                  topRight: Radius.circular(30),
-                ),
-              ),
-              child: Column(
+            // 3. Marketing Cards
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              child: Row(
                 children: [
-                  const SizedBox(height: 25),
-
-                  // 1. Stats Row สำหรับ Business
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _buildStatItem("Views", "1.2k", Colors.blue),
-                        _buildVerticalDivider(),
-                        _buildStatItem("Orders", "85", Colors.green),
-                        _buildVerticalDivider(),
-                        _buildStatItem("Rating", "4.8", Colors.amber),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 25),
-                  const Divider(height: 1, color: Color(0xFFEEEEEE)),
-                  const SizedBox(height: 10),
-
-                  // 2. เมนูต่าง ๆ
-                  Expanded(
-                    child: ListView(
-                      padding: const EdgeInsets.symmetric(horizontal: 10),
-                      children: [
-                        _buildMenuItem(
-                          Icons.menu_book,
-                          "Menu Management",
-                          "Add, edit or remove dishes",
-                          _lightOrange,
-                          _iconOrange,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const AddMenuScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                        _buildMenuItem(
-                          Icons.analytics,
-                          "Analytics",
-                          "Check performance",
-                          Colors.blue[50]!,
-                          Colors.blue,
-                          onTap: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => const BusinessDashboardScreen(),
-                              ),
-                            );
-                          },
-                        ),
-                        _buildMenuItem(
-                          Icons.photo_library,
-                          "Gallery",
-                          "Restaurant photos",
-                          _lightOrange,
-                          _iconOrange,
-                        ),
-                        _buildMenuItem(
-                          Icons.location_on,
-                          "Address & Hours",
-                          "Update opening hours",
-                          _lightOrange,
-                          _iconOrange,
-                        ),
-                        _buildMenuItem(
-                          Icons.campaign,
-                          "Promotions",
-                          "Create ads & offers",
-                          Colors.green[50]!,
-                          Colors.green,
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  // Logout
-                  Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 10,
-                    ),
-                    child: _buildMenuItem(
-                      Icons.logout,
-                      "Log Out",
-                      "",
-                      _lightRed,
-                      _iconRed,
-                      isDestructive: true,
-                    ),
-                  ),
-
-                  // พื้นที่สีเทาด้านล่างสุด
-                  Container(height: 30, color: const Color(0xFF444444)),
+                  Expanded(child: _buildMarketingCard(isCampaign: true)),
+                  const SizedBox(width: 12),
+                  Expanded(child: _buildMarketingCard(isCampaign: false)),
                 ],
               ),
             ),
+          ],
+        ),
+      ),
+      bottomNavigationBar: Container(
+        height: 70,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          border: Border(top: BorderSide(color: Color(0xFFE0E0E0), width: 1.0)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: [
+            IconButton(
+              icon: const Icon(
+                Icons.home,
+                color: Color(0xFFFF5555),
+                size: 30,
+              ), // Home is active
+              onPressed: () {},
+            ),
+            IconButton(
+              icon: const Icon(Icons.fastfood, color: Colors.grey, size: 30),
+              onPressed: () {},
+            ),
+            IconButton(
+              icon: const Icon(Icons.settings, color: Colors.grey, size: 30),
+              onPressed: () {},
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader() {
+    return Container(
+      decoration: const BoxDecoration(
+        color: Color(0xFFF9F9F9), // Match Profile background
+      ),
+      child: SafeArea(
+        bottom: false,
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              child: Row(
+                children: [
+                  // Restaurant Image/Logo
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(
+                        30,
+                      ), // Circle like Profile
+                      image: const DecorationImage(
+                        image: AssetImage(
+                          'assets/images/logo1.0.png',
+                        ), // Placeholder
+                        fit: BoxFit.cover,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.2),
+                          blurRadius: 5,
+                          spreadRadius: 1,
+                        ),
+                      ],
+                      color: Colors.white,
+                    ),
+                  ),
+                  const SizedBox(width: 15),
+                  // Name and Branch
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          "Riff and Co. Restaurant",
+                          style: TextStyle(
+                            color: Colors.black, // Black text
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                            fontFamily: 'Inter', // Match Profile font
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            const Text(
+                              "Thong Lo Branch",
+                              style: TextStyle(
+                                color: Colors.grey,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.orange,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Row(
+                                children: [
+                                  Icon(
+                                    Icons.verified,
+                                    color: Colors.white,
+                                    size: 12,
+                                  ),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    "Very Good",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  Icon(
+                                    Icons.chevron_right,
+                                    color: Colors.white,
+                                    size: 12,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  // Notification
+                  Stack(
+                    children: [
+                      const Icon(
+                        Icons.notifications_outlined, // Outlined
+                        color: Colors.black,
+                        size: 28,
+                      ),
+                      Positioned(
+                        right: 0,
+                        top: 0,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Text(
+                            "1",
+                            style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            // Status Bar
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.withOpacity(0.05),
+                    blurRadius: 5,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  RichText(
+                    text: TextSpan(
+                      children: [
+                        TextSpan(
+                          text: isShopOpen ? "Open" : "Closed",
+                          style: TextStyle(
+                            color: isShopOpen ? Colors.green : Colors.red,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            fontFamily: 'Inter',
+                          ),
+                        ),
+                        const TextSpan(
+                          text: " (Auto-accept until 16:00)",
+                          style: TextStyle(
+                            color: Colors.grey,
+                            fontSize: 14,
+                            fontFamily: 'Inter',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        isShopOpen = !isShopOpen;
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(
+                          0xFFEEF5FF,
+                        ), // Light blue tint like Profile button
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        isShopOpen ? "Set Close" : "Set Open",
+                        style: const TextStyle(
+                          color: Colors.blueAccent,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSalesCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: const [
+              Text(
+                "Today's Views",
+                style: TextStyle(color: Colors.grey, fontSize: 16),
+              ),
+              Icon(Icons.chevron_right, color: Colors.grey),
+            ],
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            "10,000",
+            style: TextStyle(
+              fontSize: 32,
+              fontWeight: FontWeight.bold,
+              color: Colors.black,
+            ),
+          ),
+          const SizedBox(height: 16),
+          const Divider(),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: const [
+              Text(
+                "Last Week's Order Quality",
+                style: TextStyle(color: Colors.grey),
+              ),
+              Icon(Icons.info_outline, size: 16, color: Colors.grey),
+              Spacer(),
+              Icon(Icons.chevron_right, color: Colors.grey),
+            ],
+          ),
+          const SizedBox(height: 16),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _buildPerformanceItem(
+                Icons.sentiment_satisfied_alt,
+                "Excellent",
+                Colors.green,
+                true,
+              ),
+              _buildVerticalDivider(),
+              _buildPerformanceItem(Icons.thumb_up, "120", Colors.grey, true),
+              _buildVerticalDivider(),
+              _buildPerformanceItem(Icons.bookmark, "50", Colors.grey, true),
+            ],
           ),
         ],
       ),
     );
   }
 
-  // ==== Widget ย่อย (คัดลอกมาจาก UserProfileScreen) ====
-  Widget _buildStatItem(String label, String count, Color color) {
-    return Column(
-      children: [
-        Text(
-          count,
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            color: color,
+  Widget _buildPerformanceItem(
+    IconData? icon,
+    String text,
+    Color color,
+    bool isIcon,
+  ) {
+    return Expanded(
+      child: Column(
+        children: [
+          if (isIcon && icon != null) Icon(icon, color: color, size: 28),
+          if (!isIcon) const SizedBox(height: 5), // Spacer to align with icon
+          const SizedBox(height: 4),
+          Text(
+            text,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
           ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          label,
-          style: const TextStyle(
-            color: Colors.grey,
-            fontSize: 14,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
   Widget _buildVerticalDivider() {
-    return Container(height: 40, width: 1, color: Colors.grey[200]);
+    return Container(height: 40, width: 1, color: Colors.grey[300]);
   }
 
-  Widget _buildMenuItem(
-    IconData icon,
-    String title,
-    String subtitle,
-    Color bgColor,
-    Color iconColor, {
-    bool isDestructive = false,
-    VoidCallback? onTap,
-  }) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 15, vertical: 5),
-      leading: Container(
-        padding: const EdgeInsets.all(10),
-        decoration: BoxDecoration(color: bgColor, shape: BoxShape.circle),
-        child: Icon(icon, color: iconColor, size: 22),
+  Widget _buildMarketingCard({required bool isCampaign}) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
       ),
-      title: Text(
-        title,
-        style: TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 16,
-          color: isDestructive ? _iconRed : Colors.black87,
-        ),
-      ),
-      subtitle: subtitle.isNotEmpty
-          ? Text(subtitle, style: const TextStyle(color: Colors.grey))
-          : null,
-      trailing: const Icon(
-        Icons.arrow_forward_ios,
-        size: 16,
-        color: Colors.grey,
-      ),
-      onTap: onTap,
-    );
-  }
-
-  // Modal สลับโหมด (คัดลอกมาจากหน้า Profile)
-  void _showAccountTypeSelector(BuildContext context) {
-    String tempSelectedType = 'Business'; // Default เป็น Business
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (_) => StatefulBuilder(
-        builder: (context, setModalState) {
-          return Container(
-            height: MediaQuery.of(context).size.height * 0.55,
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: _mainBlue,
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(20),
-                topRight: Radius.circular(20),
+              color: isCampaign
+                  ? Colors.greenAccent.withOpacity(0.2)
+                  : Colors.orangeAccent.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              isCampaign ? Icons.local_offer : Icons.campaign,
+              color: isCampaign ? Colors.green : Colors.orange,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (isCampaign)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.red,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text(
+                    "NEW",
+                    style: TextStyle(color: Colors.white, fontSize: 8),
+                  ),
+                ),
+              if (!isCampaign)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.greenAccent.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: const Text(
+                    "Active",
+                    style: TextStyle(color: Colors.green, fontSize: 8),
+                  ),
+                ),
+              Text(
+                isCampaign ? "Campaign" : "Ads",
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
               ),
-            ),
-            child: Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.close, color: Colors.white),
-                        onPressed: () => Navigator.pop(context),
-                      ),
-                      const Text(
-                        "ACCOUNT TYPES",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                        ),
-                      ),
-                      const SizedBox(width: 48),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Container(
-                    decoration: const BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.only(
-                        topLeft: Radius.circular(30),
-                        topRight: Radius.circular(30),
-                      ),
-                    ),
-                    padding: const EdgeInsets.all(20),
-                    child: Column(
-                      children: [
-                        const Text(
-                          "CHANGE TYPES",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        _buildRadioOption(
-                          "CONSUMER",
-                          tempSelectedType == 'Consumer',
-                          () => setModalState(
-                            () => tempSelectedType = 'Consumer',
-                          ),
-                        ),
-                        const Divider(),
-                        _buildRadioOption(
-                          "BUSINESS",
-                          tempSelectedType == 'Business',
-                          () => setModalState(
-                            () => tempSelectedType = 'Business',
-                          ),
-                        ),
-                        const Divider(),
-                        const Spacer(),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 50,
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.black,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                            onPressed: () {
-                              // ที่นี่ควรจะเปลี่ยนโหมดจริงของแอป (เช่น Provider หรือ Global variable)
-                              // เดี๋ยวนี้แค่ปิด modal
-                              Navigator.pop(context);
-                              if (tempSelectedType == 'Consumer') {
-                                Navigator.pop(
-                                  context,
-                                ); // กลับไปหน้า Consumer Profile
-                              }
-                            },
-                            child: const Text(
-                              "CONFIRM",
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          );
-        },
+              Text(
+                isCampaign ? "Boost Sales" : "Boost Visibility",
+                style: const TextStyle(color: Colors.grey, fontSize: 12),
+              ),
+            ],
+          ),
+        ],
       ),
-    );
-  }
-
-  Widget _buildRadioOption(String title, bool isSelected, VoidCallback onTap) {
-    return ListTile(
-      onTap: onTap,
-      leading: Container(
-        width: 24,
-        height: 24,
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.greenAccent : Colors.grey[300],
-          shape: BoxShape.circle,
-        ),
-      ),
-      title: Text(title, style: const TextStyle(fontWeight: FontWeight.bold)),
     );
   }
 }
