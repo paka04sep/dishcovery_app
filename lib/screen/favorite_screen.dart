@@ -1,3 +1,4 @@
+import 'package:dishcovery_app/models/restaurant_mock.dart';
 import 'package:dishcovery_app/screen/history_screen.dart';
 import 'package:dishcovery_app/screen/swipescreen.dart';
 import 'package:dishcovery_app/screen/user_profile_screen.dart';

@@ -66,4 +66,34 @@ class AppTextStyles {
     fontWeight: FontWeight.w600,
     color: AppColors.black,
   );
+
+  // ข้อความชื่อร้านหน้าการ์ด
+  static const TextStyle restaurantName = TextStyle(
+    fontFamily: 'Sukumvit',
+    fontSize: 32,
+    fontWeight: FontWeight.bold,
+    color: AppColors.white,
+  );
+
+  // ข้อความรายละเอียดชื่อร้านหน้าการ์ด
+  static const TextStyle restaurantDetails = TextStyle(
+    fontFamily: 'Sukumvit',
+    fontSize: 18,
+    color: AppColors.white,
+  );
+
+  // ข้อความรายละเอียดชื่อร้านในการ์ด
+  static const TextStyle restaurantInDetails = TextStyle(
+    fontFamily: 'Sukumvit',
+    fontSize: 16,
+    color: AppColors.white,
+  );
+
+  // ข้อความชื่อเมนูอาหาร
+  static const TextStyle restaurantMenuItemName = TextStyle(
+    fontFamily: 'Sukumvit',
+    fontSize: 16,
+    fontWeight: FontWeight.bold,
+    color: AppColors.black,
+  );
 }

@@ -31,7 +31,6 @@ class _FoodPreferenceScreenState extends State<FoodPreferenceScreen> {
     {'name': 'egg', 'icon': Icons.egg},
     {'name': 'cookie', 'icon': Icons.cookie},
     {'name': 'upcoming', 'icon': Icons.upcoming},
-    {'name': 'upcoming', 'icon': Icons.upcoming},
   ];
 
   // ฟังก์ชันจัดการการเลือกชิปอาหาร

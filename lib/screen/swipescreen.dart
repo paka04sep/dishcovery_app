@@ -1,11 +1,14 @@
 import 'package:dishcovery_app/constants/app_constants.dart';
 import 'package:dishcovery_app/constants/gradient_text.dart';
+import 'package:dishcovery_app/models/restaurant_mock.dart';
 import 'package:dishcovery_app/screen/favorite_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 import 'history_screen.dart';
 import '../models/restaurant_model.dart';
 import 'user_profile_screen.dart';
+import 'restarurant_detail_screen.dart';
+import '../constants/app_bottom_nav_user.dart';
 
 class SwipScreen extends StatefulWidget {
   const SwipScreen({super.key});
@@ -66,6 +69,22 @@ class _SwipScreenState extends State<SwipScreen>
     );
     // Logic การบันทึก/ส่งข้อมูลหลังการปัดเสร็จสิ้น
     // ...
+    if (direction == CardSwiperDirection.right) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => RestaurantDetailScreen(
+            restaurant: restaurantCards[previousIndex], // ส่งข้อมูลร้านที่ปัดไป
+          ),
+        ),
+      );
+    }
+
+    // หากปัดบน (FAV!) อาจจะเก็บลงฐานข้อมูล Favorite ต่อที่นี่
+    if (direction == CardSwiperDirection.top) {
+      // logic for saving favorite
+    }
+
     return true;
   }
 
@@ -216,7 +235,8 @@ class _SwipScreenState extends State<SwipScreen>
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomNavBar(context),
+      // bottomNavigationBar: _buildBottomNavBar(context),
+      bottomNavigationBar: const AppBottomNav(currentIndex: 1),
     );
   }
 
@@ -340,35 +360,65 @@ class _SwipScreenState extends State<SwipScreen>
 
               // 3. รายละเอียดร้านอาหาร
               Positioned(
-                left: 25,
-                right: 25,
-                bottom: 100,
+                left: 20,
+                right: 20,
+                bottom: 115,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // ชื่อร้าน
                     Text(
                       data.name,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 28,
-                        fontWeight: FontWeight.w900,
-                      ),
+                      style: AppTextStyles.restaurantName.copyWith(),
                     ),
-                    const SizedBox(height: 12),
-                    _buildInfoRow(
-                      Icons.restaurant_menu,
-                      "RESTAURANT TYPE",
-                      data.type,
+                    const SizedBox(height: 6),
+
+                    // ประเภท · ราคา · ระยะทาง
+                    Row(
+                      children: [
+                        Text(
+                          '${data.cuisine} · ',
+                          style: AppTextStyles.restaurantDetails.copyWith(),
+                        ),
+                        Text(
+                          data.getPriceSymbol(), // เช่น ฿฿฿
+                          style: AppTextStyles.restaurantDetails.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          ' · ${data.distance} กม.',
+                          style: AppTextStyles.restaurantDetails.copyWith(),
+                        ),
+                      ],
                     ),
-                    _buildInfoRow(
-                      Icons.monetization_on,
-                      "PRICE RATE",
-                      data.priceRate,
+                    const SizedBox(height: 6),
+
+                    // เรตติ้ง
+                    Row(
+                      children: [
+                        const Icon(Icons.star, color: Colors.amber, size: 18),
+                        const SizedBox(width: 4),
+                        Text(
+                          data.rating.toString(),
+                          style: AppTextStyles.restaurantDetails.copyWith(),
+                        ),
+                        // Text(
+                        //   ' · เปิด-ปิด ${data.openingHours} ',
+                        //   style: AppTextStyles.restaurantDetails.copyWith(),
+                        // ),
+                      ],
                     ),
-                    _buildInfoRow(
-                      Icons.location_on,
-                      "RESTAURANT LOCATION",
-                      data.location,
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Text(
+                          ' " ${data.description.toString()} " ',
+                          style: AppTextStyles.restaurantDetails.copyWith(),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 1,
+                        ),
+                      ],
                     ),
                   ],
                 ),
@@ -450,36 +500,36 @@ class _SwipScreenState extends State<SwipScreen>
   }
 
   // Widget สำหรับแสดงข้อมูลเป็นแถว
-  Widget _buildInfoRow(IconData icon, String label, String value) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4.0),
-      child: Row(
-        children: [
-          Icon(icon, color: Colors.white, size: 18),
-          const SizedBox(width: 10),
-          Text(
-            "$label: ",
-            style: const TextStyle(
-              color: Colors.white70,
-              fontWeight: FontWeight.w500,
-              fontSize: 14,
-            ),
-          ),
-          Flexible(
-            child: Text(
-              value,
-              style: const TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 14,
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildInfoRow(IconData icon, String label, String value) {
+  //   return Padding(
+  //     padding: const EdgeInsets.symmetric(vertical: 4.0),
+  //     child: Row(
+  //       children: [
+  //         Icon(icon, color: Colors.white, size: 18),
+  //         const SizedBox(width: 10),
+  //         Text(
+  //           "$label: ",
+  //           style: const TextStyle(
+  //             color: Colors.white70,
+  //             fontWeight: FontWeight.w500,
+  //             fontSize: 14,
+  //           ),
+  //         ),
+  //         Flexible(
+  //           child: Text(
+  //             value,
+  //             style: const TextStyle(
+  //               color: Colors.white,
+  //               fontWeight: FontWeight.bold,
+  //               fontSize: 14,
+  //             ),
+  //             overflow: TextOverflow.ellipsis,
+  //           ),
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   // Widget สำหรับปุ่มควบคุม
   Widget _buildActionButton({
@@ -512,43 +562,43 @@ class _SwipScreenState extends State<SwipScreen>
   }
 
   // Widget สำหรับ Bottom Navigation Bar
-  Widget _buildBottomNavBar(BuildContext context) {
-    return Container(
-      height: 70,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFE0E0E0), width: 1.0)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          IconButton(
-            icon: const Icon(Icons.history, color: Colors.grey, size: 30),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const HistoryScreen()),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.fork_right, color: Colors.orange, size: 40),
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.person, color: Colors.grey, size: 30),
-            onPressed: () {
-              // สั่งให้เปลี่ยนหน้าไปที่ UserProfileScreen
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const UserProfileScreen(),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildBottomNavBar(BuildContext context) {
+  //   return Container(
+  //     height: 70,
+  //     decoration: const BoxDecoration(
+  //       color: Colors.white,
+  //       border: Border(top: BorderSide(color: Color(0xFFE0E0E0), width: 1.0)),
+  //     ),
+  //     child: Row(
+  //       mainAxisAlignment: MainAxisAlignment.spaceAround,
+  //       children: [
+  //         IconButton(
+  //           icon: const Icon(Icons.history, color: Colors.grey, size: 30),
+  //           onPressed: () {
+  //             Navigator.push(
+  //               context,
+  //               MaterialPageRoute(builder: (context) => const HistoryScreen()),
+  //             );
+  //           },
+  //         ),
+  //         IconButton(
+  //           icon: const Icon(Icons.fork_right, color: Colors.orange, size: 40),
+  //           onPressed: () {},
+  //         ),
+  //         IconButton(
+  //           icon: const Icon(Icons.person, color: Colors.grey, size: 30),
+  //           onPressed: () {
+  //             // สั่งให้เปลี่ยนหน้าไปที่ UserProfileScreen
+  //             Navigator.push(
+  //               context,
+  //               MaterialPageRoute(
+  //                 builder: (context) => const UserProfileScreen(),
+  //               ),
+  //             );
+  //           },
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 }

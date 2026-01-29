@@ -1,6 +1,8 @@
 // lib/history_screen.dart
 
+import 'package:dishcovery_app/constants/app_bottom_nav_user.dart';
 import 'package:dishcovery_app/constants/app_constants.dart';
+import 'package:dishcovery_app/models/restaurant_mock.dart';
 import 'package:dishcovery_app/screen/user_profile_screen.dart';
 import 'package:flutter/material.dart';
 import '../models/restaurant_model.dart';
@@ -124,48 +126,48 @@ class HistoryScreen extends StatelessWidget {
   }
 
   // Widget สำหรับ Bottom Navigation Bar (คัดลอกมาจาก SwipScreen)
-  Widget _buildBottomNavBar(BuildContext context) {
-    return Container(
-      height: 70,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFE0E0E0), width: 1.0)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          IconButton(
-            icon: const Icon(
-              Icons.history,
-              color: Colors.black,
-              size: 32,
-            ), // เน้นไอคอน History
-            onPressed: () {},
-          ),
-          IconButton(
-            icon: const Icon(Icons.fork_right, color: Colors.grey, size: 30),
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const SwipScreen()),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.person, color: Colors.grey, size: 30),
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const UserProfileScreen(),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildBottomNavBar(BuildContext context) {
+  //   return Container(
+  //     height: 70,
+  //     decoration: const BoxDecoration(
+  //       color: Colors.white,
+  //       border: Border(top: BorderSide(color: Color(0xFFE0E0E0), width: 1.0)),
+  //     ),
+  //     child: Row(
+  //       mainAxisAlignment: MainAxisAlignment.spaceAround,
+  //       children: [
+  //         IconButton(
+  //           icon: const Icon(
+  //             Icons.history,
+  //             color: Colors.black,
+  //             size: 32,
+  //           ), // เน้นไอคอน History
+  //           onPressed: () {},
+  //         ),
+  //         IconButton(
+  //           icon: const Icon(Icons.fork_right, color: Colors.grey, size: 30),
+  //           onPressed: () {
+  //             Navigator.pushReplacement(
+  //               context,
+  //               MaterialPageRoute(builder: (context) => const SwipScreen()),
+  //             );
+  //           },
+  //         ),
+  //         IconButton(
+  //           icon: const Icon(Icons.person, color: Colors.grey, size: 30),
+  //           onPressed: () {
+  //             Navigator.pushReplacement(
+  //               context,
+  //               MaterialPageRoute(
+  //                 builder: (context) => const UserProfileScreen(),
+  //               ),
+  //             );
+  //           },
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   // Widget สำหรับ AppBar ในหน้า History
   PreferredSizeWidget _buildAppBar(BuildContext context) {
@@ -173,11 +175,10 @@ class HistoryScreen extends StatelessWidget {
       backgroundColor: Colors.transparent,
       elevation: 0,
 
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios, color: AppColors.black),
-        onPressed: () => Navigator.pop(context),
-      ),
-
+      // leading: IconButton(
+      //   icon: const Icon(Icons.arrow_back_ios, color: AppColors.black),
+      //   onPressed: () => Navigator.pop(context),
+      // ),
       centerTitle: false,
       titleSpacing: 0,
 
@@ -247,7 +248,7 @@ class HistoryScreen extends StatelessWidget {
           ),
         ),
       ),
-      bottomNavigationBar: _buildBottomNavBar(context),
+      bottomNavigationBar: const AppBottomNav(currentIndex: 0),
     );
   }
 }

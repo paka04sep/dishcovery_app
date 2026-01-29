@@ -64,6 +64,7 @@ flutter:
   assets:
     - assets/images/
     - assets/images/res/
+    - assets/images/res/r1/
     
 
 
@@ -90,6 +91,12 @@ flutter:
     - family: balooda
       fonts:
         - asset: assets/fonts/BalooDa-Regular.ttf
+    - family: Sukumvit
+      fonts: 
+        - asset: assets/fonts/SukhumvitSet-Bold.ttf
+        - asset: assets/fonts/SukhumvitSet-text.ttf
+         
+        
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
