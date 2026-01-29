@@ -1,4 +1,5 @@
 import 'package:dishcovery_app/constants/app_bottom_nav_user.dart';
+import 'package:dishcovery_app/screen/restaurant_map_screen.dart';
 import 'package:flutter/material.dart';
 import '../constants/app_constants.dart';
 import '../constants/gradient_text.dart';
@@ -52,7 +53,7 @@ class RestaurantDetailScreen extends StatelessWidget {
                 const SizedBox(height: 40),
 
                 // 5. ปุ่มดูสถานที่ (Location Button)
-                _buildLocationButton(fontFamily),
+                _buildLocationButton(context, fontFamily),
 
                 // เว้นที่ว่างด้านล่างเพื่อให้เนื้อหาไม่โดน Bottom Bar บัง
                 const SizedBox(height: 120),
@@ -297,7 +298,7 @@ class RestaurantDetailScreen extends StatelessWidget {
   }
 
   // ปุ่ม Location
-  Widget _buildLocationButton(String? fontFamily) {
+  Widget _buildLocationButton(BuildContext context, String? fontFamily) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 40),
       child: Container(
@@ -316,6 +317,13 @@ class RestaurantDetailScreen extends StatelessWidget {
         child: ElevatedButton(
           onPressed: () {
             // โค้ดสำหรับเปิด Map
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) =>
+                    RestaurantMapScreen(restaurant: restaurant),
+              ),
+            );
           },
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.white,

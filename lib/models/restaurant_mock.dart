@@ -22,9 +22,10 @@ final List<RestaurantCardData> mockRestaurants = [
       MenuItem(name: 'ผัดไทยไข่เค็ม', price: '90 THB'),
     ],
     galleryImages: [
-      'assets/images/res1_1.jpg',
-      'assets/images/res1_2.jpg',
-      'assets/images/res1_3.jpg',
+      'assets/images/res/r1/1_1.jpg',
+      'assets/images/res/r1/1_2.jpg',
+      'assets/images/res/r1/1_3.jpg',
+      'assets/images/res/r1/1_1.jpg',
     ],
     status: SwipeStatus.yum,
   ),

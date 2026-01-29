@@ -3,6 +3,8 @@ import '/starting_screen/onboarding_screen.dart';
 import 'package:flutter/material.dart';
 import '../main.dart';
 import '../constants/app_constants.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
 
 class LoadingScreen extends StatefulWidget {
   const LoadingScreen({super.key});
@@ -32,11 +34,63 @@ class _LoadingScreenState extends State<LoadingScreen>
 
     _controller.forward();
 
-    Timer(const Duration(seconds: 3), () {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const OnboardingScreen()),
-      );
-    });
+    // Timer(const Duration(seconds: 3), () {
+    //   Navigator.of(context).pushReplacement(
+    //     MaterialPageRoute(builder: (context) => const OnboardingScreen()),
+    //   );
+    // });
+    _initApp();
+  }
+
+  Future<Position?> _getUserLocation() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    // เช็คว่าเปิด Location service ไหม
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      debugPrint('Location service disabled');
+      return null;
+    }
+
+    // เช็ค permission
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        debugPrint('Location permission denied');
+        return null;
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      debugPrint('Location permission denied forever');
+      return null;
+    }
+
+    // ดึงตำแหน่ง
+    return await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.high,
+    );
+  }
+
+  Future<void> _initApp() async {
+    // หน่วงให้เห็น animation
+    await Future.delayed(const Duration(seconds: 2));
+
+    final position = await _getUserLocation();
+
+    if (position != null) {
+      debugPrint('User location: ${position.latitude}, ${position.longitude}');
+
+      // TODO: เก็บไว้ใน Provider / Global / Firebase
+    }
+
+    if (!mounted) return;
+
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(builder: (_) => const OnboardingScreen()),
+    );
   }
 
   @override
