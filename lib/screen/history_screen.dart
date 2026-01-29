@@ -139,50 +139,6 @@ class HistoryScreen extends StatelessWidget {
     );
   }
 
-  // Widget สำหรับ Bottom Navigation Bar (คัดลอกมาจาก SwipScreen)
-  // Widget _buildBottomNavBar(BuildContext context) {
-  //   return Container(
-  //     height: 70,
-  //     decoration: const BoxDecoration(
-  //       color: Colors.white,
-  //       border: Border(top: BorderSide(color: Color(0xFFE0E0E0), width: 1.0)),
-  //     ),
-  //     child: Row(
-  //       mainAxisAlignment: MainAxisAlignment.spaceAround,
-  //       children: [
-  //         IconButton(
-  //           icon: const Icon(
-  //             Icons.history,
-  //             color: Colors.black,
-  //             size: 32,
-  //           ), // เน้นไอคอน History
-  //           onPressed: () {},
-  //         ),
-  //         IconButton(
-  //           icon: const Icon(Icons.fork_right, color: Colors.grey, size: 30),
-  //           onPressed: () {
-  //             Navigator.pushReplacement(
-  //               context,
-  //               MaterialPageRoute(builder: (context) => const SwipScreen()),
-  //             );
-  //           },
-  //         ),
-  //         IconButton(
-  //           icon: const Icon(Icons.person, color: Colors.grey, size: 30),
-  //           onPressed: () {
-  //             Navigator.pushReplacement(
-  //               context,
-  //               MaterialPageRoute(
-  //                 builder: (context) => const UserProfileScreen(),
-  //               ),
-  //             );
-  //           },
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
-
   // Widget สำหรับ AppBar ในหน้า History
   PreferredSizeWidget _buildAppBar(BuildContext context) {
     return AppBar(
@@ -239,7 +195,8 @@ class HistoryScreen extends StatelessWidget {
     return ListenableBuilder(
       listenable: RestaurantService.instance,
       builder: (context, child) {
-        final historyList = RestaurantService.instance.history;
+        final historyList = RestaurantService.instance.history.reversed
+            .toList();
         return Scaffold(
           extendBodyBehindAppBar: true,
           appBar: _buildAppBar(context),

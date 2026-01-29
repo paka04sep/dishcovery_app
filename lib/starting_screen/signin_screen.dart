@@ -1,7 +1,10 @@
 import 'package:dishcovery_app/constants/app_constants.dart';
 import 'package:dishcovery_app/constants/gradient_text.dart';
-import 'package:dishcovery_app/screen/foodpreference_screen.dart';
+
 import 'package:flutter/material.dart';
+
+import '../services/auth_service.dart';
+import '../starting_screen/auth_wrapper.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -40,14 +43,45 @@ class _SignInScreenState extends State<SignInScreen>
     super.dispose();
   }
 
-  // ฟังก์ชันสำหรับจัดการการกดปุ่ม (ใช้ในการจำลองการนำทาง)
-  void _signIn(BuildContext context, String method) {
-    print('Signing in with $method...');
+  final AuthService _authService = AuthService();
+  bool _isLoading = false;
 
-    // 💡 นำทางไปยังหน้าหลัก (HomePage) เมื่อล็อกอินสำเร็จ 💡
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => const FoodPreferenceScreen()),
-    );
+  void _signIn(BuildContext context, String method) async {
+    if (method == 'Google') {
+      setState(() {
+        _isLoading = true;
+      });
+
+      try {
+        final userCredential = await _authService.signInWithGoogle();
+        if (userCredential != null) {
+          if (userCredential != null && mounted) {
+            // Navigation is handled by AuthWrapper listening to auth state changes
+            // However, to ensure we switch context:
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (context) => const AuthWrapper()),
+            );
+          }
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to sign in with Google: $e')),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() {
+            _isLoading = false;
+          });
+        }
+      }
+    } else {
+      // Implement other methods later
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('$method sign-in is not implemented yet.')),
+      );
+    }
   }
 
   @override
@@ -99,42 +133,45 @@ class _SignInScreenState extends State<SignInScreen>
               ),
             ),
 
-            const SizedBox(height: 120), // ระยะห่างระหว่างโลโก้กับปุ่ม
-            // 3. ปุ่ม Sign In (จัดวางใน Padding)
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 40),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // ปุ่ม Google
-                  _buildSignInButton(
-                    context,
-                    'Google',
-                    Icons.g_mobiledata, // ใช้ไอคอน Google (g_mobiledata)
-                    () => _signIn(context, 'Google'),
-                  ),
-                  const SizedBox(height: 15),
+            if (_isLoading)
+              const CircularProgressIndicator(color: AppColors.white)
+            else ...[
+              const SizedBox(height: 120), // ระยะห่างระหว่างโลโก้กับปุ่ม
+              // 3. ปุ่ม Sign In (จัดวางใน Padding)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 40),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // ปุ่ม Google
+                    _buildSignInButton(
+                      context,
+                      'Google',
+                      Icons.g_mobiledata, // ใช้ไอคอน Google (g_mobiledata)
+                      () => _signIn(context, 'Google'),
+                    ),
+                    const SizedBox(height: 15),
 
-                  // ปุ่ม Facebook
-                  _buildSignInButton(
-                    context,
-                    'facebook',
-                    Icons.facebook,
-                    () => _signIn(context, 'Facebook'),
-                  ),
-                  const SizedBox(height: 15),
+                    // ปุ่ม Facebook
+                    _buildSignInButton(
+                      context,
+                      'facebook',
+                      Icons.facebook,
+                      () => _signIn(context, 'Facebook'),
+                    ),
+                    const SizedBox(height: 15),
 
-                  // ปุ่ม Phone
-                  _buildSignInButton(
-                    context,
-                    'phone',
-                    Icons.call,
-                    () => _signIn(context, 'Phone'),
-                  ),
-                ],
+                    // ปุ่ม Phone
+                    _buildSignInButton(
+                      context,
+                      'phone',
+                      Icons.call,
+                      () => _signIn(context, 'Phone'),
+                    ),
+                  ],
+                ),
               ),
-            ),
-
+            ],
             const SizedBox(height: 20),
           ],
         ),

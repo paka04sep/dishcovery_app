@@ -1,8 +1,9 @@
 import 'package:dishcovery_app/constants/app_bottom_nav_user.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:dishcovery_app/services/auth_service.dart';
 import 'package:flutter/material.dart';
+import '../starting_screen/loading_screen.dart';
 import 'business_screen.dart';
-import 'swipescreen.dart';
-import 'history_screen.dart';
 
 class UserProfileScreen extends StatelessWidget {
   const UserProfileScreen({super.key});
@@ -61,10 +62,11 @@ class UserProfileScreen extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(width: 15),
-                const Expanded(
+                Expanded(
                   child: Text(
-                    "Apisak Chongkittiworakul",
-                    style: TextStyle(
+                    FirebaseAuth.instance.currentUser?.email?.split('@')[0] ??
+                        "Guest User",
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Colors.black,
@@ -166,6 +168,57 @@ class UserProfileScreen extends StatelessWidget {
                 );
               },
             ),
+            const SizedBox(height: 20),
+            Center(
+              child: TextButton(
+                onPressed: () {
+                  if (context.mounted) {
+                    showDialog(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text("Confirm Logout"),
+                        content: const Text(
+                          "Are you sure you want to log out?",
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text("Cancel"),
+                          ),
+                          TextButton(
+                            onPressed: () async {
+                              Navigator.pop(context); // Close dialog
+                              await AuthService().signOut();
+                              if (context.mounted) {
+                                Navigator.of(context).pushAndRemoveUntil(
+                                  MaterialPageRoute(
+                                    builder: (context) => const LoadingScreen(),
+                                  ),
+                                  (route) => false,
+                                );
+                              }
+                            },
+                            child: const Text(
+                              "Log Out",
+                              style: TextStyle(color: Colors.red),
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+                },
+                child: const Text(
+                  "Log Out",
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
           ],
         ),
       ),

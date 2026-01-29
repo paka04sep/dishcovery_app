@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
-import 'starting_screen/loading_screen.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'starting_screen/auth_wrapper.dart';
+// import 'firebase_options.dart'; // Uncomment if using generated options
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    // options: DefaultFirebaseOptions.currentPlatform, // Uncomment if using generated options
+  );
   runApp(const MyApp());
 }
 
@@ -16,7 +22,7 @@ class MyApp extends StatelessWidget {
         colorScheme: ColorScheme.fromSeed(seedColor: const Color(0xFF539DF3)),
         useMaterial3: true,
       ),
-      home: const LoadingScreen(),
+      home: const AuthWrapper(),
     );
   }
 }

@@ -2,6 +2,8 @@ import 'package:dishcovery_app/constants/app_constants.dart';
 import 'package:dishcovery_app/constants/gradient_text.dart';
 import 'package:dishcovery_app/screen/swipescreen.dart';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class FoodPreferenceScreen extends StatefulWidget {
   const FoodPreferenceScreen({super.key});
@@ -30,7 +32,6 @@ class _FoodPreferenceScreenState extends State<FoodPreferenceScreen> {
     {'name': 'Healthy', 'icon': Icons.local_florist_rounded},
     {'name': 'egg', 'icon': Icons.egg},
     {'name': 'cookie', 'icon': Icons.cookie},
-    {'name': 'upcoming', 'icon': Icons.upcoming},
   ];
 
   // ฟังก์ชันจัดการการเลือกชิปอาหาร
@@ -66,10 +67,24 @@ class _FoodPreferenceScreenState extends State<FoodPreferenceScreen> {
       return;
     }
 
+    // Update user profile in Firestore to firstLogin = false
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      FirebaseFirestore.instance.collection('users').doc(user.uid).set({
+        'isFirstLogin': false,
+        'email': user.email,
+        'preferences':
+            _selectedFoodTypes, // Saving preferences as well is a bonus
+        'distancePreference': _distanceValue,
+      }, SetOptions(merge: true));
+    }
+
     // นำทางไปยังหน้าหลัก (HomePage)
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => const SwipScreen()),
-    );
+    if (mounted) {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const SwipScreen()),
+      );
+    }
   }
 
   // ฟังก์ชันแปลงค่า Slider เป็นข้อความ (ใช้ภาษาอังกฤษ)
