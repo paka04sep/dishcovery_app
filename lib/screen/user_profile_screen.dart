@@ -1,3 +1,4 @@
+import 'package:dishcovery_app/constants/app_bottom_nav_user.dart';
 import 'package:flutter/material.dart';
 import 'business_screen.dart';
 import 'swipescreen.dart';
@@ -12,10 +13,10 @@ class UserProfileScreen extends StatelessWidget {
       backgroundColor: const Color(0xFFF9F9F9), // Light background
       appBar: AppBar(
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
-          onPressed: () => Navigator.pop(context),
-        ),
+        // leading: IconButton(
+        //   icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
+        //   onPressed: () => Navigator.pop(context),
+        // ),
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_outlined, color: Colors.black),
@@ -167,7 +168,7 @@ class UserProfileScreen extends StatelessWidget {
           ],
         ),
       ),
-      bottomNavigationBar: _buildBottomNavBar(context),
+      bottomNavigationBar: const AppBottomNav(currentIndex: 2),
     );
   }
 
@@ -262,43 +263,6 @@ class UserProfileScreen extends StatelessWidget {
         ),
       ),
       onTap: onTap,
-    );
-  }
-
-  Widget _buildBottomNavBar(BuildContext context) {
-    return Container(
-      height: 70,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFE0E0E0), width: 1.0)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          IconButton(
-            icon: const Icon(Icons.history, color: Colors.grey, size: 30),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const HistoryScreen()),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.fork_right, color: Colors.grey, size: 30),
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const SwipScreen()),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.person, color: Colors.orange, size: 40),
-            onPressed: () {},
-          ),
-        ],
-      ),
     );
   }
 }
