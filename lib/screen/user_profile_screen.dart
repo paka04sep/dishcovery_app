@@ -13,6 +13,7 @@ class UserProfileScreen extends StatelessWidget {
       backgroundColor: const Color(0xFFF9F9F9), // Light background
       appBar: AppBar(
         elevation: 0,
+        backgroundColor: Colors.transparent,
         // leading: IconButton(
         //   icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
         //   onPressed: () => Navigator.pop(context),

@@ -174,6 +174,7 @@ class HistoryScreen extends StatelessWidget {
     return AppBar(
       backgroundColor: Colors.transparent,
       elevation: 0,
+      automaticallyImplyLeading: false,
 
       // leading: IconButton(
       //   icon: const Icon(Icons.arrow_back_ios, color: AppColors.black),

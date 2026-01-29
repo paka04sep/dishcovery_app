@@ -1,3 +1,4 @@
+import 'package:dishcovery_app/constants/app_bottom_nav_user.dart';
 import 'package:dishcovery_app/models/restaurant_mock.dart';
 import 'package:dishcovery_app/screen/history_screen.dart';
 import 'package:dishcovery_app/screen/swipescreen.dart';
@@ -102,65 +103,65 @@ class FavoriteScreen extends StatelessWidget {
   }
 
   // Widget สำหรับ Bottom Navigation Bar
-  Widget _buildBottomNavBar(BuildContext context) {
-    return Container(
-      height: 70,
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Color(0xFFE0E0E0), width: 1.0)),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: [
-          IconButton(
-            icon: const Icon(Icons.history, color: Colors.grey, size: 30),
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const HistoryScreen()),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.fork_right, color: Colors.grey, size: 30),
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const SwipScreen()),
-              );
-            },
-          ),
-          IconButton(
-            icon: const Icon(
-              Icons.person,
-              color: Colors.grey,
-              size: 30,
-            ), // เน้นไอคอน Profile
-            onPressed: () {
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const UserProfileScreen(),
-                ),
-              );
-            },
-          ),
-        ],
-      ),
-    );
-  }
+  // Widget _buildBottomNavBar(BuildContext context) {
+  //   return Container(
+  //     height: 70,
+  //     decoration: const BoxDecoration(
+  //       color: Colors.white,
+  //       border: Border(top: BorderSide(color: Color(0xFFE0E0E0), width: 1.0)),
+  //     ),
+  //     child: Row(
+  //       mainAxisAlignment: MainAxisAlignment.spaceAround,
+  //       children: [
+  //         IconButton(
+  //           icon: const Icon(Icons.history, color: Colors.grey, size: 30),
+  //           onPressed: () {
+  //             Navigator.pushReplacement(
+  //               context,
+  //               MaterialPageRoute(builder: (context) => const HistoryScreen()),
+  //             );
+  //           },
+  //         ),
+  //         IconButton(
+  //           icon: const Icon(Icons.fork_right, color: Colors.grey, size: 30),
+  //           onPressed: () {
+  //             Navigator.pushReplacement(
+  //               context,
+  //               MaterialPageRoute(builder: (context) => const SwipScreen()),
+  //             );
+  //           },
+  //         ),
+  //         IconButton(
+  //           icon: const Icon(
+  //             Icons.person,
+  //             color: Colors.grey,
+  //             size: 30,
+  //           ), // เน้นไอคอน Profile
+  //           onPressed: () {
+  //             Navigator.pushReplacement(
+  //               context,
+  //               MaterialPageRoute(
+  //                 builder: (context) => const UserProfileScreen(),
+  //               ),
+  //             );
+  //           },
+  //         ),
+  //       ],
+  //     ),
+  //   );
+  // }
 
   // Widget สำหรับ AppBar ในหน้า Favorite
   PreferredSizeWidget _buildAppBar(BuildContext context) {
     return AppBar(
       backgroundColor: Colors.transparent,
       elevation: 0,
-
+      automaticallyImplyLeading: false,
       // ปุ่มย้อนกลับ
-      leading: IconButton(
-        icon: const Icon(Icons.arrow_back_ios, color: AppColors.black),
-        onPressed: () => Navigator.pop(context),
-      ),
+      // leading: IconButton(
+      //   icon: const Icon(Icons.arrow_back_ios, color: AppColors.black),
+      //   onPressed: () => Navigator.pop(context),
+      // ),
 
       // จัด Title ให้อยู่ทางขวา
       centerTitle: false,
@@ -229,7 +230,7 @@ class FavoriteScreen extends StatelessWidget {
           ),
         ),
       ),
-      bottomNavigationBar: _buildBottomNavBar(context),
+      bottomNavigationBar: const AppBottomNav(currentIndex: 4),
     );
   }
 }

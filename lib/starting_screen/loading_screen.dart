@@ -3,7 +3,6 @@ import '/starting_screen/onboarding_screen.dart';
 import 'package:flutter/material.dart';
 import '../main.dart';
 import '../constants/app_constants.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 
 class LoadingScreen extends StatefulWidget {
@@ -26,71 +25,55 @@ class _LoadingScreenState extends State<LoadingScreen>
       vsync: this,
     );
 
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) {
-        _controller.forward();
-      }
-    });
-
-    _controller.forward();
-
-    // Timer(const Duration(seconds: 3), () {
-    //   Navigator.of(context).pushReplacement(
-    //     MaterialPageRoute(builder: (context) => const OnboardingScreen()),
-    //   );
-    // });
     _initApp();
   }
 
-  Future<Position?> _getUserLocation() async {
+  Future<void> _initApp() async {
+    // 1. เริ่มเล่น Animation ของตัวอักษร
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) _controller.forward();
+    });
+
+    // 2. ขอสิทธิ์ Location
+    await _handleLocationPermission();
+
+    // 3. รอให้ครบ 3 วินาทีตามดีไซน์เดิม (หรือจนกว่างานอื่นจะเสร็จ)
+    Timer(const Duration(seconds: 3), () {
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const OnboardingScreen()),
+        );
+      }
+    });
+  }
+
+  Future<void> _handleLocationPermission() async {
     bool serviceEnabled;
     LocationPermission permission;
 
-    // เช็คว่าเปิด Location service ไหม
+    // ตรวจสอบว่าเปิด Service หรือยัง
     serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
-      debugPrint('Location service disabled');
-      return null;
+      // สามารถแจ้งเตือนให้ผู้ใช้เปิด GPS ได้ที่นี่
+      return;
     }
 
-    // เช็ค permission
     permission = await Geolocator.checkPermission();
     if (permission == LocationPermission.denied) {
+      // ขอสิทธิ์จากผู้ใช้
       permission = await Geolocator.requestPermission();
       if (permission == LocationPermission.denied) {
-        debugPrint('Location permission denied');
-        return null;
+        return;
       }
     }
 
     if (permission == LocationPermission.deniedForever) {
-      debugPrint('Location permission denied forever');
-      return null;
+      // กรณีผู้ใช้ปฏิเสธแบบถาวร
+      return;
     }
 
-    // ดึงตำแหน่ง
-    return await Geolocator.getCurrentPosition(
-      desiredAccuracy: LocationAccuracy.high,
-    );
-  }
-
-  Future<void> _initApp() async {
-    // หน่วงให้เห็น animation
-    await Future.delayed(const Duration(seconds: 2));
-
-    final position = await _getUserLocation();
-
-    if (position != null) {
-      debugPrint('User location: ${position.latitude}, ${position.longitude}');
-
-      // TODO: เก็บไว้ใน Provider / Global / Firebase
-    }
-
-    if (!mounted) return;
-
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (_) => const OnboardingScreen()),
-    );
+    // หากผ่านการขอสิทธิ์ สามารถดึงตำแหน่งไว้รอได้เลย (Optional)
+    // Position position = await Geolocator.getCurrentPosition();
   }
 
   @override
