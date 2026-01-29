@@ -1,5 +1,5 @@
 import 'package:dishcovery_app/constants/app_bottom_nav_user.dart';
-import 'package:dishcovery_app/models/restaurant_mock.dart';
+import 'package:dishcovery_app/services/restaurant_service.dart';
 import 'package:dishcovery_app/screen/history_screen.dart';
 import 'package:dishcovery_app/screen/swipescreen.dart';
 import 'package:dishcovery_app/screen/user_profile_screen.dart';
@@ -205,32 +205,45 @@ class FavoriteScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: _buildAppBar(context),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              AppColors.white,
-              AppColors.white, // ใช้สีฟ้าอ่อนเพื่อความแตกต่าง
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+    return ListenableBuilder(
+      listenable: RestaurantService.instance,
+      builder: (context, child) {
+        final favoriteList = RestaurantService.instance.favorites;
+        return Scaffold(
+          extendBodyBehindAppBar: true,
+          appBar: _buildAppBar(context),
+          body: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.white,
+                  AppColors.white, // ใช้สีฟ้าอ่อนเพื่อความแตกต่าง
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+            ),
+            child: SafeArea(
+              top: true,
+              child: favoriteList.isEmpty
+                  ? Center(
+                      child: Text(
+                        "ไม่มีร้านอาหารที่ถูกใจ",
+                        style: AppTextStyles.refreshText.copyWith(),
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.only(top: 20),
+                      itemCount: favoriteList.length,
+                      itemBuilder: (context, index) {
+                        return _buildFavoriteCard(context, favoriteList[index]);
+                      },
+                    ),
+            ),
           ),
-        ),
-        child: SafeArea(
-          top: true,
-          child: ListView.builder(
-            padding: const EdgeInsets.only(top: 20),
-            itemCount: mockRestaurants.length,
-            itemBuilder: (context, index) {
-              return _buildFavoriteCard(context, mockRestaurants[index]);
-            },
-          ),
-        ),
-      ),
-      bottomNavigationBar: const AppBottomNav(currentIndex: 4),
+          bottomNavigationBar: const AppBottomNav(currentIndex: 4),
+        );
+      },
     );
   }
 }

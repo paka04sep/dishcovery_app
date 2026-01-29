@@ -12,7 +12,7 @@ final List<RestaurantCardData> mockRestaurants = [
     address: '123 ถนนสุขุมวิท แขวงคลองเตย กรุงเทพฯ',
     phone: '0212345678',
     openingHours: '10:00 - 22:00',
-    description: 'ร้านอาหารไทยต้นตำรับ เมนูแนะนำ ผัดไทย ต้มยำกุ้ง',
+    description: 'ร้านอาหารไทยต้นตำรับ เมนูแนะนำ ผัดไทย',
     menuItems: [
       MenuItem(name: 'ผัดไทยกุ้งสด', price: '150 THB'),
       MenuItem(name: 'ผัดไทยไข่เค็ม', price: '80 THB'),

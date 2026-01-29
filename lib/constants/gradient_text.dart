@@ -10,7 +10,6 @@ class GradientText extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ShaderMask(
-      // 💡 ใช้ AppColors.textGradient ที่เรากำหนดไว้ 💡
       shaderCallback: (bounds) {
         return AppColors.textGradient.createShader(
           Rect.fromLTWH(0, 0, bounds.width, bounds.height),

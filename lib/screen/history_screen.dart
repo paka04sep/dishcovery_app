@@ -2,7 +2,7 @@
 
 import 'package:dishcovery_app/constants/app_bottom_nav_user.dart';
 import 'package:dishcovery_app/constants/app_constants.dart';
-import 'package:dishcovery_app/models/restaurant_mock.dart';
+import 'package:dishcovery_app/services/restaurant_service.dart';
 import 'package:dishcovery_app/screen/user_profile_screen.dart';
 import 'package:flutter/material.dart';
 import '../models/restaurant_model.dart';
@@ -14,10 +14,24 @@ class HistoryScreen extends StatelessWidget {
   // Widget สำหรับสร้างการ์ดในหน้า History
   Widget _buildHistoryCard(BuildContext context, RestaurantCardData data) {
     // กำหนดสีและข้อความตามสถานะการปัด
-    final Color statusColor = data.status == SwipeStatus.yum
-        ? Colors.green.shade700
-        : Colors.red.shade700;
-    final String statusText = data.status == SwipeStatus.yum ? "YUM!" : "PASS";
+    Color statusColor;
+    String statusText;
+
+    switch (data.status) {
+      case SwipeStatus.yum:
+        statusColor = Colors.green.shade700;
+        statusText = "YUM!";
+        break;
+      case SwipeStatus.fav:
+        statusColor = Colors.amber.shade700;
+        statusText = "FAV!";
+        break;
+      case SwipeStatus.pass:
+      default:
+        statusColor = Colors.red.shade700;
+        statusText = "PASS";
+        break;
+    }
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
@@ -222,34 +236,49 @@ class HistoryScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      appBar: _buildAppBar(context),
-      body: Container(
-        // พื้นหลังเป็น Gradient
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              const Color.fromARGB(255, 255, 255, 255), // สีอ่อนด้านบน
-              const Color.fromARGB(255, 218, 218, 218), // สีอ่อนลงมา
-            ],
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
+    return ListenableBuilder(
+      listenable: RestaurantService.instance,
+      builder: (context, child) {
+        final historyList = RestaurantService.instance.history;
+        return Scaffold(
+          extendBodyBehindAppBar: true,
+          appBar: _buildAppBar(context),
+          body: Container(
+            // พื้นหลังเป็น Gradient
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  const Color.fromARGB(255, 255, 255, 255), // สีอ่อนด้านบน
+                  const Color.fromARGB(255, 218, 218, 218), // สีอ่อนลงมา
+                ],
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+              ),
+            ),
+            child: SafeArea(
+              // กำหนดให้เริ่มต้นด้านบนสูงกว่าปกติเล็กน้อย
+              top: true,
+              child: historyList.isEmpty
+                  ? Center(
+                      child: Text(
+                        "ไม่มีประวัติ",
+                        style: AppTextStyles.refreshText.copyWith(),
+                      ),
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.only(
+                        top: 20,
+                      ), // เพิ่ม padding ด้านบน
+                      itemCount: historyList.length,
+                      itemBuilder: (context, index) {
+                        return _buildHistoryCard(context, historyList[index]);
+                      },
+                    ),
+            ),
           ),
-        ),
-        child: SafeArea(
-          // กำหนดให้เริ่มต้นด้านบนสูงกว่าปกติเล็กน้อย
-          top: true,
-          child: ListView.builder(
-            padding: const EdgeInsets.only(top: 20), // เพิ่ม padding ด้านบน
-            itemCount: mockRestaurants.length,
-            itemBuilder: (context, index) {
-              return _buildHistoryCard(context, mockRestaurants[index]);
-            },
-          ),
-        ),
-      ),
-      bottomNavigationBar: const AppBottomNav(currentIndex: 0),
+          bottomNavigationBar: const AppBottomNav(currentIndex: 0),
+        );
+      },
     );
   }
 }

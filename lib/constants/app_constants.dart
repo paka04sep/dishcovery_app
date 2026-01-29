@@ -96,4 +96,12 @@ class AppTextStyles {
     fontWeight: FontWeight.bold,
     color: AppColors.black,
   );
+
+  // ข้อความ refresh
+  static const TextStyle refreshText = TextStyle(
+    fontFamily: 'Sukumvit',
+    fontSize: 16,
+    fontWeight: FontWeight.bold,
+    color: Colors.grey,
+  );
 }

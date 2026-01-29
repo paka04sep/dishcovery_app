@@ -109,7 +109,7 @@ class MenuItem {
   MenuItem({required this.name, required this.price});
 }
 
-enum SwipeStatus { yum, pass }
+enum SwipeStatus { yum, pass, none, fav }
 
 class RestaurantCardData {
   final String id;
@@ -145,6 +145,40 @@ class RestaurantCardData {
     this.menuItems = const [],
     this.galleryImages = const [],
   });
+
+  RestaurantCardData copyWith({
+    String? id,
+    String? name,
+    String? cuisine,
+    int? priceRange,
+    double? rating,
+    double? distance,
+    String? imageUrl,
+    String? address,
+    String? phone,
+    String? openingHours,
+    String? description,
+    SwipeStatus? status,
+    List<MenuItem>? menuItems,
+    List<String>? galleryImages,
+  }) {
+    return RestaurantCardData(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      cuisine: cuisine ?? this.cuisine,
+      priceRange: priceRange ?? this.priceRange,
+      rating: rating ?? this.rating,
+      distance: distance ?? this.distance,
+      imageUrl: imageUrl ?? this.imageUrl,
+      address: address ?? this.address,
+      phone: phone ?? this.phone,
+      openingHours: openingHours ?? this.openingHours,
+      description: description ?? this.description,
+      status: status ?? this.status,
+      menuItems: menuItems ?? this.menuItems,
+      galleryImages: galleryImages ?? this.galleryImages,
+    );
+  }
 
   // ฟังก์ชันแปลง JSON เป็น Restaurant object
   factory RestaurantCardData.fromJson(Map<String, dynamic> json) {

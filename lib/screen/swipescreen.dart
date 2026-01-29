@@ -1,12 +1,13 @@
 import 'package:dishcovery_app/constants/app_constants.dart';
 import 'package:dishcovery_app/constants/gradient_text.dart';
-import 'package:dishcovery_app/models/restaurant_mock.dart';
+
 import 'package:dishcovery_app/screen/favorite_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
 import 'history_screen.dart';
 import '../models/restaurant_model.dart';
 import 'user_profile_screen.dart';
+import 'package:dishcovery_app/services/restaurant_service.dart';
 import 'restarurant_detail_screen.dart';
 import '../constants/app_bottom_nav_user.dart';
 
@@ -28,11 +29,14 @@ class _SwipScreenState extends State<SwipScreen>
   Color _buttonOverlayColor = Colors.transparent;
 
   // ข้อมูลการ์ดจริง (ใช้ในการอ้างอิงและนับจำนวน)
-  late final List<RestaurantCardData> restaurantCards = mockRestaurants;
+  late List<RestaurantCardData> restaurantCards;
+  // เพิ่มตัวแปรเช็คว่าปัดหมดหรือยังเพื่อให้แสดงผลทันที
+  bool _isFinished = false;
 
   @override
   void initState() {
     super.initState();
+    restaurantCards = RestaurantService.instance.swipableRestaurants;
     _buttonAnimationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
@@ -48,6 +52,15 @@ class _SwipScreenState extends State<SwipScreen>
           _buttonOverlayColor = Colors.transparent;
         });
       }
+    });
+  }
+
+  void _loadRestaurants() {
+    final swipable = RestaurantService.instance.swipableRestaurants;
+    setState(() {
+      restaurantCards = swipable;
+      _isFinished =
+          restaurantCards.isEmpty; // ถ้าโหลดมาแล้วว่างเลยให้ set finished
     });
   }
 
@@ -69,7 +82,11 @@ class _SwipScreenState extends State<SwipScreen>
     );
     // Logic การบันทึก/ส่งข้อมูลหลังการปัดเสร็จสิ้น
     // ...
+    SwipeStatus newStatus = SwipeStatus.none;
+
     if (direction == CardSwiperDirection.right) {
+      newStatus = SwipeStatus.yum;
+      // Navigate to detail as before
       Navigator.push(
         context,
         MaterialPageRoute(
@@ -78,11 +95,23 @@ class _SwipScreenState extends State<SwipScreen>
           ),
         ),
       );
+    } else if (direction == CardSwiperDirection.left) {
+      newStatus = SwipeStatus.pass;
+    } else if (direction == CardSwiperDirection.top) {
+      newStatus = SwipeStatus.fav;
     }
 
-    // หากปัดบน (FAV!) อาจจะเก็บลงฐานข้อมูล Favorite ต่อที่นี่
-    if (direction == CardSwiperDirection.top) {
-      // logic for saving favorite
+    if (newStatus != SwipeStatus.none) {
+      RestaurantService.instance.swipeRestaurant(
+        restaurantCards[previousIndex].id,
+        newStatus,
+      );
+    }
+
+    if (currentIndex == null) {
+      setState(() {
+        _isFinished = true;
+      });
     }
 
     return true;
@@ -90,6 +119,7 @@ class _SwipScreenState extends State<SwipScreen>
 
   // ฟังก์ชันสำหรับการกดปุ่ม
   void _onActionButtonPressed(CardSwiperDirection direction) {
+    if (_isFinished || restaurantCards.isEmpty) return;
     String text;
     Color color;
 
@@ -167,76 +197,123 @@ class _SwipScreenState extends State<SwipScreen>
             // 1. Card Swiper (ขยายให้ใหญ่ที่สุด)
             Padding(
               padding: EdgeInsets.only(top: appBarHeight, bottom: 10),
-              child: CardSwiper(
-                controller: _controller,
-                // 💡 แก้ไข: ใช้ restaurantCards.length
-                cardsCount: restaurantCards.length,
-                onSwipe: _onSwipe,
-                isLoop: false,
-                allowedSwipeDirection: const AllowedSwipeDirection.only(
-                  left: true,
-                  right: true,
-                  up: true,
-                ),
-                numberOfCardsDisplayed: 2,
-                cardBuilder:
-                    (context, index, percentThresholdX, percentThresholdY) {
-                      return _buildInteractiveCard(
-                        data: restaurantCards[index],
-                        // 👈 แก้ไขตรงนี้: Cast ค่าเป็น double อย่างชัดเจน
-                        percentX: percentThresholdX.toDouble(),
-                        percentY: percentThresholdY.toDouble(),
-                      );
-                    },
-              ),
+              child: (_isFinished || restaurantCards.isEmpty)
+                  ? _buildEmptyState()
+                  : CardSwiper(
+                      controller: _controller,
+                      cardsCount: restaurantCards.length,
+                      onSwipe: _onSwipe,
+                      isLoop: false,
+                      allowedSwipeDirection: const AllowedSwipeDirection.only(
+                        left: true,
+                        right: true,
+                        up: true,
+                      ),
+                      //
+                      numberOfCardsDisplayed: restaurantCards.length >= 2
+                          ? 2
+                          : 1,
+                      cardBuilder:
+                          (
+                            context,
+                            index,
+                            percentThresholdX,
+                            percentThresholdY,
+                          ) {
+                            return _buildInteractiveCard(
+                              data: restaurantCards[index],
+                              percentX: percentThresholdX.toDouble(),
+                              percentY: percentThresholdY.toDouble(),
+                            );
+                          },
+                    ),
             ),
 
             // 2. ปุ่มควบคุมบนการ์ด
-            Positioned(
-              left: 0,
-              right: 0,
-              bottom: 10,
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 40.0,
-                  horizontal: 30,
-                ),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    // ปุ่ม PASS (Icons.close)
-                    _buildActionButton(
-                      icon: Icons.close,
-                      color: Colors.red,
-                      size: 40,
-                      onPressed: () =>
-                          _onActionButtonPressed(CardSwiperDirection.left),
-                    ),
-                    // ปุ่ม STAR (FAV)
-                    _buildActionButton(
-                      icon: Icons.star,
-                      color: Colors.amber,
-                      size: 35,
-                      onPressed: () =>
-                          _onActionButtonPressed(CardSwiperDirection.top),
-                    ),
-                    // ปุ่ม YUM (LIKE)
-                    _buildActionButton(
-                      icon: Icons.restaurant,
-                      color: Colors.green,
-                      size: 40,
-                      onPressed: () =>
-                          _onActionButtonPressed(CardSwiperDirection.right),
-                    ),
-                  ],
+            if (!_isFinished && restaurantCards.isNotEmpty)
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: 10,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 40.0,
+                    horizontal: 30,
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      // ปุ่ม PASS (Icons.close)
+                      _buildActionButton(
+                        icon: Icons.close,
+                        color: Colors.red,
+                        size: 40,
+                        onPressed: () =>
+                            _onActionButtonPressed(CardSwiperDirection.left),
+                      ),
+                      // ปุ่ม STAR (FAV)
+                      _buildActionButton(
+                        icon: Icons.star,
+                        color: Colors.amber,
+                        size: 35,
+                        onPressed: () =>
+                            _onActionButtonPressed(CardSwiperDirection.top),
+                      ),
+                      // ปุ่ม YUM (LIKE)
+                      _buildActionButton(
+                        icon: Icons.restaurant,
+                        color: Colors.green,
+                        size: 40,
+                        onPressed: () =>
+                            _onActionButtonPressed(CardSwiperDirection.right),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
           ],
         ),
       ),
       // bottomNavigationBar: _buildBottomNavBar(context),
       bottomNavigationBar: const AppBottomNav(currentIndex: 1),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(Icons.restaurant_menu, size: 100, color: Colors.grey.shade300),
+          const SizedBox(height: 20),
+          Text("รีเฟรช", style: AppTextStyles.refreshText.copyWith()),
+          const SizedBox(height: 10),
+          Text(
+            "เราหามาให้คุณจนหมดพอร์ตแล้ว\nลองรีเฟรชหรือเปลี่ยนระยะทางดูนะ",
+            textAlign: TextAlign.center,
+            style: AppTextStyles.refreshText.copyWith(fontSize: 14),
+          ),
+          const SizedBox(height: 30),
+          // ElevatedButton(
+          //   onPressed: () {
+          //     setState(() {
+          //       _isFinished = false; // รีเซ็ตค่าเพื่อกลับไปแสดง Swiper
+          //     });
+          //     _loadRestaurants();
+          //   },
+          //   style: ElevatedButton.styleFrom(
+          //     backgroundColor: AppColors.primaryBlue,
+          //     shape: RoundedRectangleBorder(
+          //       borderRadius: BorderRadius.circular(30),
+          //     ),
+          //   ),
+          //   child: Text(
+          //     "Refresh List",
+          //     style: AppTextStyles.refreshText.copyWith(fontSize: 14),
+          //   ),
+          // ),
+        ],
+      ),
     );
   }
 
@@ -414,7 +491,9 @@ class _SwipScreenState extends State<SwipScreen>
                       children: [
                         Text(
                           ' " ${data.description.toString()} " ',
-                          style: AppTextStyles.restaurantDetails.copyWith(),
+                          style: AppTextStyles.restaurantDetails.copyWith(
+                            fontSize: 16,
+                          ),
                           overflow: TextOverflow.ellipsis,
                           maxLines: 1,
                         ),
@@ -560,45 +639,4 @@ class _SwipScreenState extends State<SwipScreen>
       ),
     );
   }
-
-  // Widget สำหรับ Bottom Navigation Bar
-  // Widget _buildBottomNavBar(BuildContext context) {
-  //   return Container(
-  //     height: 70,
-  //     decoration: const BoxDecoration(
-  //       color: Colors.white,
-  //       border: Border(top: BorderSide(color: Color(0xFFE0E0E0), width: 1.0)),
-  //     ),
-  //     child: Row(
-  //       mainAxisAlignment: MainAxisAlignment.spaceAround,
-  //       children: [
-  //         IconButton(
-  //           icon: const Icon(Icons.history, color: Colors.grey, size: 30),
-  //           onPressed: () {
-  //             Navigator.push(
-  //               context,
-  //               MaterialPageRoute(builder: (context) => const HistoryScreen()),
-  //             );
-  //           },
-  //         ),
-  //         IconButton(
-  //           icon: const Icon(Icons.fork_right, color: Colors.orange, size: 40),
-  //           onPressed: () {},
-  //         ),
-  //         IconButton(
-  //           icon: const Icon(Icons.person, color: Colors.grey, size: 30),
-  //           onPressed: () {
-  //             // สั่งให้เปลี่ยนหน้าไปที่ UserProfileScreen
-  //             Navigator.push(
-  //               context,
-  //               MaterialPageRoute(
-  //                 builder: (context) => const UserProfileScreen(),
-  //               ),
-  //             );
-  //           },
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
 }
