@@ -1,5 +1,6 @@
 import 'package:dishcovery_app/constants/app_constants.dart';
 import 'package:dishcovery_app/constants/gradient_text.dart';
+import 'package:dishcovery_app/screen/swipescreen.dart';
 
 import 'package:flutter/material.dart';
 
@@ -168,6 +169,23 @@ class _SignInScreenState extends State<SignInScreen>
                       Icons.call,
                       () => _signIn(context, 'Phone'),
                     ),
+
+                    const SizedBox(height: 12),
+
+                    // 👤 Guest Login (สำหรับเทส)
+                    TextButton(
+                      onPressed: () {
+                        _guestLogin(context);
+                      },
+                      child: Text(
+                        'Continue as Guest',
+                        style: TextStyle(
+                          color: const Color.fromARGB(255, 179, 179, 179),
+                          fontSize: 14,
+                          fontFamily: fontFamily,
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
@@ -176,6 +194,13 @@ class _SignInScreenState extends State<SignInScreen>
           ],
         ),
       ),
+    );
+  }
+
+  void _guestLogin(BuildContext context) {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (context) => const SwipScreen()),
     );
   }
 

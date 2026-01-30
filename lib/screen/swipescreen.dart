@@ -398,7 +398,7 @@ class _SwipScreenState extends State<SwipScreen>
                       ],
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
-                      stops: const [0.6, 1.0],
+                      stops: const [0.3, 0.9],
                     ),
                   ),
                 ),

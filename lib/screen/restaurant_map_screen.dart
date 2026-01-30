@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:geolocator/geolocator.dart';
 import '../constants/app_constants.dart';
 import '../models/restaurant_model.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -39,7 +38,7 @@ class _RestaurantMapScreenState extends State<RestaurantMapScreen> {
   Future<void> _launchNavigation() async {
     // สร้าง URL สำหรับ Google Maps และ Apple Maps
     final String googleMapsUrl = "google.navigation:q=$resLat,$resLng&mode=d";
-    // final String appleMapsUrl = "http://maps.apple.com/?daddr=$resLat,$resLng";
+
     final String webUrl =
         "https://www.google.com/maps/dir/?api=1&destination=$resLat,$resLng";
 
@@ -140,7 +139,7 @@ class _RestaurantMapScreenState extends State<RestaurantMapScreen> {
           ),
 
           // ปุ่ม Navigation และ Bottom Bar (คงเดิม)
-          _buildActionButtons(fontFamily),
+          _buildActionButtons(context, fontFamily),
         ],
       ),
     );
@@ -186,29 +185,73 @@ class _RestaurantMapScreenState extends State<RestaurantMapScreen> {
     );
   }
 
-  Widget _buildActionButtons(String? fontFamily) {
-    return Column(
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(vertical: 20),
-          child: ElevatedButton.icon(
-            onPressed: _launchNavigation,
-            icon: const Icon(Icons.navigation),
-            label: const Text("START NAVIGATION"),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.black,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(30),
-              ),
+  Widget _buildActionButtons(BuildContext context, String? fontFamily) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
+      child: Container(
+        width: double.infinity,
+        height: 60,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(32),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: ElevatedButton(
+          onPressed: _launchNavigation,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.white,
+            foregroundColor: Colors.black,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(32),
+              side: const BorderSide(color: Colors.black12),
             ),
           ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.navigation),
+              const SizedBox(width: 8),
+              Text(
+                'START NAVIGATION',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2.5,
+                  fontFamily: fontFamily,
+                ),
+              ),
+            ],
+          ),
         ),
-        // _buildBottomNavBar(),
-      ],
+      ),
     );
   }
+
+  // Widget _buildActionButtons(String? fontFamily) {
+  // return Column(
+  // children: [ Padding( padding: const EdgeInsets.symmetric(vertical: 20),
+  // child: ElevatedButton.icon( onPressed: _launchNavigation,
+  // icon: const Icon(Icons.navigation),
+  // label: const Text("START NAVIGATION"),
+  // style: ElevatedButton.styleFrom(
+  // backgroundColor: Colors.white,
+  // foregroundColor: Colors.black,
+  // padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
+  // shape: RoundedRectangleBorder( borderRadius: BorderRadius.circular(30),
+  // ),
+  // ),
+  // ),
+  // ),
+  // // _buildBottomNavBar(),
+  // /],
+  // /);
+  // /}
 
   //  ปุ่ม Back ลอยตัว
   Widget _buildFloatingBackButton(BuildContext context) {
@@ -239,22 +282,4 @@ class _RestaurantMapScreenState extends State<RestaurantMapScreen> {
       ),
     );
   }
-
-  // Widget _buildBottomNavBar() {
-  //   return Container(
-  //     height: 70,
-  //     decoration: const BoxDecoration(
-  //       color: Colors.white,
-  //       border: Border(top: BorderSide(color: Color(0xFFEEEEEE))),
-  //     ),
-  //     child: const Row(
-  //       mainAxisAlignment: MainAxisAlignment.spaceAround,
-  //       children: [
-  //         Icon(Icons.history, color: Colors.grey, size: 28),
-  //         Icon(Icons.restaurant_menu, color: Colors.black, size: 34),
-  //         Icon(Icons.person_outline, color: Colors.grey, size: 28),
-  //       ],
-  //     ),
-  //   );
-  // }
 }
