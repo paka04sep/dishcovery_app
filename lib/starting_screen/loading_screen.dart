@@ -29,22 +29,31 @@ class _LoadingScreenState extends State<LoadingScreen>
   }
 
   Future<void> _initApp() async {
-    // 1. เริ่มเล่น Animation ของตัวอักษร
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (mounted) _controller.forward();
-    });
+    try {
+      // 1. เริ่มเล่น Animation ของตัวอักษร
+      Future.delayed(const Duration(milliseconds: 500), () {
+        if (mounted) _controller.forward();
+      });
 
-    // 2. ขอสิทธิ์ Location
-    await _handleLocationPermission();
-
-    // 3. รอให้ครบ 3 วินาทีตามดีไซน์เดิม (หรือจนกว่างานอื่นจะเสร็จ)
-    Timer(const Duration(seconds: 3), () {
-      if (mounted) {
-        Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const OnboardingScreen()),
-        );
+      // 2. ขอสิทธิ์ Location (ใส่ try-catch แยกเพื่อให้ทำงานต่อได้)
+      try {
+        await _handleLocationPermission();
+      } catch (e) {
+        debugPrint("Error handling location permission: $e");
       }
-    });
+    } catch (e) {
+      debugPrint("Error in _initApp: $e");
+    } finally {
+      // 3. รอให้ครบ 3 วินาทีตามดีไซน์เดิม (หรือจนกว่างานอื่นจะเสร็จ)
+      // ใช้ finally เพื่อให้มั่นใจว่า Code ส่วนนี้จะถูกรันเสนอ
+      Timer(const Duration(seconds: 3), () {
+        if (mounted) {
+          Navigator.of(context).pushReplacement(
+            MaterialPageRoute(builder: (context) => const OnboardingScreen()),
+          );
+        }
+      });
+    }
   }
 
   Future<void> _handleLocationPermission() async {
