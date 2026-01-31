@@ -81,65 +81,68 @@ class _RestaurantMapScreenState extends State<RestaurantMapScreen> {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: Column(
+      body: Stack(
         children: [
-          // ส่วนบน: ปุ่มย้อนกลับและ Card
-          Padding(
-            padding: const EdgeInsets.only(
-              top: 50,
-              left: 20,
-              right: 20,
-              bottom: 10,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildFloatingBackButton(context),
-                const SizedBox(height: 10),
-
-                _buildRestaurantHeader(fontFamily),
-              ],
-            ),
-          ),
-
-          // ส่วนแผนที่
-          Expanded(
-            child: Container(
-              margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(25),
-                border: Border.all(color: Colors.grey.shade200, width: 2),
+          // เนื้อหาหลัก
+          Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(
+                  top: 50,
+                  left: 20,
+                  right: 20,
+                  bottom: 10,
+                ),
+                child: _buildRestaurantHeader(fontFamily),
               ),
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(23),
-                child: Stack(
-                  children: [
-                    GoogleMap(
-                      onMapCreated: _onMapCreated,
-                      initialCameraPosition: CameraPosition(
-                        target: LatLng(resLat, resLng),
-                        zoom: 15.0,
-                      ),
-                      myLocationEnabled: true,
-                      myLocationButtonEnabled: true,
-                      markers: {
-                        Marker(
-                          markerId: const MarkerId('res_1'),
-                          position: LatLng(resLat, resLng),
-                          infoWindow: InfoWindow(title: widget.restaurant.name),
+
+              // แผนที่
+              Expanded(
+                child: Container(
+                  margin: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
+                  ),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(25),
+                    border: Border.all(color: Colors.grey.shade200, width: 2),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(23),
+                    child: Stack(
+                      children: [
+                        GoogleMap(
+                          onMapCreated: _onMapCreated,
+                          initialCameraPosition: CameraPosition(
+                            target: LatLng(resLat, resLng),
+                            zoom: 15,
+                          ),
+                          myLocationEnabled: true,
+                          myLocationButtonEnabled: true,
+                          markers: {
+                            Marker(
+                              markerId: const MarkerId('res_1'),
+                              position: LatLng(resLat, resLng),
+                              infoWindow: InfoWindow(
+                                title: widget.restaurant.name,
+                              ),
+                            ),
+                          },
                         ),
-                      },
+                        if (!_isMapReady)
+                          const Center(child: CircularProgressIndicator()),
+                      ],
                     ),
-                    if (!_isMapReady)
-                      const Center(child: CircularProgressIndicator()),
-                  ],
+                  ),
                 ),
               ),
-            ),
+
+              _buildActionButtons(context, fontFamily),
+            ],
           ),
 
-          // ปุ่ม Navigation และ Bottom Bar (คงเดิม)
-          _buildActionButtons(context, fontFamily),
+          // ปุ่ม Back ลอย (ถูกที่แล้ว)
+          _buildFloatingBackButton(context),
         ],
       ),
     );
