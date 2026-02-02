@@ -16,6 +16,8 @@ class RestaurantCardData {
   final int priceRange; // 1, 2, or 3
   final double rating;
   final double distance;
+  final double latitude; // Added latitude
+  final double longitude; // Added longitude
   final String imageUrl;
   final String address;
   final String phone;
@@ -33,6 +35,8 @@ class RestaurantCardData {
     required this.priceRange,
     required this.rating,
     required this.distance,
+    required this.latitude,
+    required this.longitude,
     required this.imageUrl,
     required this.address,
     required this.phone,
@@ -51,6 +55,8 @@ class RestaurantCardData {
     int? priceRange,
     double? rating,
     double? distance,
+    double? latitude,
+    double? longitude,
     String? imageUrl,
     String? address,
     String? phone,
@@ -67,6 +73,8 @@ class RestaurantCardData {
       priceRange: priceRange ?? this.priceRange,
       rating: rating ?? this.rating,
       distance: distance ?? this.distance,
+      latitude: latitude ?? this.latitude,
+      longitude: longitude ?? this.longitude,
       imageUrl: imageUrl ?? this.imageUrl,
       address: address ?? this.address,
       phone: phone ?? this.phone,
@@ -87,6 +95,8 @@ class RestaurantCardData {
       priceRange: json['priceRange'] as int,
       rating: (json['rating'] as num).toDouble(),
       distance: (json['distance'] as num).toDouble(),
+      latitude: (json['latitude'] as num).toDouble(),
+      longitude: (json['longitude'] as num).toDouble(),
       imageUrl: json['imageUrl'] as String,
       address: json['address'] as String,
       phone: json['phone'] as String,
@@ -105,6 +115,8 @@ class RestaurantCardData {
       'priceRange': priceRange,
       'rating': rating,
       'distance': distance,
+      'latitude': latitude,
+      'longitude': longitude,
       'imageUrl': imageUrl,
       'address': address,
       'phone': phone,

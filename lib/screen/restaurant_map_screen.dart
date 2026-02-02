@@ -20,8 +20,8 @@ class _RestaurantMapScreenState extends State<RestaurantMapScreen> {
 
   // พิกัดร้านอาหาร (ควรดึงจาก Model จริง)
   // final LatLng _restaurantLocation = const LatLng(13.7563, 100.5018);
-  final double resLat = 13.7563;
-  final double resLng = 100.5018;
+  double get resLat => widget.restaurant.latitude;
+  double get resLng => widget.restaurant.longitude;
 
   @override
   void initState() {
