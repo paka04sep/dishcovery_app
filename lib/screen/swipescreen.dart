@@ -4,6 +4,7 @@ import 'package:dishcovery_app/constants/gradient_text.dart';
 import 'package:dishcovery_app/screen/favorite_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_card_swiper/flutter_card_swiper.dart';
+import '../constants/app_init_screen.dart';
 import 'history_screen.dart';
 import '../models/restaurant_model.dart';
 import 'user_profile_screen.dart';
@@ -82,11 +83,28 @@ class _SwipScreenState extends State<SwipScreen>
       final allRestaurants = RestaurantService.instance.restaurants;
 
       // 1. Check if we need to reload due to Filtering Changes.
-      // If `restaurantCards` contains items with status=none that are NOT in `freshSwipable`,
-      // it means they were filtered out by preferences/distance. We must reload.
+      // We only reload if a card is "Filtered Out".
+      // A card is "Filtered Out" if:
+      // - locally it is NONE (visible)
+      // - globally it is STILL NONE (hasn't been swiped)
+      // - BUT it is missing from `freshSwipable`.
+
       bool hasInvalidItems = restaurantCards.any((card) {
         if (card.status == SwipeStatus.none) {
-          return !freshSwipable.any((r) => r.id == card.id);
+          // Find the real status in service
+          final realCard = allRestaurants.firstWhere(
+            (r) => r.id == card.id,
+            orElse: () => card,
+          );
+
+          // If real status is ALSO none, it implies it hasn't been swiped yet.
+          if (realCard.status == SwipeStatus.none) {
+            // If it's pure (none) but missing from freshSwipable, it must be FILTERED out.
+            bool isInFresh = freshSwipable.any((r) => r.id == card.id);
+            return !isInFresh;
+          }
+          // If real status is YUM/PASS, it is naturally missing from freshSwipable. This is OK.
+          // We don't want to reload in this case, we just want to update the status in step 2.
         }
         return false;
       });
@@ -200,7 +218,7 @@ class _SwipScreenState extends State<SwipScreen>
         MediaQuery.of(context).padding.top + kToolbarHeight;
 
     if (!RestaurantService.instance.isReady) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const AppInitScreen();
     }
 
     return Scaffold(

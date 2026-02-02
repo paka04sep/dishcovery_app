@@ -24,17 +24,17 @@ class RestaurantService extends ChangeNotifier {
 
   bool get isReady => _isReady;
 
-  void _initializeData() {
+  Future<void> _initializeData() async {
     // Reset all mock data to SwipeStatus.none so the user starts fresh
     _restaurants = mockRestaurants.map((r) {
       return r.copyWith(status: SwipeStatus.none);
     }).toList();
 
-    // Trigger location update
-    updateUserLocation();
+    // Fetch both in parallel
+    await Future.wait([updateUserLocation(), fetchUserPreferences()]);
 
-    // Fetch preferences
-    fetchUserPreferences();
+    _isReady = true;
+    notifyListeners();
   }
 
   Future<void> fetchUserPreferences() async {
@@ -61,13 +61,7 @@ class RestaurantService extends ChangeNotifier {
         if (kDebugMode) {
           print("Error fetching preferences: $e");
         }
-      } finally {
-        _isReady = true;
-        notifyListeners();
       }
-    } else {
-      _isReady = true;
-      notifyListeners();
     }
   }
 
