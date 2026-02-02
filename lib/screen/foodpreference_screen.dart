@@ -6,7 +6,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class FoodPreferenceScreen extends StatefulWidget {
-  const FoodPreferenceScreen({super.key});
+  final bool isEditMode;
+  const FoodPreferenceScreen({super.key, this.isEditMode = false});
 
   @override
   State<FoodPreferenceScreen> createState() => _FoodPreferenceScreenState();
@@ -19,20 +20,86 @@ class _FoodPreferenceScreenState extends State<FoodPreferenceScreen> {
   double _distanceValue = 25.0;
   final int _maxSelection = 5;
 
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isEditMode) {
+      _loadUserPreferences();
+    }
+  }
+
+  Future<void> _loadUserPreferences() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+      if (doc.exists) {
+        final data = doc.data();
+        if (data != null) {
+          setState(() {
+            if (data['preferences'] != null) {
+              _selectedFoodTypes.addAll(List<String>.from(data['preferences']));
+            }
+            if (data['distancePreference'] != null) {
+              _distanceValue = (data['distancePreference'] as num).toDouble();
+            }
+          });
+        }
+      }
+    }
+  }
+
   // รายการตัวเลือกอาหารพร้อมไอคอน
   final List<Map<String, dynamic>> _foodOptions = [
-    {'name': 'Thai Food', 'icon': Icons.ramen_dining_rounded},
-    {'name': 'Fast Food', 'icon': Icons.fastfood_rounded},
-    {'name': 'Noodles', 'icon': Icons.set_meal_rounded},
-    {'name': 'Seafood', 'icon': Icons.restaurant_menu_rounded},
-    {'name': 'Bakery', 'icon': Icons.cake_rounded},
-    {'name': 'Japanese', 'icon': Icons.rice_bowl_rounded},
-    // สามารถเพิ่มตัวเลือกอื่น ๆ ได้
-    {'name': 'Coffee & Tea', 'icon': Icons.local_cafe_rounded},
-    {'name': 'Healthy', 'icon': Icons.local_florist_rounded},
-    {'name': 'egg', 'icon': Icons.egg},
-    {'name': 'cookie', 'icon': Icons.cookie},
+    {'name': 'อาหารไทย', 'icon': Icons.ramen_dining_rounded},
+    {'name': 'อาหารอีสาน', 'icon': Icons.local_fire_department_rounded},
+    {'name': 'อาหารเหนือ', 'icon': Icons.terrain_rounded},
+    {'name': 'อาหารใต้', 'icon': Icons.waves_rounded},
+
+    {'name': 'อาหารญี่ปุ่น', 'icon': Icons.rice_bowl_rounded},
+    {'name': 'อาหารเกาหลี', 'icon': Icons.restaurant_rounded},
+    {'name': 'อาหารจีน', 'icon': Icons.set_meal_rounded},
+    {'name': 'อาหารตะวันตก', 'icon': Icons.dinner_dining_rounded},
+
+    {'name': 'ฟาสต์ฟู้ด', 'icon': Icons.fastfood_rounded},
+    {'name': 'เบอร์เกอร์', 'icon': Icons.lunch_dining_rounded},
+    {'name': 'พิซซ่า', 'icon': Icons.local_pizza_rounded},
+    {'name': 'ไก่ทอด', 'icon': Icons.restaurant_menu_rounded},
+
+    {'name': 'ก๋วยเตี๋ยว', 'icon': Icons.ramen_dining},
+    {'name': 'ข้าวแกง', 'icon': Icons.rice_bowl},
+    {'name': 'ข้าวมันไก่', 'icon': Icons.set_meal},
+    {'name': 'อาหารตามสั่ง', 'icon': Icons.restaurant},
+
+    {'name': 'ซีฟู้ด', 'icon': Icons.sailing_rounded},
+    {'name': 'ปิ้งย่าง', 'icon': Icons.outdoor_grill_rounded},
+    {'name': 'ชาบู / สุกี้', 'icon': Icons.soup_kitchen_rounded},
+
+    {'name': 'เบเกอรี่', 'icon': Icons.cake_rounded},
+    {'name': 'ของหวาน', 'icon': Icons.icecream_rounded},
+    {'name': 'ไอศกรีม', 'icon': Icons.icecream},
+    {'name': 'คุกกี้', 'icon': Icons.cookie},
+
+    {'name': 'กาแฟ', 'icon': Icons.local_cafe_rounded},
+    {'name': 'ชา / ชานม', 'icon': Icons.emoji_food_beverage_rounded},
+    {'name': 'เครื่องดื่ม', 'icon': Icons.local_drink_rounded},
+
+    {'name': 'อาหารเพื่อสุขภาพ', 'icon': Icons.eco_rounded},
+    {'name': 'มังสวิรัติ', 'icon': Icons.grass_rounded},
+    {'name': 'คลีน', 'icon': Icons.spa_rounded},
+
+    {'name': 'ไข่', 'icon': Icons.egg},
   ];
+
+  List<List<T>> chunkList<T>(List<T> list, int chunkCount) {
+    final chunks = List.generate(chunkCount, (_) => <T>[]);
+    for (var i = 0; i < list.length; i++) {
+      chunks[i % chunkCount].add(list[i]);
+    }
+    return chunks;
+  }
 
   // ฟังก์ชันจัดการการเลือกชิปอาหาร
   void _toggleFoodSelection(String foodType) {
@@ -45,9 +112,28 @@ class _FoodPreferenceScreenState extends State<FoodPreferenceScreen> {
         // หากเกิน 5 ชนิด ให้แสดงข้อความแจ้งเตือน (แทนการใช้ alert)
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('เลือกได้สูงสุดเพียง $_maxSelection ประเภทเท่านั้น!'),
-            duration: const Duration(seconds: 1),
+            behavior: SnackBarBehavior.floating,
+            margin: const EdgeInsets.all(16),
             backgroundColor: AppColors.midblue,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            duration: const Duration(seconds: 2),
+            content: Row(
+              children: [
+                const Icon(Icons.warning_amber_rounded, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'เลือกได้สูงสุด $_maxSelection ประเภทเท่านั้น',
+                    style: AppTextStyles.refreshText.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.normal,
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       }
@@ -55,35 +141,76 @@ class _FoodPreferenceScreenState extends State<FoodPreferenceScreen> {
   }
 
   // ฟังก์ชันจัดการปุ่ม NEXT
-  void _goToNextScreen() {
+  Future<void> _goToNextScreen() async {
     if (_selectedFoodTypes.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('โปรดเลือกประเภทอาหารที่คุณชื่นชอบอย่างน้อย 1 ประเภท'),
-          duration: Duration(seconds: 2),
-          backgroundColor: Colors.orange,
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          margin: const EdgeInsets.all(16),
+          backgroundColor: Colors.orange.shade400,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+          duration: const Duration(seconds: 2),
+          content: Row(
+            children: [
+              Icon(Icons.info_outline, color: Colors.white),
+              SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'กรุณาเลือกประเภทอาหารที่คุณชื่นชอบอย่างน้อย 1 ประเภทก่อนดำเนินการต่อ',
+                  style: AppTextStyles.refreshText.copyWith(
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       );
       return;
     }
 
-    // Update user profile in Firestore to firstLogin = false
+    // Update user profile in Firestore
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      FirebaseFirestore.instance.collection('users').doc(user.uid).set({
-        'isFirstLogin': false,
-        'email': user.email,
-        'preferences':
-            _selectedFoodTypes, // Saving preferences as well is a bonus
+      // Data to update
+      final Map<String, dynamic> updateData = {
+        'preferences': _selectedFoodTypes,
         'distancePreference': _distanceValue,
-      }, SetOptions(merge: true));
+      };
+
+      if (!widget.isEditMode) {
+        updateData['isFirstLogin'] = false;
+        updateData['email'] = user.email;
+      }
+
+      await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .set(updateData, SetOptions(merge: true));
     }
 
-    // นำทางไปยังหน้าหลัก (HomePage)
-    if (mounted) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const SwipScreen()),
-      );
+    if (widget.isEditMode) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Preferences saved!',
+              style: TextStyle(color: Colors.white),
+            ),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pop(context);
+      }
+    } else {
+      // นำทางไปยังหน้าหลัก (HomePage)
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const SwipScreen()),
+        );
+      }
     }
   }
 
@@ -99,6 +226,7 @@ class _FoodPreferenceScreenState extends State<FoodPreferenceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final rows = chunkList(_foodOptions, 5);
     // กำหนด Font Family ถ้ามีการตั้งค่าใน Theme
     final String? fontFamily = Theme.of(
       context,
@@ -107,35 +235,44 @@ class _FoodPreferenceScreenState extends State<FoodPreferenceScreen> {
     return Scaffold(
       // กำหนดสีพื้นหลังเป็นสีขาว
       backgroundColor: AppColors.white,
-      // ลบ AppBar
-      // appBar: AppBar(
-      //   title: const Text('MAIN SCREEN'),
-      //   backgroundColor: AppColors.darkBackground,
-      //   foregroundColor: AppColors.white,
-      // ),
+      appBar: widget.isEditMode
+          ? AppBar(
+              title: GradientText(
+                text: 'Edit Preferences!',
+                style: AppTextStyles.secondaryTitle.copyWith(
+                  fontWeight: FontWeight.w100,
+                ),
+              ),
+              backgroundColor: Colors.white,
+              foregroundColor: Colors.black,
+              elevation: 0,
+            )
+          : null,
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(20.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const SizedBox(height: 35),
+              SizedBox(height: widget.isEditMode ? 8 : 35),
               // 1. Header (Logo & Title) - อยู่ด้านบนสุด
-              Row(
-                children: [
-                  Image.asset(
-                    'assets/images/logo1.0circle.png',
-                    width: 36,
-                    height: 36,
-                  ),
-                  const SizedBox(width: 10),
-                  GradientText(
-                    text: 'DISHCOVERY!',
-                    style: AppTextStyles.secondaryTitle.copyWith(),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 35),
+              if (!widget.isEditMode) ...[
+                Row(
+                  children: [
+                    Image.asset(
+                      'assets/images/logo1.0circle.png',
+                      width: 36,
+                      height: 36,
+                    ),
+                    const SizedBox(width: 10),
+                    GradientText(
+                      text: 'DISHCOVERY!',
+                      style: AppTextStyles.secondaryTitle.copyWith(),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 35),
+              ],
 
               // 2. ส่วนเลือกประเภทอาหาร
               GradientText(
@@ -149,57 +286,69 @@ class _FoodPreferenceScreenState extends State<FoodPreferenceScreen> {
               const SizedBox(height: 15),
 
               // ใช้ Wrap เพื่อจัดเรียง Chip ให้พอดีกับหน้าจอ
-              Wrap(
-                spacing: 8.0, // ระยะห่างแนวนอน
-                runSpacing: 8.0, // ระยะห่างแนวตั้ง
-                children: _foodOptions.map((option) {
-                  final String name = option['name'];
-                  final IconData icon = option['icon'];
-                  final bool isSelected = _selectedFoodTypes.contains(name);
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: List.generate(rows.length, (rowIndex) {
+                    return Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: Wrap(
+                        spacing: 10, // 👈 ระยะห่างแนวนอน (เล็กลง ดูชิดขึ้น)
+                        children: rows[rowIndex].map((option) {
+                          final String name = option['name'];
+                          final IconData icon = option['icon'];
+                          final bool isSelected = _selectedFoodTypes.contains(
+                            name,
+                          );
 
-                  return ChoiceChip(
-                    showCheckmark: false,
-                    label: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          icon,
-                          size: 18,
-                          color: isSelected ? AppColors.black : AppColors.black,
-                        ),
-                        const SizedBox(width: 8),
-                        Text(
-                          name,
-                          style: AppTextStyles.description.copyWith(
-                            color: isSelected
-                                ? AppColors.black
-                                : AppColors.black,
-                            fontSize: 16,
-                            fontFamily: 'balooda',
-                          ),
-                        ),
-                      ],
-                    ),
-                    selected: isSelected,
-                    selectedColor: AppColors.lightBlue,
-                    backgroundColor: AppColors.white,
-                    onSelected: (selected) => _toggleFoodSelection(name),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30),
-                      side: BorderSide(
-                        color: isSelected
-                            ? AppColors.primaryBlue
-                            : AppColors.black,
+                          return ChoiceChip(
+                            showCheckmark: false,
+                            materialTapTargetSize: MaterialTapTargetSize
+                                .shrinkWrap, // 👈 ลดพื้นที่แฝง
+                            labelPadding: const EdgeInsets.symmetric(
+                              horizontal: 4,
+                            ),
+                            label: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(icon, size: 18),
+                                const SizedBox(width: 6),
+                                Text(
+                                  name,
+                                  style: AppTextStyles.restaurantDetails
+                                      .copyWith(
+                                        color: AppColors.black,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                ),
+                              ],
+                            ),
+                            selected: isSelected,
+                            selectedColor: AppColors.lightBlue,
+                            backgroundColor: AppColors.white,
+                            onSelected: (_) => _toggleFoodSelection(name),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(24),
+                              side: BorderSide(
+                                color: isSelected
+                                    ? AppColors.primaryBlue
+                                    : AppColors.black,
+                              ),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                              vertical: 18,
+                              horizontal: 10,
+                            ),
+                          );
+                        }).toList(),
                       ),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      vertical: 10,
-                      horizontal: 15,
-                    ),
-                  );
-                }).toList(),
+                    );
+                  }),
+                ),
               ),
-              const SizedBox(height: 25),
+              const SizedBox(height: 35),
 
               // 3. ส่วนเลือกความชอบระยะทาง
               GradientText(
@@ -333,7 +482,7 @@ class _FoodPreferenceScreenState extends State<FoodPreferenceScreen> {
                     elevation: 15,
                   ),
                   child: Text(
-                    'NEXT',
+                    widget.isEditMode ? 'SAVE' : 'NEXT',
                     style: AppTextStyles.buttonText.copyWith(
                       fontFamily: fontFamily,
                       color: AppColors.black, // ข้อความเป็นสีขาวบนปุ่มสีดำ

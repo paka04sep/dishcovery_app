@@ -4,6 +4,7 @@ import 'package:dishcovery_app/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import '../starting_screen/loading_screen.dart';
 import 'business_screen.dart';
+import 'foodpreference_screen.dart';
 
 class UserProfileScreen extends StatelessWidget {
   const UserProfileScreen({super.key});
@@ -140,8 +141,17 @@ class UserProfileScreen extends StatelessWidget {
 
             // List Menu
             _buildListTile(
-              icon: Icons.add_business_outlined,
-              title: "Add Missing Restaurant / Place",
+              icon: Icons.restaurant_outlined,
+              title: "Edit Food Preferences",
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        const FoodPreferenceScreen(isEditMode: true),
+                  ),
+                );
+              },
             ),
             _buildListTile(
               icon: Icons.help_outline,

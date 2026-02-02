@@ -1,5 +1,6 @@
 import 'package:dishcovery_app/constants/app_constants.dart';
 import 'package:dishcovery_app/constants/gradient_text.dart';
+import 'package:dishcovery_app/screen/foodpreference_screen.dart';
 import 'package:dishcovery_app/screen/swipescreen.dart';
 
 import 'package:flutter/material.dart';
@@ -200,7 +201,7 @@ class _SignInScreenState extends State<SignInScreen>
   void _guestLogin(BuildContext context) {
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (context) => const SwipScreen()),
+      MaterialPageRoute(builder: (context) => const FoodPreferenceScreen()),
     );
   }
 
