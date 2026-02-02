@@ -37,6 +37,7 @@ class _SwipScreenState extends State<SwipScreen>
   void initState() {
     super.initState();
     restaurantCards = RestaurantService.instance.swipableRestaurants;
+    RestaurantService.instance.addListener(_onServiceUpdate); // Add listener
     _buttonAnimationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
@@ -68,7 +69,27 @@ class _SwipScreenState extends State<SwipScreen>
   void dispose() {
     _controller.dispose();
     _buttonAnimationController.dispose();
+    RestaurantService.instance.removeListener(
+      _onServiceUpdate,
+    ); // Remove listener
     super.dispose();
+  }
+
+  void _onServiceUpdate() {
+    if (mounted) {
+      // Use stable updates to prevent index skipping bug
+      // Instead of replacing the list (which shrinks it and messes up CardSwiper index),
+      // we update the existing items in place with fresh data from the service.
+      final allRestaurants = RestaurantService.instance.restaurants;
+      setState(() {
+        restaurantCards = restaurantCards.map((card) {
+          return allRestaurants.firstWhere(
+            (r) => r.id == card.id,
+            orElse: () => card,
+          );
+        }).toList();
+      });
+    }
   }
 
   // ฟังก์ชัน Callback เมื่อมีการปัด (ใช้สำหรับ logic การบันทึกเท่านั้น)
@@ -472,21 +493,21 @@ class _SwipScreenState extends State<SwipScreen>
                     const SizedBox(height: 6),
 
                     // เรตติ้ง
-                    Row(
-                      children: [
-                        const Icon(Icons.star, color: Colors.amber, size: 18),
-                        const SizedBox(width: 4),
-                        Text(
-                          data.rating.toString(),
-                          style: AppTextStyles.restaurantDetails.copyWith(),
-                        ),
-                        // Text(
-                        //   ' · เปิด-ปิด ${data.openingHours} ',
-                        //   style: AppTextStyles.restaurantDetails.copyWith(),
-                        // ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
+                    // Row(
+                    //   children: [
+                    //     const Icon(Icons.star, color: Colors.amber, size: 18),
+                    //     const SizedBox(width: 4),
+                    //     Text(
+                    //       data.rating.toString(),
+                    //       style: AppTextStyles.restaurantDetails.copyWith(),
+                    //     ),
+                    //     // Text(
+                    //     //   ' · เปิด-ปิด ${data.openingHours} ',
+                    //     //   style: AppTextStyles.restaurantDetails.copyWith(),
+                    //     // ),
+                    //   ],
+                    // ),
+                    // const SizedBox(height: 6),
                     Row(
                       children: [
                         Text(

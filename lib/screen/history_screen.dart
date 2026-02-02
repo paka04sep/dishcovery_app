@@ -57,7 +57,7 @@ class HistoryScreen extends StatelessWidget {
                   data.imageUrl,
                   fit: BoxFit.cover,
                   color: Colors.black.withOpacity(
-                    0.2,
+                    0.4,
                   ), // เพิ่ม Overlay สีดำจาง ๆ
                   colorBlendMode: BlendMode.darken,
                   errorBuilder: (context, error, stackTrace) => Container(
@@ -88,20 +88,38 @@ class HistoryScreen extends StatelessWidget {
                   children: [
                     Text(
                       data.name,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 22,
-                        fontWeight: FontWeight.bold,
-                        shadows: [Shadow(color: Colors.black, blurRadius: 3)],
+                      style: AppTextStyles.restaurantName.copyWith(
+                        fontSize: 28,
                       ),
                     ),
-                    const Text(
-                      "DETAILS",
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        shadows: [Shadow(color: Colors.black, blurRadius: 3)],
+                    Row(
+                      children: [
+                        Text(
+                          '${data.cuisine} · ',
+                          style: AppTextStyles.restaurantDetails.copyWith(
+                            fontSize: 16,
+                          ),
+                        ),
+                        Text(
+                          '${data.getPriceSymbol()} ',
+                          style: AppTextStyles.restaurantDetails.copyWith(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          ' · ${data.distance} กม.',
+                          style: AppTextStyles.restaurantDetails.copyWith(
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      data.description,
+                      style: AppTextStyles.restaurantDetails.copyWith(
+                        fontSize: 16,
                       ),
                     ),
                   ],

@@ -20,11 +20,7 @@ class AppBottomNav extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceAround,
         children: [
           IconButton(
-            icon: Icon(
-              Icons.history,
-              color: currentIndex == 0 ? Colors.orange : Colors.grey,
-              size: currentIndex == 0 ? 40 : 30,
-            ),
+            icon: _gradientIcon(Icons.history, currentIndex == 0),
             onPressed: () {
               if (currentIndex != 0) {
                 Navigator.pushReplacement(
@@ -35,11 +31,7 @@ class AppBottomNav extends StatelessWidget {
             },
           ),
           IconButton(
-            icon: Icon(
-              Icons.fork_right,
-              size: currentIndex == 1 ? 40 : 30,
-              color: currentIndex == 1 ? Colors.orange : Colors.grey,
-            ),
+            icon: _gradientIcon(Icons.fork_right, currentIndex == 1),
             onPressed: () {
               if (currentIndex != 1) {
                 Navigator.pushReplacement(
@@ -50,11 +42,7 @@ class AppBottomNav extends StatelessWidget {
             },
           ),
           IconButton(
-            icon: Icon(
-              Icons.person,
-              color: currentIndex == 2 ? Colors.orange : Colors.grey,
-              size: currentIndex == 2 ? 40 : 30,
-            ),
+            icon: _gradientIcon(Icons.person, currentIndex == 2),
             onPressed: () {
               if (currentIndex != 2) {
                 Navigator.pushReplacement(
@@ -66,6 +54,25 @@ class AppBottomNav extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _gradientIcon(IconData icon, bool isActive) {
+    final double size = isActive ? 40 : 30;
+
+    if (!isActive) {
+      return Icon(icon, size: size, color: Colors.grey);
+    }
+
+    return ShaderMask(
+      shaderCallback: (bounds) {
+        return const LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [Color(0xFF001738), Color(0xFF004C7B), Color(0xFF000F36)],
+        ).createShader(bounds);
+      },
+      child: Icon(icon, size: size, color: Colors.white),
     );
   }
 }
