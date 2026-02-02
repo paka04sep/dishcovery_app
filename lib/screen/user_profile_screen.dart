@@ -169,14 +169,14 @@ class UserProfileScreen extends StatelessWidget {
             _buildListTile(
               icon: Icons.store_outlined,
               title: "Switch to Restaurant Menu",
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const RestaurantDetailsScreen(),
-                  ),
-                );
-              },
+              // onTap: () {
+              //   Navigator.push(
+              //     context,
+              //     MaterialPageRoute(
+              //       builder: (context) => const RestaurantDetailsScreen(),
+              //     ),
+              //   );
+              // },
             ),
             const SizedBox(height: 20),
             Center(

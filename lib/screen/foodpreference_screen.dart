@@ -4,6 +4,7 @@ import 'package:dishcovery_app/screen/swipescreen.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:dishcovery_app/services/restaurant_service.dart';
 
 class FoodPreferenceScreen extends StatefulWidget {
   final bool isEditMode;
@@ -189,6 +190,12 @@ class _FoodPreferenceScreenState extends State<FoodPreferenceScreen> {
           .collection('users')
           .doc(user.uid)
           .set(updateData, SetOptions(merge: true));
+
+      // Update local service state immediately
+      RestaurantService.instance.updatePreferences(
+        _selectedFoodTypes,
+        _distanceValue,
+      );
     }
 
     if (widget.isEditMode) {
