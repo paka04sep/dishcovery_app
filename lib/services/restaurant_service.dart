@@ -20,6 +20,9 @@ class RestaurantService extends ChangeNotifier {
   List<RestaurantCardData> _restaurants = [];
   List<String> _userPreferences = [];
   double _userMaxDistance = 50.0; // Default max distance
+  bool _isReady = false; // Add isReady flag
+
+  bool get isReady => _isReady;
 
   void _initializeData() {
     // Reset all mock data to SwipeStatus.none so the user starts fresh
@@ -58,7 +61,13 @@ class RestaurantService extends ChangeNotifier {
         if (kDebugMode) {
           print("Error fetching preferences: $e");
         }
+      } finally {
+        _isReady = true;
+        notifyListeners();
       }
+    } else {
+      _isReady = true;
+      notifyListeners();
     }
   }
 

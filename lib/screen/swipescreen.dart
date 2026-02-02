@@ -36,8 +36,9 @@ class _SwipScreenState extends State<SwipScreen>
   @override
   void initState() {
     super.initState();
-    restaurantCards = RestaurantService.instance.swipableRestaurants;
+    // restaurantCards = RestaurantService.instance.swipableRestaurants;
     RestaurantService.instance.addListener(_onServiceUpdate); // Add listener
+    restaurantCards = RestaurantService.instance.swipableRestaurants;
     _buttonAnimationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
@@ -77,10 +78,34 @@ class _SwipScreenState extends State<SwipScreen>
 
   void _onServiceUpdate() {
     if (mounted) {
-      // Use stable updates to prevent index skipping bug
-      // Instead of replacing the list (which shrinks it and messes up CardSwiper index),
-      // we update the existing items in place with fresh data from the service.
+      final freshSwipable = RestaurantService.instance.swipableRestaurants;
       final allRestaurants = RestaurantService.instance.restaurants;
+
+      // 1. Check if we need to reload due to Filtering Changes.
+      // If `restaurantCards` contains items with status=none that are NOT in `freshSwipable`,
+      // it means they were filtered out by preferences/distance. We must reload.
+      bool hasInvalidItems = restaurantCards.any((card) {
+        if (card.status == SwipeStatus.none) {
+          return !freshSwipable.any((r) => r.id == card.id);
+        }
+        return false;
+      });
+
+      // Also reload if we are empty but data came in (initial load case)
+      if (restaurantCards.isEmpty && freshSwipable.isNotEmpty) {
+        hasInvalidItems = true;
+      }
+
+      if (hasInvalidItems) {
+        setState(() {
+          restaurantCards = freshSwipable;
+          _isFinished = restaurantCards.isEmpty;
+        });
+        return;
+      }
+
+      // 2. Standard Update (Status Changes)
+      // Update existing cards in place without changing list order/size
       setState(() {
         restaurantCards = restaurantCards.map((card) {
           return allRestaurants.firstWhere(
@@ -173,6 +198,10 @@ class _SwipScreenState extends State<SwipScreen>
   Widget build(BuildContext context) {
     final double appBarHeight =
         MediaQuery.of(context).padding.top + kToolbarHeight;
+
+    if (!RestaurantService.instance.isReady) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
 
     return Scaffold(
       extendBodyBehindAppBar: true,
