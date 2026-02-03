@@ -155,16 +155,50 @@ class FavoriteScreen extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Remove from Favorites?'),
-        content: const Text(
-          'Do you want to remove this restaurant from your favorite list?',
+        titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
+        contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+
+        title: Row(
+          children: [
+            const Icon(
+              Icons.star_border_rounded,
+              color: Colors.amber,
+              size: 32,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              'ลบออกจากรายการโปรด?',
+              style: AppTextStyles.restaurantName.copyWith(
+                fontSize: 22,
+                color: Colors.black,
+              ),
+            ),
+          ],
+        ),
+        content: Text(
+          'ร้านนี้จะถูกลบออกจากรายการโปรด',
+          style: AppTextStyles.refreshText.copyWith(
+            color: Colors.black.withOpacity(0.7),
+            fontSize: 16,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
-            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+            child: Text(
+              'ยกเลิก',
+              style: AppTextStyles.refreshText.copyWith(color: Colors.grey),
+            ),
           ),
-          TextButton(
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              elevation: 0,
+
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
             onPressed: () {
               RestaurantService.instance.swipeRestaurant(
                 data.id,
@@ -172,7 +206,10 @@ class FavoriteScreen extends StatelessWidget {
               );
               Navigator.of(ctx).pop();
             },
-            child: const Text('Confirm', style: TextStyle(color: Colors.red)),
+            child: Text(
+              'ยืนยัน',
+              style: AppTextStyles.refreshText.copyWith(color: Colors.red),
+            ),
           ),
         ],
       ),

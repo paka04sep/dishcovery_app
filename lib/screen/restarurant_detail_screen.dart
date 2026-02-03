@@ -259,7 +259,8 @@ class RestaurantDetailScreen extends StatelessWidget {
             child: Text(
               'ยืนยัน',
               style: AppTextStyles.refreshText.copyWith(
-                color: isFav ? Colors.red : Colors.green,
+                color: isFav ? Colors.red : Colors.amber.shade800,
+                fontWeight: FontWeight.bold,
               ),
             ),
           ),
