@@ -30,19 +30,29 @@ class RestaurantService extends ChangeNotifier {
     // 1. Fetch User Preferences first (independent)
     await fetchUserPreferences();
 
+    // 2. Get User Location (Needed for both Mock and Real data distance)
+    Position? position = await _getCurrentLocation();
+
     // CRM: Toggle for Mock Data vs Real Data
     if (AppConfig.useMockData) {
       if (kDebugMode) print("DEBUG: Using Mock Data");
       _restaurants = mockRestaurants.map((r) {
-        return r.copyWith(status: SwipeStatus.none);
+        double dist = 0.0;
+        if (position != null) {
+          double distanceInMeters = Geolocator.distanceBetween(
+            position.latitude,
+            position.longitude,
+            r.latitude,
+            r.longitude,
+          );
+          dist = double.parse((distanceInMeters / 1000).toStringAsFixed(1));
+        }
+        return r.copyWith(status: SwipeStatus.none, distance: dist);
       }).toList();
       _isReady = true;
       notifyListeners();
       return;
     }
-
-    // 2. Get User Location
-    Position? position = await _getCurrentLocation();
 
     if (position != null) {
       // 3. Fetch Restaurants from Google Places API
