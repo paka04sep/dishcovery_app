@@ -6,6 +6,7 @@ import 'package:dishcovery_app/services/restaurant_service.dart';
 import 'package:dishcovery_app/screen/user_profile_screen.dart';
 import 'package:flutter/material.dart';
 import '../models/restaurant_model.dart';
+import 'restarurant_detail_screen.dart';
 import 'swipescreen.dart';
 
 class HistoryScreen extends StatelessWidget {
@@ -35,124 +36,236 @@ class HistoryScreen extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
-      child: Container(
-        height: 150,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(15.0),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.2),
-              blurRadius: 5,
-              offset: const Offset(0, 3),
+      child: GestureDetector(
+        onTap: () => _onRestaurantTap(context, data),
+        child: Container(
+          height: 150,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(15.0),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.2),
+                blurRadius: 5,
+                offset: const Offset(0, 3),
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(15.0),
+            child: Stack(
+              children: [
+                // รูปภาพพื้นหลัง
+                Positioned.fill(
+                  child: Image.asset(
+                    data.imageUrl,
+                    fit: BoxFit.cover,
+                    color: Colors.black.withOpacity(
+                      0.4,
+                    ), // เพิ่ม Overlay สีดำจาง ๆ
+                    colorBlendMode: BlendMode.darken,
+                    errorBuilder: (context, error, stackTrace) => Container(
+                      color: Colors.grey.shade600,
+                      child: const Center(
+                        child: Text(
+                          "No Image",
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Overlay สีเขียว/แดง ตามสถานะ
+                Positioned.fill(
+                  child: Container(
+                    color: statusColor.withOpacity(0.2), // สีโปร่งใสตามสถานะ
+                  ),
+                ),
+
+                // รายละเอียดร้านอาหาร
+                Positioned(
+                  top: 20,
+                  left: 20,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        data.name,
+                        style: AppTextStyles.restaurantName.copyWith(
+                          fontSize: 28,
+                        ),
+                      ),
+                      Row(
+                        children: [
+                          Text(
+                            '${data.cuisine} · ',
+                            style: AppTextStyles.restaurantDetails.copyWith(
+                              fontSize: 16,
+                            ),
+                          ),
+                          Text(
+                            '${data.getPriceSymbol()} ',
+                            style: AppTextStyles.restaurantDetails.copyWith(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          Text(
+                            ' · ${data.distance} กม.',
+                            style: AppTextStyles.restaurantDetails.copyWith(
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        data.description,
+                        style: AppTextStyles.restaurantDetails.copyWith(
+                          fontSize: 16,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // ข้อความสถานะ "YUM!" / "PASS"
+                Positioned(
+                  right: -15, // เลื่อนออกจากขอบเล็กน้อย
+                  bottom: -5,
+                  child: Transform.rotate(
+                    angle: 0.3, // หมุนข้อความ
+                    child: Text(
+                      statusText,
+                      style: TextStyle(
+                        color: statusColor.withOpacity(0.8),
+                        fontSize: 50,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: 2,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withOpacity(0.5),
+                            blurRadius: 5,
+                            offset: const Offset(3, 3),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(15.0),
-          child: Stack(
+      ),
+    );
+  }
+
+  void _onRestaurantTap(BuildContext context, RestaurantCardData data) {
+    if (data.status == SwipeStatus.pass) {
+      showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
+          contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 16),
+          actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+
+          title: Row(
             children: [
-              // รูปภาพพื้นหลัง
-              Positioned.fill(
-                child: Image.asset(
-                  data.imageUrl,
-                  fit: BoxFit.cover,
-                  color: Colors.black.withOpacity(
-                    0.4,
-                  ), // เพิ่ม Overlay สีดำจาง ๆ
-                  colorBlendMode: BlendMode.darken,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    color: Colors.grey.shade600,
-                    child: const Center(
-                      child: Text(
-                        "No Image",
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-
-              // Overlay สีเขียว/แดง ตามสถานะ
-              Positioned.fill(
-                child: Container(
-                  color: statusColor.withOpacity(0.2), // สีโปร่งใสตามสถานะ
-                ),
-              ),
-
-              // รายละเอียดร้านอาหาร
-              Positioned(
-                top: 20,
-                left: 20,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      data.name,
-                      style: AppTextStyles.restaurantName.copyWith(
-                        fontSize: 28,
-                      ),
-                    ),
-                    Row(
-                      children: [
-                        Text(
-                          '${data.cuisine} · ',
-                          style: AppTextStyles.restaurantDetails.copyWith(
-                            fontSize: 16,
-                          ),
-                        ),
-                        Text(
-                          '${data.getPriceSymbol()} ',
-                          style: AppTextStyles.restaurantDetails.copyWith(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          ' · ${data.distance} กม.',
-                          style: AppTextStyles.restaurantDetails.copyWith(
-                            fontSize: 16,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      data.description,
-                      style: AppTextStyles.restaurantDetails.copyWith(
-                        fontSize: 16,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // ข้อความสถานะ "YUM!" / "PASS"
-              Positioned(
-                right: -15, // เลื่อนออกจากขอบเล็กน้อย
-                bottom: -5,
-                child: Transform.rotate(
-                  angle: 0.3, // หมุนข้อความ
-                  child: Text(
-                    statusText,
-                    style: TextStyle(
-                      color: statusColor.withOpacity(0.8),
-                      fontSize: 50,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: 2,
-                      shadows: [
-                        Shadow(
-                          color: Colors.black.withOpacity(0.5),
-                          blurRadius: 5,
-                          offset: const Offset(3, 3),
-                        ),
-                      ],
-                    ),
-                  ),
+              const Icon(Icons.refresh_rounded, color: Colors.red, size: 36),
+              const SizedBox(width: 8),
+              Text(
+                'ดูร้านนี้อีกครั้งไหม?',
+                style: AppTextStyles.restaurantName.copyWith(
+                  color: Colors.black,
+                  fontSize: 24,
                 ),
               ),
             ],
           ),
+
+          content: RichText(
+            text: TextSpan(
+              style: AppTextStyles.refreshText.copyWith(
+                color: Colors.black.withOpacity(0.7),
+
+                fontSize: 18,
+              ),
+              children: [
+                const TextSpan(text: 'คุณเคยเลือก '),
+                TextSpan(
+                  text: '“PASS”',
+                  style: AppTextStyles.refreshText.copyWith(
+                    color: Colors.red,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const TextSpan(
+                  text:
+                      ' ร้านนี้มาก่อน\n\n'
+                      'หากต้องการดูรายละเอียด ระบบจะเปลี่ยนสถานะเป็น ',
+                ),
+                TextSpan(
+                  text: '"Yum"',
+                  style: AppTextStyles.refreshText.copyWith(
+                    color: Colors.green,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const TextSpan(
+                  text: ' เพื่อช่วยให้เราแนะนำร้านได้ตรงใจคุณมากขึ้น',
+                ),
+              ],
+            ),
+          ),
+
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: Text(
+                'ยกเลิก',
+                style: AppTextStyles.refreshText.copyWith(color: Colors.grey),
+              ),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: () {
+                RestaurantService.instance.swipeRestaurant(
+                  data.id,
+                  SwipeStatus.yum,
+                );
+                Navigator.of(ctx).pop();
+                _navigateToDetail(context, data);
+              },
+              child: Text(
+                'ยืนยัน',
+                style: AppTextStyles.refreshText.copyWith(
+                  color: Colors.green,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
         ),
+      );
+    } else {
+      _navigateToDetail(context, data);
+    }
+  }
+
+  void _navigateToDetail(BuildContext context, RestaurantCardData data) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => RestaurantDetailScreen(restaurant: data),
       ),
     );
   }
