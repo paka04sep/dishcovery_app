@@ -195,7 +195,7 @@ class HistoryScreen extends StatelessWidget {
                 fontSize: 18,
               ),
               children: [
-                const TextSpan(text: 'คุณเคยเลือก '),
+                const TextSpan(text: 'คุณเคยปัด '),
                 TextSpan(
                   text: '“PASS”',
                   style: AppTextStyles.refreshText.copyWith(
@@ -248,7 +248,7 @@ class HistoryScreen extends StatelessWidget {
               child: Text(
                 'ยืนยัน',
                 style: AppTextStyles.refreshText.copyWith(
-                  color: Colors.green,
+                  color: Colors.red,
                   fontWeight: FontWeight.w600,
                 ),
               ),
