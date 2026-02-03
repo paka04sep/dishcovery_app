@@ -1,9 +1,8 @@
-import 'package:dishcovery_app/constants/app_bottom_nav_user.dart';
 import 'package:dishcovery_app/screen/restaurant_map_screen.dart';
 import 'package:flutter/material.dart';
 import '../constants/app_constants.dart';
-import '../constants/gradient_text.dart';
 import '../models/restaurant_model.dart';
+import '../services/restaurant_service.dart';
 
 class RestaurantDetailScreen extends StatelessWidget {
   final RestaurantCardData restaurant;
@@ -22,43 +21,57 @@ class RestaurantDetailScreen extends StatelessWidget {
       body: Stack(
         children: [
           // 1. ส่วนของเนื้อหาที่เลื่อนได้ทั้งหมด
-          SingleChildScrollView(
-            physics:
-                const BouncingScrollPhysics(), // เพิ่มเอฟเฟกต์การเลื่อนให้ดูพรีเมียม
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // ระยะห่างจากด้านบน (SafeArea)
-                const SizedBox(height: 60),
+          AnimatedBuilder(
+            animation: RestaurantService.instance,
+            builder: (context, child) {
+              final currentRestaurant = RestaurantService.instance.restaurants
+                  .firstWhere(
+                    (r) => r.id == restaurant.id,
+                    orElse: () => restaurant,
+                  );
 
-                // 2. ส่วนหัว: รูปภาพหลักของร้านพร้อม Overlay ชื่อร้าน
-                _buildHeaderSection(fontFamily),
+              return SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ระยะห่างจากด้านบน (SafeArea)
+                    const SizedBox(height: 60),
 
-                const SizedBox(height: 30),
+                    // 2. ส่วนหัว: รูปภาพหลักของร้านพร้อม Overlay ชื่อร้าน
+                    _buildHeaderSection(context, fontFamily, currentRestaurant),
 
-                // 3. ส่วนแกลเลอรี (Gallery Images)
-                // จะแสดงผลก็ต่อเมื่อใน Model มีรูปภาพแกลเลอรีเท่านั้น
-                if (restaurant.galleryImages.isNotEmpty) ...[
-                  _buildSectionTitle('GALLERY', fontFamily),
-                  const SizedBox(height: 12),
-                  _buildGalleryHorizontalList(),
-                  const SizedBox(height: 30),
-                ],
+                    const SizedBox(height: 30),
 
-                // 4. ส่วนรายการเมนูและราคา (Dynamic Menu Section)
-                _buildMenuHeader(fontFamily),
-                const SizedBox(height: 15),
-                _buildDynamicMenuList(fontFamily),
+                    // 3. ส่วนแกลเลอรี (Gallery Images)
+                    // จะแสดงผลก็ต่อเมื่อใน Model มีรูปภาพแกลเลอรีเท่านั้น
+                    if (currentRestaurant.galleryImages.isNotEmpty) ...[
+                      _buildSectionTitle('GALLERY', fontFamily),
+                      const SizedBox(height: 12),
+                      _buildGalleryHorizontalList(currentRestaurant),
+                      const SizedBox(height: 30),
+                    ],
 
-                const SizedBox(height: 40),
+                    // 4. ส่วนรายการเมนูและราคา (Dynamic Menu Section)
+                    _buildMenuHeader(fontFamily),
+                    const SizedBox(height: 15),
+                    _buildDynamicMenuList(fontFamily, currentRestaurant),
 
-                // 5. ปุ่มดูสถานที่ (Location Button)
-                _buildLocationButton(context, fontFamily),
+                    const SizedBox(height: 40),
 
-                // เว้นที่ว่างด้านล่างเพื่อให้เนื้อหาไม่โดน Bottom Bar บัง
-                const SizedBox(height: 120),
-              ],
-            ),
+                    // 5. ปุ่มดูสถานที่ (Location Button)
+                    _buildLocationButton(
+                      context,
+                      fontFamily,
+                      currentRestaurant,
+                    ),
+
+                    // เว้นที่ว่างด้านล่างเพื่อให้เนื้อหาไม่โดน Bottom Bar บัง
+                    const SizedBox(height: 120),
+                  ],
+                ),
+              );
+            },
           ),
 
           // 6. ปุ่มย้อนกลับ (Back Button)
@@ -73,7 +86,13 @@ class RestaurantDetailScreen extends StatelessWidget {
   // --- Widget ส่วนประกอบย่อย (Sub-Widgets) ---
 
   // ส่วนหัว: รูปภาพใหญ่และ Gradient
-  Widget _buildHeaderSection(String? fontFamily) {
+  Widget _buildHeaderSection(
+    BuildContext context,
+    String? fontFamily,
+    RestaurantCardData data,
+  ) {
+    bool isFav = data.status == SwipeStatus.fav;
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Container(
@@ -95,7 +114,7 @@ class RestaurantDetailScreen extends StatelessWidget {
             children: [
               // รูปภาพหลัก
               Image.asset(
-                restaurant.imageUrl,
+                data.imageUrl,
                 width: double.infinity,
                 height: double.infinity,
                 fit: BoxFit.cover,
@@ -117,6 +136,7 @@ class RestaurantDetailScreen extends StatelessWidget {
                   ),
                 ),
               ),
+
               // ชื่อร้านและรายละเอียด
               Positioned(
                 bottom: 20,
@@ -126,20 +146,84 @@ class RestaurantDetailScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      restaurant.name.toUpperCase(),
+                      data.name.toUpperCase(),
                       style: AppTextStyles.restaurantName.copyWith(),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${restaurant.cuisine}  •  ${restaurant.address}',
+                      '${data.cuisine}  •  ${data.address}',
                       style: AppTextStyles.restaurantInDetails.copyWith(),
                     ),
                   ],
                 ),
               ),
+
+              // Favorite Icon
+              Positioned(
+                top: 15,
+                right: 15,
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      _showFavoriteConfirmation(context, data.id, isFav);
+                    },
+                    borderRadius: BorderRadius.circular(50),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withOpacity(0.7),
+                        shape: BoxShape.circle,
+                        border: Border.all(color: Colors.white54, width: 1),
+                      ),
+                      child: Icon(
+                        isFav ? Icons.star : Icons.star_border,
+                        color: isFav ? Colors.amber : Colors.white,
+                        size: 28,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showFavoriteConfirmation(
+    BuildContext context,
+    String restaurantId,
+    bool isFav,
+  ) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Text(isFav ? 'Remove from Favorites?' : 'Add to Favorites?'),
+        content: Text(
+          isFav
+              ? 'Do you want to remove this restaurant from your favorite list?'
+              : 'Do you want to save this restaurant to your favorite list?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () {
+              final newStatus = isFav ? SwipeStatus.yum : SwipeStatus.fav;
+              RestaurantService.instance.swipeRestaurant(
+                restaurantId,
+                newStatus,
+              );
+              Navigator.of(ctx).pop();
+            },
+            child: const Text('Confirm', style: TextStyle(color: Colors.blue)),
+          ),
+        ],
       ),
     );
   }
@@ -161,13 +245,13 @@ class RestaurantDetailScreen extends StatelessWidget {
   }
 
   // แกลเลอรีรูปภาพแนวนอน
-  Widget _buildGalleryHorizontalList() {
+  Widget _buildGalleryHorizontalList(RestaurantCardData data) {
     return SizedBox(
       height: 160,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 20),
-        itemCount: restaurant.galleryImages.length,
+        itemCount: data.galleryImages.length,
         physics: const BouncingScrollPhysics(),
         itemBuilder: (context, index) {
           return Container(
@@ -180,7 +264,7 @@ class RestaurantDetailScreen extends StatelessWidget {
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
               child: Image.asset(
-                restaurant.galleryImages[index],
+                data.galleryImages[index],
                 fit: BoxFit.cover,
                 errorBuilder: (context, error, stackTrace) =>
                     const Center(child: Icon(Icons.image_not_supported)),
@@ -221,8 +305,8 @@ class RestaurantDetailScreen extends StatelessWidget {
   }
 
   // ส่วนสำคัญ: วนลูปสร้างรายการเมนูตามข้อมูลที่มีจริง (Dynamic)
-  Widget _buildDynamicMenuList(String? fontFamily) {
-    if (restaurant.menuItems.isEmpty) {
+  Widget _buildDynamicMenuList(String? fontFamily, RestaurantCardData data) {
+    if (data.menuItems.isEmpty) {
       return const Center(
         child: Padding(
           padding: EdgeInsets.symmetric(vertical: 20),
@@ -234,7 +318,7 @@ class RestaurantDetailScreen extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 25),
       child: Column(
-        children: restaurant.menuItems.map((item) {
+        children: data.menuItems.map((item) {
           return _buildMenuItemRow(item.name, item.price, fontFamily);
         }).toList(),
       ),
@@ -295,7 +379,11 @@ class RestaurantDetailScreen extends StatelessWidget {
   }
 
   // ปุ่ม Location
-  Widget _buildLocationButton(BuildContext context, String? fontFamily) {
+  Widget _buildLocationButton(
+    BuildContext context,
+    String? fontFamily,
+    RestaurantCardData data,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 40),
       child: Container(
@@ -317,8 +405,7 @@ class RestaurantDetailScreen extends StatelessWidget {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) =>
-                    RestaurantMapScreen(restaurant: restaurant),
+                builder: (context) => RestaurantMapScreen(restaurant: data),
               ),
             );
           },

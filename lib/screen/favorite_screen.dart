@@ -108,25 +108,73 @@ class FavoriteScreen extends StatelessWidget {
 
                 // ไอคอนดาวมุมขวาล่าง
                 Positioned(
-                  right: 20,
-                  bottom: 20,
-                  child: Icon(
-                    Icons.star,
-                    color: Colors.amber.shade600,
-                    size: 40,
-                    shadows: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.5),
-                        blurRadius: 5,
-                        offset: const Offset(2, 2),
+                  right: 10,
+                  bottom: 10,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(50),
+                      onTap: () {
+                        _showRemoveFavoriteDialog(context, data);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: Colors.black.withOpacity(0.1),
+                        ),
+                        child: Icon(
+                          Icons.star,
+                          color: Colors.amber.shade600,
+                          size: 35, // Slightly smaller to fit padding
+                          shadows: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.5),
+                              blurRadius: 5,
+                              offset: const Offset(2, 2),
+                            ),
+                          ],
+                        ),
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ],
             ),
           ),
         ),
+      ),
+    );
+  }
+
+  void _showRemoveFavoriteDialog(
+    BuildContext context,
+    RestaurantCardData data,
+  ) {
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Remove from Favorites?'),
+        content: const Text(
+          'Do you want to remove this restaurant from your favorite list?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(),
+            child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () {
+              RestaurantService.instance.swipeRestaurant(
+                data.id,
+                SwipeStatus.yum,
+              );
+              Navigator.of(ctx).pop();
+            },
+            child: const Text('Confirm', style: TextStyle(color: Colors.red)),
+          ),
+        ],
       ),
     );
   }

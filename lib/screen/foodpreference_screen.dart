@@ -235,9 +235,6 @@ class _FoodPreferenceScreenState extends State<FoodPreferenceScreen> {
   Widget build(BuildContext context) {
     final rows = chunkList(_foodOptions, 5);
     // กำหนด Font Family ถ้ามีการตั้งค่าใน Theme
-    final String? fontFamily = Theme.of(
-      context,
-    ).textTheme.bodyLarge?.fontFamily;
 
     return Scaffold(
       // กำหนดสีพื้นหลังเป็นสีขาว
@@ -301,7 +298,7 @@ class _FoodPreferenceScreenState extends State<FoodPreferenceScreen> {
                     return Padding(
                       padding: const EdgeInsets.only(bottom: 8),
                       child: Wrap(
-                        spacing: 10, // 👈 ระยะห่างแนวนอน (เล็กลง ดูชิดขึ้น)
+                        spacing: 10, //  ระยะห่างแนวนอน (เล็กลง ดูชิดขึ้น)
                         children: rows[rowIndex].map((option) {
                           final String name = option['name'];
                           final IconData icon = option['icon'];
@@ -312,7 +309,7 @@ class _FoodPreferenceScreenState extends State<FoodPreferenceScreen> {
                           return ChoiceChip(
                             showCheckmark: false,
                             materialTapTargetSize: MaterialTapTargetSize
-                                .shrinkWrap, // 👈 ลดพื้นที่แฝง
+                                .shrinkWrap, //   ลดพื้นที่แฝง
                             labelPadding: const EdgeInsets.symmetric(
                               horizontal: 4,
                             ),
@@ -370,7 +367,7 @@ class _FoodPreferenceScreenState extends State<FoodPreferenceScreen> {
               // Slider สำหรับเลือกระยะทาง (5KM ถึง 50KM+)
               Column(
                 children: [
-                  // 💡 5. ไอคอนบ่งบอกระยะแบบเคลื่อนที่ (อยู่ด้านบน) 💡
+                  //  5. ไอคอนบ่งบอกระยะแบบเคลื่อนที่ (อยู่ด้านบน)
                   LayoutBuilder(
                     builder: (context, constraints) {
                       // ความกว้างที่ใช้ได้สำหรับ Slider (Track Width)
@@ -431,7 +428,7 @@ class _FoodPreferenceScreenState extends State<FoodPreferenceScreen> {
                     ),
                   ),
 
-                  // 💡 6. ข้อความแสดงระยะทางแบบเคลื่อนที่ (อยู่ด้านล่าง Slider) 💡
+                  //  6. ข้อความแสดงระยะทางแบบเคลื่อนที่ (อยู่ด้านล่าง Slider)
                   LayoutBuilder(
                     builder: (context, constraints) {
                       final trackWidth = constraints.maxWidth;
@@ -461,7 +458,7 @@ class _FoodPreferenceScreenState extends State<FoodPreferenceScreen> {
                                 _getDistanceLabel(_distanceValue),
                                 style: AppTextStyles.buttonText.copyWith(
                                   color: AppColors.black,
-                                  fontFamily: fontFamily,
+
                                   fontSize: 16,
                                 ),
                               ),
@@ -491,7 +488,6 @@ class _FoodPreferenceScreenState extends State<FoodPreferenceScreen> {
                   child: Text(
                     widget.isEditMode ? 'SAVE' : 'NEXT',
                     style: AppTextStyles.buttonText.copyWith(
-                      fontFamily: fontFamily,
                       color: AppColors.black, // ข้อความเป็นสีขาวบนปุ่มสีดำ
                     ),
                   ),

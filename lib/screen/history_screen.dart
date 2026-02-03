@@ -75,7 +75,7 @@ class HistoryScreen extends StatelessWidget {
               // Overlay สีเขียว/แดง ตามสถานะ
               Positioned.fill(
                 child: Container(
-                  color: statusColor.withOpacity(0.3), // สีโปร่งใสตามสถานะ
+                  color: statusColor.withOpacity(0.2), // สีโปร่งใสตามสถานะ
                 ),
               ),
 
@@ -236,7 +236,7 @@ class HistoryScreen extends StatelessWidget {
               child: historyList.isEmpty
                   ? Center(
                       child: Text(
-                        "ไม่มีประวัติ",
+                        "ไม่มีประวัติการปัด",
                         style: AppTextStyles.refreshText.copyWith(),
                       ),
                     )
