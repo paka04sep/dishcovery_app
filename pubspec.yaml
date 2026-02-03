@@ -47,6 +47,7 @@ dependencies:
   cloud_firestore: ^6.1.2
   google_sign_in: ^6.3.0 
   http: ^1.6.0
+  flutter_dotenv: ^6.0.0
 
 
 dev_dependencies:
@@ -76,6 +77,7 @@ flutter:
     - assets/images/
     - assets/images/res/
     - assets/images/res/r1/
+    - .env
     
 
 

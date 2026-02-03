@@ -1,5 +1,6 @@
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+
 class ApiConstants {
-  // TODO: Replace with your actual Google Places API Key
-  static const String googlePlacesApiKey =
-      'AIzaSyBe1ApHXjokycQf2_bVwslsXSptSPGtjJQ';
+  static String get googlePlacesApiKey =>
+      dotenv.env['GOOGLE_PLACES_API_KEY'] ?? '';
 }
