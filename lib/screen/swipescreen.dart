@@ -442,19 +442,43 @@ class _SwipScreenState extends State<SwipScreen>
             children: [
               // 1. รูปภาพและ Gradient
               Positioned.fill(
-                child: Image.asset(
-                  data.imageUrl,
-                  fit: BoxFit.cover,
-                  errorBuilder: (context, error, stackTrace) => Container(
-                    color: Colors.grey.shade600,
-                    child: const Center(
-                      child: Text(
-                        "No Image",
-                        style: TextStyle(color: Colors.white),
+                child: data.imageUrl.startsWith('http')
+                    ? Image.network(
+                        data.imageUrl,
+                        fit: BoxFit.cover,
+                        loadingBuilder: (context, child, loadingProgress) {
+                          if (loadingProgress == null) return child;
+                          return Container(
+                            color: Colors.grey.shade300,
+                            child: const Center(
+                              child: CircularProgressIndicator(),
+                            ),
+                          );
+                        },
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: Colors.grey.shade600,
+                          child: const Center(
+                            child: Icon(
+                              Icons.broken_image,
+                              color: Colors.white,
+                              size: 40,
+                            ),
+                          ),
+                        ),
+                      )
+                    : Image.asset(
+                        data.imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => Container(
+                          color: Colors.grey.shade600,
+                          child: const Center(
+                            child: Text(
+                              "No Image",
+                              style: TextStyle(color: Colors.white),
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
-                  ),
-                ),
               ),
               Positioned.fill(
                 child: Container(

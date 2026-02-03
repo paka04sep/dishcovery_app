@@ -1,5 +1,7 @@
-import 'package:dishcovery_app/models/restaurant_mock.dart';
 import 'package:dishcovery_app/models/restaurant_model.dart';
+import 'package:dishcovery_app/models/restaurant_mock.dart';
+import 'package:dishcovery_app/constants/app_constants.dart';
+import 'package:dishcovery_app/services/places_service.dart';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -25,16 +27,77 @@ class RestaurantService extends ChangeNotifier {
   bool get isReady => _isReady;
 
   Future<void> _initializeData() async {
-    // Reset all mock data to SwipeStatus.none so the user starts fresh
-    _restaurants = mockRestaurants.map((r) {
-      return r.copyWith(status: SwipeStatus.none);
-    }).toList();
+    // 1. Fetch User Preferences first (independent)
+    await fetchUserPreferences();
 
-    // Fetch both in parallel
-    await Future.wait([updateUserLocation(), fetchUserPreferences()]);
+    // CRM: Toggle for Mock Data vs Real Data
+    if (AppConfig.useMockData) {
+      if (kDebugMode) print("DEBUG: Using Mock Data");
+      _restaurants = mockRestaurants.map((r) {
+        return r.copyWith(status: SwipeStatus.none);
+      }).toList();
+      _isReady = true;
+      notifyListeners();
+      return;
+    }
+
+    // 2. Get User Location
+    Position? position = await _getCurrentLocation();
+
+    if (position != null) {
+      // 3. Fetch Restaurants from Google Places API
+      try {
+        final places = await PlacesService().fetchNearbyRestaurants(
+          latitude: position.latitude,
+          longitude: position.longitude,
+        );
+
+        // 4. Update distances and status
+        _restaurants = places.map((r) {
+          double distanceInMeters = Geolocator.distanceBetween(
+            position.latitude,
+            position.longitude,
+            r.latitude,
+            r.longitude,
+          );
+          return r.copyWith(
+            distance: double.parse(
+              (distanceInMeters / 1000).toStringAsFixed(1),
+            ),
+            status: SwipeStatus.none,
+          );
+        }).toList();
+      } catch (e) {
+        if (kDebugMode) print("Error fetching places: $e");
+        // Fallback to empty or mock if needed
+      }
+    } else {
+      // Handle no location permission or service disabled
+      // Maybe fallback to default location or mock data?
+      if (kDebugMode)
+        print("Location not available, cannot fetch nearby places.");
+    }
 
     _isReady = true;
     notifyListeners();
+  }
+
+  Future<Position?> _getCurrentLocation() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) return null;
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) return null;
+    }
+
+    if (permission == LocationPermission.deniedForever) return null;
+
+    return await Geolocator.getCurrentPosition();
   }
 
   Future<void> fetchUserPreferences() async {
@@ -71,69 +134,6 @@ class RestaurantService extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> updateUserLocation() async {
-    bool serviceEnabled;
-    LocationPermission permission;
-
-    // Test if location services are enabled.
-    serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      // Location services are not enabled don't continue
-      // accessing the position and request users of the
-      // App to enable the location services.
-      return;
-    }
-
-    permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
-      if (permission == LocationPermission.denied) {
-        // Permissions are denied, next time you could try
-        // requesting permissions again (this is also where
-        // Android's shouldShowRequestPermissionRationale
-        // returned true. According to Android guidelines
-        // your App should show an explanatory UI now.
-        return;
-      }
-    }
-
-    if (permission == LocationPermission.deniedForever) {
-      // Permissions are denied forever, handle appropriately.
-      return;
-    }
-
-    // When we reach here, permissions are granted and we can
-    // continue accessing the position of the device.
-    try {
-      Position position = await Geolocator.getCurrentPosition();
-
-      List<RestaurantCardData> updatedRestaurants = [];
-
-      for (var restaurant in _restaurants) {
-        double distanceInMeters = Geolocator.distanceBetween(
-          position.latitude,
-          position.longitude,
-          restaurant.latitude,
-          restaurant.longitude,
-        );
-
-        // Convert to Kilometers and round to 1 decimal place
-        double distanceInKm = double.parse(
-          (distanceInMeters / 1000).toStringAsFixed(1),
-        );
-
-        updatedRestaurants.add(restaurant.copyWith(distance: distanceInKm));
-      }
-
-      _restaurants = updatedRestaurants;
-      notifyListeners();
-    } catch (e) {
-      if (kDebugMode) {
-        print("Error getting location: $e");
-      }
-    }
-  }
-
   // Getters for different states
   List<RestaurantCardData> get restaurants => _restaurants;
 
@@ -143,30 +143,31 @@ class RestaurantService extends ChangeNotifier {
         .toList();
 
     // Filter by Distance
-    // If _userMaxDistance is >= 50, consider it as "unlimited" (or very far).
-    // But requirement says "filter according to truth". Let's say 50+ means > 50.
-    // If logic is strict:
     if (_userMaxDistance < 50.0) {
       filtered = filtered.where((r) => r.distance <= _userMaxDistance).toList();
     }
+    print(
+      "Debug: After Distance Filter (< $_userMaxDistance km): ${filtered.length}",
+    );
 
     // Filter by Preferences (Cuisine)
     if (_userPreferences.isNotEmpty) {
+      print("Debug: User Preferences: $_userPreferences");
       filtered = filtered.where((r) {
-        // Check if restaurant cuisine matches any of the user preferences keywords
-        // User Pref: "อาหารไทย" -> Keyword: "ไทย"
-        // User Pref: "อาหารญี่ปุ่น" -> Keyword: "ญี่ปุ่น"
-
         for (final pref in _userPreferences) {
           final keywords = _getCuisineKeywords(pref);
           for (final keyword in keywords) {
-            if (r.cuisine.contains(keyword)) {
+            // Basic contains check
+            if (r.cuisine.contains(keyword) || r.cuisine == 'อาหารทั่วไป') {
               return true;
             }
           }
         }
         return false;
       }).toList();
+      print("Debug: After Preference Filter: ${filtered.length}");
+    } else {
+      print("Debug: No User Preferences, skipping filter.");
     }
 
     return filtered;

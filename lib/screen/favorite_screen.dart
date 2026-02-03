@@ -42,21 +42,41 @@ class FavoriteScreen extends StatelessWidget {
               children: [
                 // รูปภาพพื้นหลัง
                 Positioned.fill(
-                  child: Image.asset(
-                    data.imageUrl,
-                    fit: BoxFit.cover,
-                    color: Colors.black.withOpacity(0.4), // Overlay สีดำจาง ๆ
-                    colorBlendMode: BlendMode.darken,
-                    errorBuilder: (context, error, stackTrace) => Container(
-                      color: Colors.grey.shade600,
-                      child: const Center(
-                        child: Text(
-                          "No Image",
-                          style: TextStyle(color: Colors.white),
+                  child: data.imageUrl.startsWith('http')
+                      ? Image.network(
+                          data.imageUrl,
+                          fit: BoxFit.cover,
+                          color: Colors.black.withOpacity(0.4),
+                          colorBlendMode: BlendMode.darken,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(
+                                color: Colors.grey.shade600,
+                                child: const Center(
+                                  child: Icon(
+                                    Icons.broken_image,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                        )
+                      : Image.asset(
+                          data.imageUrl,
+                          fit: BoxFit.cover,
+                          color: Colors.black.withOpacity(
+                            0.4,
+                          ), // Overlay สีดำจาง ๆ
+                          colorBlendMode: BlendMode.darken,
+                          errorBuilder: (context, error, stackTrace) =>
+                              Container(
+                                color: Colors.grey.shade600,
+                                child: const Center(
+                                  child: Text(
+                                    "No Image",
+                                    style: TextStyle(color: Colors.white),
+                                  ),
+                                ),
+                              ),
                         ),
-                      ),
-                    ),
-                  ),
                 ),
 
                 // รายละเอียดร้านอาหาร

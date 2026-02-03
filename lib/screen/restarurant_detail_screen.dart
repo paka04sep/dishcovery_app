@@ -113,18 +113,31 @@ class RestaurantDetailScreen extends StatelessWidget {
           child: Stack(
             children: [
               // รูปภาพหลัก
-              Image.asset(
-                data.imageUrl,
-                width: double.infinity,
-                height: double.infinity,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => Container(
-                  color: Colors.grey[300],
-                  child: const Center(
-                    child: Icon(Icons.broken_image, color: Colors.grey),
-                  ),
-                ),
-              ),
+              data.imageUrl.startsWith('http')
+                  ? Image.network(
+                      data.imageUrl,
+                      width: double.infinity,
+                      height: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: Colors.grey[300],
+                        child: const Center(
+                          child: Icon(Icons.broken_image, color: Colors.grey),
+                        ),
+                      ),
+                    )
+                  : Image.asset(
+                      data.imageUrl,
+                      width: double.infinity,
+                      height: double.infinity,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: Colors.grey[300],
+                        child: const Center(
+                          child: Icon(Icons.broken_image, color: Colors.grey),
+                        ),
+                      ),
+                    ),
               // Gradient Overlay เพื่อให้อ่านชื่อร้านง่ายขึ้น
               Container(
                 decoration: BoxDecoration(
@@ -147,7 +160,10 @@ class RestaurantDetailScreen extends StatelessWidget {
                   children: [
                     Text(
                       data.name.toUpperCase(),
-                      style: AppTextStyles.restaurantName.copyWith(),
+                      style: AppTextStyles.restaurantName.copyWith(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                     const SizedBox(height: 4),
                     Text(
@@ -304,12 +320,19 @@ class RestaurantDetailScreen extends StatelessWidget {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              child: Image.asset(
-                data.galleryImages[index],
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) =>
-                    const Center(child: Icon(Icons.image_not_supported)),
-              ),
+              child: data.galleryImages[index].startsWith('http')
+                  ? Image.network(
+                      data.galleryImages[index],
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) =>
+                          const Center(child: Icon(Icons.image_not_supported)),
+                    )
+                  : Image.asset(
+                      data.galleryImages[index],
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) =>
+                          const Center(child: Icon(Icons.image_not_supported)),
+                    ),
             ),
           );
         },

@@ -155,7 +155,9 @@ class _RestaurantMapScreenState extends State<RestaurantMapScreen> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(15),
         image: DecorationImage(
-          image: AssetImage(widget.restaurant.imageUrl),
+          image: widget.restaurant.imageUrl.startsWith('http')
+              ? NetworkImage(widget.restaurant.imageUrl)
+              : AssetImage(widget.restaurant.imageUrl) as ImageProvider,
           fit: BoxFit.cover,
         ),
       ),

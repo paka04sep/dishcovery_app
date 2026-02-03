@@ -1,5 +1,12 @@
 import 'package:flutter/material.dart';
 
+// --- App Configuration ---
+class AppConfig {
+  // เปลี่ยนเป็น true เพื่อใช้ Mock Data (ไม่เปลือง Quota API)
+  // เปลี่ยนเป็น false เพื่อใช้ Google Places API (ข้อมูลจริง)
+  static const bool useMockData = false;
+}
+
 // --- Color Constants ---
 class AppColors {
   // สีหลักของแอป (Gradient Background)
