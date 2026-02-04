@@ -90,23 +90,24 @@ class _SwipScreenState extends State<SwipScreen>
       // - BUT it is missing from `freshSwipable`.
 
       bool hasInvalidItems = restaurantCards.any((card) {
-        if (card.status == SwipeStatus.none) {
-          // Find the real status in service
-          final realCard = allRestaurants.firstWhere(
-            (r) => r.id == card.id,
-            orElse: () => card,
-          );
+        final currentStatus = RestaurantService.instance.getRestaurantStatus(
+          card.id,
+        );
 
-          // If real status is ALSO none, it implies it hasn't been swiped yet.
-          if (realCard.status == SwipeStatus.none) {
-            // If it's pure (none) but missing from freshSwipable, it must be FILTERED out.
-            bool isInFresh = freshSwipable.any((r) => r.id == card.id);
-            return !isInFresh;
-          }
-          // If real status is YUM/PASS, it is naturally missing from freshSwipable. This is OK.
-          // We don't want to reload in this case, we just want to update the status in step 2.
+        if (currentStatus != SwipeStatus.none) {
+          // FIX: If the card has been swiped (YUM/PASS/FAV), we must NOT remove it from
+          // the local 'restaurantCards' list immediately. Removing it causes the
+          // CardSwiper to shift its underlying list while animating, leading to
+          // an "off-by-one" skip (e.g., swiping card 1 shows card 3).
+          // We return 'false' here to indicate this card is still "valid" for the
+          // purpose of the current Swiper state.
+          return false;
         }
-        return false;
+
+        // If status is NONE, verification logic:
+        // Detect if it was filtered out by preferences/distance (missing from freshSwipable)
+        bool isInFresh = freshSwipable.any((r) => r.id == card.id);
+        return !isInFresh;
       });
 
       // Also reload if we are empty but data came in (initial load case)

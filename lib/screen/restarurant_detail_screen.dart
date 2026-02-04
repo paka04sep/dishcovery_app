@@ -118,7 +118,9 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
     RestaurantCardData data,
     RestaurantDetailsData? details,
   ) {
-    bool isFav = data.status == SwipeStatus.fav;
+    bool isFav =
+        RestaurantService.instance.getRestaurantStatus(data.id) ==
+        SwipeStatus.fav;
 
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),

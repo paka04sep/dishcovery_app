@@ -18,7 +18,11 @@ class HistoryScreen extends StatelessWidget {
     Color statusColor;
     String statusText;
 
-    switch (data.status) {
+    final currentStatus = RestaurantService.instance.getRestaurantStatus(
+      data.id,
+    );
+
+    switch (currentStatus) {
       case SwipeStatus.yum:
         statusColor = Colors.green.shade700;
         statusText = "YUM!";
@@ -180,7 +184,8 @@ class HistoryScreen extends StatelessWidget {
   }
 
   void _onRestaurantTap(BuildContext context, RestaurantCardData data) {
-    if (data.status == SwipeStatus.pass) {
+    final status = RestaurantService.instance.getRestaurantStatus(data.id);
+    if (status == SwipeStatus.pass) {
       showDialog(
         context: context,
         builder: (ctx) => AlertDialog(

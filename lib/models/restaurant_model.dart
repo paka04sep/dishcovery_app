@@ -34,7 +34,6 @@ class RestaurantCardData {
   final double longitude; // Added longitude
   final String imageUrl;
   final String description;
-  final SwipeStatus status;
   final DateTime? createdAt; // Added createdAt
 
   RestaurantCardData({
@@ -47,7 +46,6 @@ class RestaurantCardData {
     required this.longitude,
     required this.imageUrl,
     required this.description,
-    required this.status,
     this.createdAt,
   });
 
@@ -61,7 +59,6 @@ class RestaurantCardData {
     double? longitude,
     String? imageUrl,
     String? description,
-    SwipeStatus? status,
     DateTime? createdAt,
   }) {
     return RestaurantCardData(
@@ -74,7 +71,6 @@ class RestaurantCardData {
       longitude: longitude ?? this.longitude,
       imageUrl: imageUrl ?? this.imageUrl,
       description: description ?? this.description,
-      status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -91,12 +87,6 @@ class RestaurantCardData {
       longitude: (json['longitude'] as num).toDouble(),
       imageUrl: json['imageUrl'] as String,
       description: json['description'] as String,
-      status: json['status'] != null
-          ? SwipeStatus.values.firstWhere(
-              (e) => e.toString() == json['status'],
-              orElse: () => SwipeStatus.none,
-            )
-          : SwipeStatus.none,
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : null,
@@ -134,7 +124,6 @@ class RestaurantCardData {
       longitude: parseDouble(data['longitude'], 0.0),
       imageUrl: data['imageUrl'] ?? '',
       description: data['description'] ?? '',
-      status: SwipeStatus.none,
       createdAt: data['created_at'] != null
           ? (data['created_at'] is Timestamp
                 ? (data['created_at'] as Timestamp).toDate()
@@ -155,7 +144,6 @@ class RestaurantCardData {
       'longitude': longitude,
       'imageUrl': imageUrl,
       'description': description,
-      'status': status.toString(),
       'created_at': createdAt?.toIso8601String(),
     };
   }

@@ -94,14 +94,12 @@ class PlacesService {
       cuisine: cuisine,
       priceRange: priceLevel,
       rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
-      // distance: 0.0,
       latitude: (geometry['lat'] as num).toDouble(),
       longitude: (geometry['lng'] as num).toDouble(),
       imageUrl:
           photoUrl ??
           'https://via.placeholder.com/400x300?text=No+Image', // Placeholder if no image
       description: 'A great place to eat!', // Placeholder
-      status: SwipeStatus.none,
     );
   }
 }

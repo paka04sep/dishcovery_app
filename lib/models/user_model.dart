@@ -1,0 +1,118 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+
+class UserStats {
+  final int totalSwipes;
+  final int yums;
+  final int passes;
+  final int fav;
+
+  UserStats({
+    this.totalSwipes = 0,
+    this.yums = 0,
+    this.passes = 0,
+    this.fav = 0,
+  });
+
+  factory UserStats.fromMap(Map<String, dynamic> map) {
+    return UserStats(
+      totalSwipes: (map['totalSwipes'] as num?)?.toInt() ?? 0,
+      yums: (map['yums'] as num?)?.toInt() ?? 0,
+      passes: (map['passes'] as num?)?.toInt() ?? 0,
+      fav: (map['fav'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {
+      'totalSwipes': totalSwipes,
+      'yums': yums,
+      'passes': passes,
+      'fav': fav,
+    };
+  }
+
+  Map<String, dynamic> toJson() => toMap();
+}
+
+class UserHistory {
+  final List<String> yum;
+  final List<String> passed;
+  final List<String> fav;
+
+  UserHistory({
+    this.yum = const [],
+    this.passed = const [],
+    this.fav = const [],
+  });
+
+  factory UserHistory.fromMap(Map<String, dynamic> map) {
+    return UserHistory(
+      yum: List<String>.from(map['yum'] ?? []),
+      passed: List<String>.from(map['passed'] ?? []),
+      fav: List<String>.from(map['fav'] ?? []),
+    );
+  }
+
+  Map<String, dynamic> toMap() {
+    return {'yum': yum, 'passed': passed, 'fav': fav};
+  }
+
+  Map<String, dynamic> toJson() => toMap();
+}
+
+class UserModel {
+  final String uid;
+  final String? email;
+  final List<String> preferences;
+  final UserStats stats;
+  final UserHistory history;
+  final DateTime? createdAt;
+  final DateTime? lastActiveAt;
+
+  UserModel({
+    required this.uid,
+    this.email,
+    this.preferences = const [],
+    required this.stats,
+    required this.history,
+    this.createdAt,
+    this.lastActiveAt,
+  });
+
+  factory UserModel.fromFirestore(DocumentSnapshot doc) {
+    final data = doc.data() as Map<String, dynamic>? ?? {};
+
+    // Parse timestamps safely
+    DateTime? parseTimestamp(dynamic value) {
+      if (value is Timestamp) return value.toDate();
+      if (value is String) return DateTime.tryParse(value);
+      return null;
+    }
+
+    return UserModel(
+      uid: doc.id,
+      email: data['email'] as String?,
+      preferences: List<String>.from(data['preferences'] ?? []),
+      stats: data['stats'] != null
+          ? UserStats.fromMap(data['stats'] as Map<String, dynamic>)
+          : UserStats(),
+      history: data['history'] != null
+          ? UserHistory.fromMap(data['history'] as Map<String, dynamic>)
+          : UserHistory(),
+      createdAt: parseTimestamp(data['createdAt']),
+      lastActiveAt: parseTimestamp(data['lastActiveAt']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'email': email,
+      'preferences': preferences,
+      'stats': stats.toMap(),
+      'history': history.toMap(),
+      'createdAt':
+          createdAt, // Firestore handles DateTime -> Timestamp automatically usually, but careful with updates
+      'lastActiveAt': lastActiveAt,
+    };
+  }
+}

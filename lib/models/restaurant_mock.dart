@@ -29,7 +29,6 @@ final List<RestaurantDetailsData> mockRestaurants = [
       'assets/images/res/r1/1_3.jpg',
       'assets/images/res/r1/1_1.jpg',
     ],
-    status: SwipeStatus.yum,
   ),
   RestaurantDetailsData(
     id: '2',
@@ -37,7 +36,6 @@ final List<RestaurantDetailsData> mockRestaurants = [
     cuisine: 'ไทย',
     priceRange: 1,
     rating: 4.3,
-    // distance: 0,
     latitude: 13.7150,
     longitude: 100.5650,
     imageUrl: 'assets/images/res/r2.jpg',
@@ -45,7 +43,6 @@ final List<RestaurantDetailsData> mockRestaurants = [
     phone: '0223456789',
     openingHours: '09:00 - 21:00',
     description: 'อาหารไทยรสชาติต้นตำรับ บรรยากาศอบอุ่น',
-    status: SwipeStatus.yum,
   ),
   RestaurantDetailsData(
     id: '3',
@@ -61,7 +58,6 @@ final List<RestaurantDetailsData> mockRestaurants = [
     phone: '0234567890',
     openingHours: '11:30 - 23:00',
     description: 'ร้านซูชิพรีเมียม วัตถุดิบสดใหม่จากญี่ปุ่น',
-    status: SwipeStatus.yum,
   ),
   RestaurantDetailsData(
     id: '4',
@@ -77,7 +73,6 @@ final List<RestaurantDetailsData> mockRestaurants = [
     phone: '0245678901',
     openingHours: '11:00 - 22:00',
     description: 'ราเมนสไตล์โตเกียว น้ำซุปเข้มข้น',
-    status: SwipeStatus.pass,
   ),
   RestaurantDetailsData(
     id: '5',
@@ -93,7 +88,6 @@ final List<RestaurantDetailsData> mockRestaurants = [
     phone: '0256789012',
     openingHours: '12:00 - 23:00',
     description: 'ร้านอาหารอิตาเลียนต้นตำรับ พาสต้าทำสด',
-    status: SwipeStatus.yum,
   ),
   RestaurantDetailsData(
     id: '6',
@@ -109,7 +103,6 @@ final List<RestaurantDetailsData> mockRestaurants = [
     phone: '0267890123',
     openingHours: '11:00 - 22:30',
     description: 'พิซซ่าเตาอิฐ สไตล์โรมัน',
-    status: SwipeStatus.pass,
   ),
   RestaurantDetailsData(
     id: '7',
@@ -125,7 +118,6 @@ final List<RestaurantDetailsData> mockRestaurants = [
     phone: '0278901234',
     openingHours: '11:30 - 23:30',
     description: 'บาร์บีคิวเกาหลี เนื้อคุณภาพพรีเมียม',
-    status: SwipeStatus.pass,
   ),
   RestaurantDetailsData(
     id: '8',
@@ -141,7 +133,6 @@ final List<RestaurantDetailsData> mockRestaurants = [
     phone: '0289012345',
     openingHours: '10:00 - 22:00',
     description: 'อาหารเกาหลีราคาประหยัด รสชาติต้นตำรับ',
-    status: SwipeStatus.yum,
   ),
   RestaurantDetailsData(
     id: '9',
@@ -157,7 +148,6 @@ final List<RestaurantDetailsData> mockRestaurants = [
     phone: '0290123456',
     openingHours: '11:00 - 23:00',
     description: 'ทาโก้และบูริโต้สไตล์เม็กซิกัน',
-    status: SwipeStatus.yum,
   ),
   RestaurantDetailsData(
     id: '10',
@@ -173,7 +163,6 @@ final List<RestaurantDetailsData> mockRestaurants = [
     phone: '0201234567',
     openingHours: '12:00 - 00:00',
     description: 'อาหารเม็กซิกันรสจัดจ้าน บรรยากาศสนุกสนาน',
-    status: SwipeStatus.yum,
   ),
   RestaurantDetailsData(
     id: '11',
@@ -189,7 +178,6 @@ final List<RestaurantDetailsData> mockRestaurants = [
     phone: '0212345679',
     openingHours: '07:00 - 15:00',
     description: 'ติ่มซำฮ่องกง ขนมจีบสดใหม่ทุกวัน',
-    status: SwipeStatus.yum,
   ),
   RestaurantDetailsData(
     id: '12',
@@ -205,6 +193,5 @@ final List<RestaurantDetailsData> mockRestaurants = [
     phone: '0223456780',
     openingHours: '11:00 - 22:00',
     description: 'ร้านอาหารจีนกวางตุ้ง เป็ดปักกิ่งสูตรต้นตำรับ',
-    status: SwipeStatus.pass,
   ),
 ];

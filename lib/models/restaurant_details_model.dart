@@ -18,7 +18,6 @@ class RestaurantDetailsData extends RestaurantCardData {
     required super.longitude,
     required super.imageUrl,
     required super.description,
-    required super.status,
     super.createdAt,
     required this.address,
     required this.phone,
@@ -66,7 +65,6 @@ class RestaurantDetailsData extends RestaurantCardData {
     double? longitude,
     String? imageUrl,
     String? description,
-    SwipeStatus? status,
     DateTime? createdAt,
     String? address,
     String? phone,
@@ -84,7 +82,6 @@ class RestaurantDetailsData extends RestaurantCardData {
       longitude: longitude ?? this.longitude,
       imageUrl: imageUrl ?? this.imageUrl,
       description: description ?? this.description,
-      status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       address: address ?? this.address,
       phone: phone ?? this.phone,
@@ -108,7 +105,6 @@ class RestaurantDetailsData extends RestaurantCardData {
       longitude: _parseDouble(data['longitude'], 0.0),
       imageUrl: data['imageUrl'] ?? '',
       description: data['description'] ?? '',
-      status: SwipeStatus.none, // Default, updated by service
       createdAt: data['created_at'] != null
           ? (data['created_at'] is Timestamp
                 ? (data['created_at'] as Timestamp).toDate()

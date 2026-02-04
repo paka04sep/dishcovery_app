@@ -3,10 +3,12 @@ import 'package:dishcovery_app/models/restaurant_details_model.dart';
 import 'package:dishcovery_app/models/restaurant_mock.dart';
 import 'package:dishcovery_app/constants/app_constants.dart';
 import 'package:dishcovery_app/services/places_service.dart';
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:dishcovery_app/models/user_model.dart';
 
 class RestaurantService extends ChangeNotifier {
   // Singleton pattern
@@ -24,89 +26,125 @@ class RestaurantService extends ChangeNotifier {
   List<String> _userPreferences = [];
   double _userMaxDistance = 50.0; // Default max distance
   bool _isReady = false; // Add isReady flag
+  bool _isLoadingUser = false; // Flag to track if user data is being fetched
 
-  bool get isReady => _isReady;
+  bool get isReady => _isReady && !_isLoadingUser;
 
   double _lastKnownLat = 0.0; // Cache location
   double _lastKnownLng = 0.0;
 
-  Future<void> _initializeData() async {
-    // 1. Fetch User Preferences first (independent)
-    await fetchUserPreferences();
+  UserModel? _userModel;
 
-    // 2. Get User Location
+  UserModel? get userModel => _userModel;
+
+  // Subscription to auth state changes
+  StreamSubscription<User?>? _authSubscription;
+
+  Future<void> _initializeData() async {
+    // 0. Setup Auth Listener to handle login/logout automatically
+    _setupAuthListener();
+
+    // 2. Get User Location (Independent of Auth)
     Position? position = await _getCurrentLocation();
     if (position != null) {
       _lastKnownLat = position.latitude;
       _lastKnownLng = position.longitude;
     }
 
+    List<RestaurantCardData> fetchedRestaurants = [];
+
+    // ... (rest of restaurant loading logic)
+    // Need to trigger restaurant loading independently or let it wait?
+    // Let's load restaurants initially anyway, status will be mapped based on _userModel which is null initially until auth triggers
+
     // CRM: Toggle for Mock Data vs Real Data
     if (AppConfig.useMockData) {
+      // ... (existing logic)
       if (kDebugMode) print("DEBUG: Using Mock Data + Firestore");
 
-      // 1. Process Mock Data
-      List<RestaurantCardData> mockList = mockRestaurants.map((r) {
-        return r.copyWith(status: SwipeStatus.none);
-      }).toList();
+      // Process Mock Data
+      List<RestaurantCardData> mockList = mockRestaurants;
 
-      // 2. Process Firestore Data (Merge with Mock)
+      // Process Firestore Data (Merge with Mock)
       List<RestaurantCardData> firestoreList = [];
       try {
         final firestoreData = await fetchRestaurantsFromFirestore();
         if (firestoreData.isNotEmpty) {
-          firestoreList = firestoreData.map((r) {
-            return r.copyWith(status: SwipeStatus.none);
-          }).toList();
+          firestoreList = firestoreData;
         }
       } catch (e) {
         if (kDebugMode) print("Error fetching/merging Firestore data: $e");
       }
 
-      // Combine lists
-      _restaurants = [...mockList, ...firestoreList];
-      _isReady = true;
-      notifyListeners();
-      return;
-    }
-
-    // Try fetching from Firestore first
-    List<RestaurantCardData> firestoreRestaurants =
-        await fetchRestaurantsFromFirestore();
-
-    if (firestoreRestaurants.isNotEmpty) {
-      if (kDebugMode)
-        print(
-          "DEBUG: Using Firestore Data (${firestoreRestaurants.length} items)",
-        );
-      _restaurants = firestoreRestaurants.map((r) {
-        return r.copyWith(status: SwipeStatus.none);
-      }).toList();
-    } else if (position != null) {
-      // Fallback: Fetch Restaurants from Google Places API
-      try {
-        if (kDebugMode) print("DEBUG: Using Places API Data");
-        final places = await PlacesService().fetchNearbyRestaurants(
-          latitude: position.latitude,
-          longitude: position.longitude,
-        );
-
-        // 4. Update status
-        _restaurants = places.map((r) {
-          return r.copyWith(status: SwipeStatus.none);
-        }).toList();
-      } catch (e) {
-        if (kDebugMode) print("Error fetching places: $e");
-      }
+      fetchedRestaurants = [...mockList, ...firestoreList];
     } else {
-      // Handle no location permission or service disabled
-      if (kDebugMode)
-        print("Location not available, cannot fetch nearby places.");
+      // ... (existing logic)
+      // Try fetching from Firestore first
+      List<RestaurantCardData> firestoreList =
+          await fetchRestaurantsFromFirestore();
+
+      if (firestoreList.isNotEmpty) {
+        fetchedRestaurants = firestoreList;
+      } else if (position != null) {
+        // Fallback: Fetch Restaurants from Google Places API
+        try {
+          if (kDebugMode) print("DEBUG: Using Places API Data");
+          final places = await PlacesService().fetchNearbyRestaurants(
+            latitude: position.latitude,
+            longitude: position.longitude,
+          );
+          fetchedRestaurants = places;
+        } catch (e) {
+          if (kDebugMode) print("Error fetching places: $e");
+        }
+      } else {
+        if (kDebugMode)
+          print("Location not available, cannot fetch nearby places.");
+      }
     }
 
+    _restaurants = fetchedRestaurants;
     _isReady = true;
     notifyListeners();
   }
+
+  void _setupAuthListener() {
+    _authSubscription = FirebaseAuth.instance.authStateChanges().listen((
+      User? user,
+    ) async {
+      if (user == null) {
+        if (kDebugMode) print("Auth Listener: User logged out. Clearing data.");
+        clearUserData();
+      } else {
+        if (kDebugMode)
+          print("Auth Listener: User logged in (${user.uid}). Fetching data.");
+
+        // Start loading
+        _isLoadingUser = true;
+        notifyListeners(); // UI should show loading/init screen
+
+        await fetchUserModel();
+
+        // Finish loading
+        _isLoadingUser = false;
+        notifyListeners(); // UI should show content
+      }
+    });
+  }
+
+  void clearUserData() {
+    _userModel = null;
+    _userPreferences = [];
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _authSubscription?.cancel();
+    super.dispose();
+  }
+
+  // Helper to hydrate status -> REMOVED
 
   // Calculate distance on the fly
   double getDistance(RestaurantCardData r) {
@@ -119,6 +157,17 @@ class RestaurantService extends ChangeNotifier {
       r.longitude,
     );
     return double.parse((distanceInMeters / 1000).toStringAsFixed(1));
+  }
+
+  // Get Restaurant Status Dynamically
+  SwipeStatus getRestaurantStatus(String id) {
+    if (_userModel == null) return SwipeStatus.none;
+
+    if (_userModel!.history.yum.contains(id)) return SwipeStatus.yum;
+    if (_userModel!.history.passed.contains(id)) return SwipeStatus.pass;
+    if (_userModel!.history.fav.contains(id)) return SwipeStatus.fav;
+
+    return SwipeStatus.none;
   }
 
   Future<List<RestaurantCardData>> fetchRestaurantsFromFirestore() async {
@@ -153,32 +202,111 @@ class RestaurantService extends ChangeNotifier {
     return await Geolocator.getCurrentPosition();
   }
 
-  Future<void> fetchUserPreferences() async {
+  Future<void> fetchUserModel() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
       try {
-        final doc = await FirebaseFirestore.instance
+        final docRef = FirebaseFirestore.instance
             .collection('users')
-            .doc(user.uid)
-            .get();
+            .doc(user.uid);
+        final doc = await docRef.get();
+
         if (doc.exists) {
-          final data = doc.data();
-          if (data != null) {
-            if (data['preferences'] != null) {
-              _userPreferences = List<String>.from(data['preferences']);
-            }
-            if (data['distancePreference'] != null) {
-              _userMaxDistance = (data['distancePreference'] as num).toDouble();
-            }
-            notifyListeners();
+          Map<String, dynamic> data = doc.data() ?? {};
+          bool needsRepair = false;
+          Map<String, dynamic> repairData = {};
+
+          // Check for missing 'stats'
+          if (!data.containsKey('stats')) {
+            if (kDebugMode)
+              print("DEBUG: User doc missing 'stats'. Repairing...");
+            repairData['stats'] = UserStats().toJson();
+            needsRepair = true;
           }
+
+          // Check for missing 'history'
+          if (!data.containsKey('history')) {
+            if (kDebugMode)
+              print("DEBUG: User doc missing 'history'. Repairing...");
+            repairData['history'] = UserHistory().toJson();
+            needsRepair = true;
+          }
+
+          if (needsRepair) {
+            // Repair the document
+            if (kDebugMode) print("DEBUG: Performing user doc repair...");
+            await docRef.set(repairData, SetOptions(merge: true));
+
+            // Re-fetch to get complete data
+            final repairedDoc = await docRef.get();
+            _userModel = UserModel.fromFirestore(repairedDoc);
+
+            // Also ensure swipes collection is initialized for repaired users
+            _ensureSwipesCollectionExists(docRef);
+          } else {
+            _userModel = UserModel.fromFirestore(doc);
+          }
+
+          _userPreferences = _userModel?.preferences ?? [];
+
+          // Update lastActiveAt
+          await docRef.update({'lastActiveAt': FieldValue.serverTimestamp()});
+
+          notifyListeners();
+        } else {
+          // Create new user document
+          if (kDebugMode)
+            print("User document not found. Creating new user...");
+
+          final newUser = UserModel(
+            uid: user.uid,
+            email: user.email,
+            createdAt: DateTime.now(),
+            lastActiveAt: DateTime.now(),
+            stats: UserStats(),
+            history: UserHistory(),
+          );
+
+          await docRef.set({
+            ...newUser.toJson(),
+            'createdAt': FieldValue.serverTimestamp(),
+            'lastActiveAt': FieldValue.serverTimestamp(),
+          });
+
+          // Initialize swipes collection for new users
+          await _ensureSwipesCollectionExists(docRef);
+
+          _userModel = newUser;
+          _userPreferences = [];
+          notifyListeners();
         }
       } catch (e) {
         if (kDebugMode) {
-          print("Error fetching preferences: $e");
+          print("Error fetching/repairing user stats: $e");
         }
       }
     }
+  }
+
+  Future<void> _ensureSwipesCollectionExists(DocumentReference userRef) async {
+    try {
+      // Create a dummy document to initialize the collection, then delete it?
+      // Or just keep an 'init' doc. Keeping 'init' is safer and easier.
+      final initDoc = userRef.collection('swipes').doc('init');
+      final snapshot = await initDoc.get();
+
+      if (!snapshot.exists) {
+        if (kDebugMode) print("DEBUG: Initializing 'swipes' subcollection...");
+        await initDoc.set({'created': FieldValue.serverTimestamp()});
+      }
+    } catch (e) {
+      if (kDebugMode) print("Error initializing swipes collection: $e");
+    }
+  }
+
+  // Deprecated: merged into fetchUserModel, keeping for compatibility if needed elsewhere
+  Future<void> fetchUserPreferences() async {
+    await fetchUserModel();
   }
 
   void updatePreferences(List<String> prefs, double distance) {
@@ -192,7 +320,7 @@ class RestaurantService extends ChangeNotifier {
 
   List<RestaurantCardData> get swipableRestaurants {
     List<RestaurantCardData> filtered = _restaurants
-        .where((r) => r.status == SwipeStatus.none)
+        .where((r) => getRestaurantStatus(r.id) == SwipeStatus.none)
         .toList();
 
     // Filter by Distance
@@ -201,18 +329,13 @@ class RestaurantService extends ChangeNotifier {
           .where((r) => getDistance(r) <= _userMaxDistance)
           .toList();
     }
-    // print(
-    // "Debug: After Distance Filter (< $_userMaxDistance km): ${filtered.length}",
-    // );
 
     // Filter by Preferences (Cuisine)
     if (_userPreferences.isNotEmpty) {
-      // print("Debug: User Preferences: $_userPreferences");
       filtered = filtered.where((r) {
         for (final pref in _userPreferences) {
           final keywords = _getCuisineKeywords(pref);
           for (final keyword in keywords) {
-            // Basic contains check
             if (r.cuisine.contains(keyword) || r.cuisine == 'อาหารทั่วไป') {
               return true;
             }
@@ -220,9 +343,10 @@ class RestaurantService extends ChangeNotifier {
         }
         return false;
       }).toList();
-      print("Debug: After Preference Filter: ${filtered.length}");
+      if (kDebugMode)
+        print("Debug: After Preference Filter: ${filtered.length}");
     } else {
-      print("Debug: No User Preferences, skipping filter.");
+      if (kDebugMode) print("Debug: No User Preferences, skipping filter.");
     }
 
     return filtered;
@@ -247,28 +371,164 @@ class RestaurantService extends ChangeNotifier {
     if (preference.contains("อินเดีย")) return ["อินเดีย"];
     if (preference.contains("เวียดนาม")) return ["เวียดนาม"];
 
-    // Default fallback: trim "อาหาร" out
     return [preference.replaceAll("อาหาร", "").trim()];
   }
 
   List<RestaurantCardData> get history {
-    // History shows everything that is NOT none (YUM or PASS)
-    return _restaurants.where((r) => r.status != SwipeStatus.none).toList();
+    return _restaurants
+        .where((r) => getRestaurantStatus(r.id) != SwipeStatus.none)
+        .toList();
   }
 
   List<RestaurantCardData> get favorites {
-    // Favorites only shows FAV (Swipe Up)
-    return _restaurants.where((r) => r.status == SwipeStatus.fav).toList();
+    return _restaurants
+        .where((r) => getRestaurantStatus(r.id) == SwipeStatus.fav)
+        .toList();
   }
 
   // Update status (Swipe Action)
-  void swipeRestaurant(String id, SwipeStatus newStatus) {
+  Future<void> swipeRestaurant(String id, SwipeStatus newStatus) async {
     if (newStatus == SwipeStatus.none) return;
 
+    // 1. Optimistic Update Local State
     final index = _restaurants.indexWhere((r) => r.id == id);
+    RestaurantCardData? swipedRestaurant;
+    SwipeStatus oldStatus = getRestaurantStatus(id);
+
     if (index != -1) {
-      _restaurants[index] = _restaurants[index].copyWith(status: newStatus);
+      swipedRestaurant = _restaurants[index];
+      // oldStatus already set
+
+      // Update UserModel locally for immediate UI feedback
+      if (_userModel != null) {
+        // Remove from old lists
+        _userModel!.history.yum.remove(id);
+        _userModel!.history.passed.remove(id);
+        _userModel!.history.fav.remove(id);
+
+        // Add to new list
+        switch (newStatus) {
+          case SwipeStatus.yum:
+            _userModel!.history.yum.add(id);
+            break;
+          case SwipeStatus.pass:
+            _userModel!.history.passed.add(id);
+            break;
+          case SwipeStatus.fav:
+            _userModel!.history.fav.add(id);
+            break;
+          default:
+            break;
+        }
+      }
+
       notifyListeners();
+    }
+
+    // 2. Persist to Firestore
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null && swipedRestaurant != null) {
+      await _recordSwipeToFirestore(
+        user.uid,
+        swipedRestaurant,
+        newStatus,
+        oldStatus,
+      );
+    }
+  }
+
+  Future<void> _recordSwipeToFirestore(
+    String uid,
+    RestaurantCardData restaurant,
+    SwipeStatus newStatus,
+    SwipeStatus oldStatus,
+  ) async {
+    final db = FirebaseFirestore.instance;
+    final userRef = db.collection('users').doc(uid);
+    final swipeRef = userRef.collection('swipes').doc(); // Auto ID
+
+    String action = '';
+    String newHistoryField = '';
+    String newStatsField = '';
+
+    String? oldHistoryField;
+    String? oldStatsField;
+
+    // Determine New Fields
+    switch (newStatus) {
+      case SwipeStatus.yum:
+        action = 'yum';
+        newHistoryField = 'history.yum';
+        newStatsField = 'stats.yums';
+        break;
+      case SwipeStatus.pass:
+        action = 'pass';
+        newHistoryField = 'history.passed';
+        newStatsField = 'stats.passes';
+        break;
+      case SwipeStatus.fav:
+        action = 'fav';
+        newHistoryField = 'history.fav';
+        newStatsField = 'stats.fav';
+        break;
+      default:
+        return;
+    }
+
+    // Determine Old Fields
+    switch (oldStatus) {
+      case SwipeStatus.yum:
+        oldHistoryField = 'history.yum';
+        oldStatsField = 'stats.yums';
+        break;
+      case SwipeStatus.pass:
+        oldHistoryField = 'history.passed';
+        oldStatsField = 'stats.passes';
+        break;
+      case SwipeStatus.fav:
+        oldHistoryField = 'history.fav';
+        oldStatsField = 'stats.fav';
+        break;
+      default:
+        break;
+    }
+
+    if (newStatus == oldStatus) return;
+
+    try {
+      await db.runTransaction((transaction) async {
+        transaction.set(swipeRef, {
+          'restaurantId': restaurant.id,
+          'action': action,
+          'timestamp': FieldValue.serverTimestamp(),
+          'restaurantSnapshot': {
+            'name': restaurant.name,
+            'cuisine': restaurant.cuisine,
+            'priceRange': restaurant.priceRange,
+          },
+        });
+
+        Map<String, dynamic> updateData = {
+          'lastActiveAt': FieldValue.serverTimestamp(),
+        };
+
+        updateData[newHistoryField] = FieldValue.arrayUnion([restaurant.id]);
+        updateData[newStatsField] = FieldValue.increment(1);
+
+        if (oldHistoryField != null && oldStatsField != null) {
+          updateData[oldHistoryField] = FieldValue.arrayRemove([restaurant.id]);
+          updateData[oldStatsField] = FieldValue.increment(-1);
+        } else {
+          updateData['stats.totalSwipes'] = FieldValue.increment(1);
+        }
+
+        transaction.update(userRef, updateData);
+      });
+
+      if (kDebugMode)
+        print("Recorded swipe: $action (from $oldStatus) for ${restaurant.id}");
+    } catch (e) {
+      if (kDebugMode) print("Error recording swipe: $e");
     }
   }
 
