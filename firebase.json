@@ -1,1 +1,39 @@
-{"flutter":{"platforms":{"android":{"default":{"projectId":"dishcovery-app-62ab5","appId":"1:611474656292:android:8f86dc26bf1eefccf25cb1","fileOutput":"android/app/google-services.json"}},"dart":{"lib/firebase_options.dart":{"projectId":"dishcovery-app-62ab5","configurations":{"android":"1:611474656292:android:8f86dc26bf1eefccf25cb1","ios":"1:611474656292:ios:b22bcf8f5cfa6d38f25cb1","macos":"1:611474656292:ios:b22bcf8f5cfa6d38f25cb1","web":"1:611474656292:web:b496408e48aba48af25cb1","windows":"1:611474656292:web:37eadbbacfed3804f25cb1"}}}}}}
+{
+  "flutter": {
+    "platforms": {
+      "android": {
+        "default": {
+          "projectId": "dishcovery-app-62ab5",
+          "appId": "1:611474656292:android:8f86dc26bf1eefccf25cb1",
+          "fileOutput": "android/app/google-services.json"
+        }
+      },
+      "dart": {
+        "lib/firebase_options.dart": {
+          "projectId": "dishcovery-app-62ab5",
+          "configurations": {
+            "android": "1:611474656292:android:8f86dc26bf1eefccf25cb1",
+            "ios": "1:611474656292:ios:b22bcf8f5cfa6d38f25cb1",
+            "macos": "1:611474656292:ios:b22bcf8f5cfa6d38f25cb1",
+            "web": "1:611474656292:web:b496408e48aba48af25cb1",
+            "windows": "1:611474656292:web:37eadbbacfed3804f25cb1"
+          }
+        }
+      }
+    }
+  },
+  "functions": [
+    {
+      "source": "functions",
+      "codebase": "default",
+      "disallowLegacyRuntimeConfig": true,
+      "ignore": [
+        "node_modules",
+        ".git",
+        "firebase-debug.log",
+        "firebase-debug.*.log",
+        "*.local"
+      ]
+    }
+  ]
+}

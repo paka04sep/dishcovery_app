@@ -556,38 +556,23 @@ class _SwipScreenState extends State<SwipScreen>
                           ),
                         ),
                         Text(
-                          ' · ${data.distance} กม.',
+                          ' · ${RestaurantService.instance.getDistance(data)} km',
                           style: AppTextStyles.restaurantDetails.copyWith(),
                         ),
                       ],
                     ),
                     const SizedBox(height: 6),
-
-                    // เรตติ้ง
-                    // Row(
-                    //   children: [
-                    //     const Icon(Icons.star, color: Colors.amber, size: 18),
-                    //     const SizedBox(width: 4),
-                    //     Text(
-                    //       data.rating.toString(),
-                    //       style: AppTextStyles.restaurantDetails.copyWith(),
-                    //     ),
-                    //     // Text(
-                    //     //   ' · เปิด-ปิด ${data.openingHours} ',
-                    //     //   style: AppTextStyles.restaurantDetails.copyWith(),
-                    //     // ),
-                    //   ],
-                    // ),
-                    // const SizedBox(height: 6),
                     Row(
                       children: [
-                        Text(
-                          ' " ${data.description.toString()} " ',
-                          style: AppTextStyles.restaurantDetails.copyWith(
-                            fontSize: 16,
+                        Expanded(
+                          child: Text(
+                            ' " ${data.description} " ',
+                            style: AppTextStyles.restaurantDetails.copyWith(
+                              fontSize: 16,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                            maxLines: 1,
                           ),
-                          overflow: TextOverflow.ellipsis,
-                          maxLines: 1,
                         ),
                       ],
                     ),

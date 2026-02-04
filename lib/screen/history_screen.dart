@@ -129,7 +129,7 @@ class HistoryScreen extends StatelessWidget {
                             ),
                           ),
                           Text(
-                            ' · ${data.distance} กม.',
+                            ' · ${RestaurantService.instance.getDistance(data)} กม.',
                             style: AppTextStyles.restaurantDetails.copyWith(
                               fontSize: 16,
                             ),

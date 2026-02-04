@@ -1,13 +1,27 @@
+import 'package:dishcovery_app/models/restaurant_details_model.dart';
 import 'package:dishcovery_app/screen/restaurant_map_screen.dart';
 import 'package:flutter/material.dart';
 import '../constants/app_constants.dart';
 import '../models/restaurant_model.dart';
 import '../services/restaurant_service.dart';
 
-class RestaurantDetailScreen extends StatelessWidget {
+class RestaurantDetailScreen extends StatefulWidget {
   final RestaurantCardData restaurant;
 
   const RestaurantDetailScreen({super.key, required this.restaurant});
+
+  @override
+  State<RestaurantDetailScreen> createState() => _RestaurantDetailScreenState();
+}
+
+class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
+  @override
+  void initState() {
+    super.initState();
+    // Fetch details when screen loads
+    // Checks if details are already in memory, if not fetches from Firestore/Mock
+    RestaurantService.instance.getRestaurantDetails(widget.restaurant.id);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -26,9 +40,14 @@ class RestaurantDetailScreen extends StatelessWidget {
             builder: (context, child) {
               final currentRestaurant = RestaurantService.instance.restaurants
                   .firstWhere(
-                    (r) => r.id == restaurant.id,
-                    orElse: () => restaurant,
+                    (r) => r.id == widget.restaurant.id,
+                    orElse: () => widget.restaurant,
                   );
+
+              // Check if we have details
+              final details = currentRestaurant is RestaurantDetailsData
+                  ? currentRestaurant
+                  : null;
 
               return SingleChildScrollView(
                 physics: const BouncingScrollPhysics(),
@@ -39,23 +58,32 @@ class RestaurantDetailScreen extends StatelessWidget {
                     const SizedBox(height: 60),
 
                     // 2. ส่วนหัว: รูปภาพหลักของร้านพร้อม Overlay ชื่อร้าน
-                    _buildHeaderSection(context, fontFamily, currentRestaurant),
+                    _buildHeaderSection(
+                      context,
+                      fontFamily,
+                      currentRestaurant,
+                      details,
+                    ),
 
                     const SizedBox(height: 30),
 
                     // 3. ส่วนแกลเลอรี (Gallery Images)
-                    // จะแสดงผลก็ต่อเมื่อใน Model มีรูปภาพแกลเลอรีเท่านั้น
-                    if (currentRestaurant.galleryImages.isNotEmpty) ...[
+                    if (details != null &&
+                        details.galleryImages.isNotEmpty) ...[
                       _buildSectionTitle('GALLERY', fontFamily),
                       const SizedBox(height: 12),
-                      _buildGalleryHorizontalList(currentRestaurant),
+                      _buildGalleryHorizontalList(details.galleryImages),
+                      const SizedBox(height: 30),
+                    ] else if (details == null) ...[
+                      // Loading state for gallery or hidden
+                      const Center(child: CircularProgressIndicator()),
                       const SizedBox(height: 30),
                     ],
 
                     // 4. ส่วนรายการเมนูและราคา (Dynamic Menu Section)
                     _buildMenuHeader(fontFamily),
                     const SizedBox(height: 15),
-                    _buildDynamicMenuList(fontFamily, currentRestaurant),
+                    _buildDynamicMenuList(fontFamily, details?.menuItems ?? []),
 
                     const SizedBox(height: 40),
 
@@ -78,8 +106,6 @@ class RestaurantDetailScreen extends StatelessWidget {
           _buildFloatingBackButton(context),
         ],
       ),
-      // 7. แถบนำทางด้านล่าง (Bottom Navigation Bar)
-      // bottomNavigationBar: _buildCustomBottomNavBar(),
     );
   }
 
@@ -90,6 +116,7 @@ class RestaurantDetailScreen extends StatelessWidget {
     BuildContext context,
     String? fontFamily,
     RestaurantCardData data,
+    RestaurantDetailsData? details,
   ) {
     bool isFav = data.status == SwipeStatus.fav;
 
@@ -167,7 +194,9 @@ class RestaurantDetailScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${data.cuisine}  •  ${data.address}',
+                      details != null
+                          ? '${data.cuisine}  •  ${details.address}'
+                          : '${data.cuisine} ...', // Loading address
                       style: AppTextStyles.restaurantInDetails.copyWith(),
                     ),
                   ],
@@ -302,13 +331,13 @@ class RestaurantDetailScreen extends StatelessWidget {
   }
 
   // แกลเลอรีรูปภาพแนวนอน
-  Widget _buildGalleryHorizontalList(RestaurantCardData data) {
+  Widget _buildGalleryHorizontalList(List<String> galleryImages) {
     return SizedBox(
       height: 160,
       child: ListView.builder(
         scrollDirection: Axis.horizontal,
         padding: const EdgeInsets.symmetric(horizontal: 20),
-        itemCount: data.galleryImages.length,
+        itemCount: galleryImages.length,
         physics: const BouncingScrollPhysics(),
         itemBuilder: (context, index) {
           return Container(
@@ -320,15 +349,15 @@ class RestaurantDetailScreen extends StatelessWidget {
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(16),
-              child: data.galleryImages[index].startsWith('http')
+              child: galleryImages[index].startsWith('http')
                   ? Image.network(
-                      data.galleryImages[index],
+                      galleryImages[index],
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) =>
                           const Center(child: Icon(Icons.image_not_supported)),
                     )
                   : Image.asset(
-                      data.galleryImages[index],
+                      galleryImages[index],
                       fit: BoxFit.cover,
                       errorBuilder: (context, error, stackTrace) =>
                           const Center(child: Icon(Icons.image_not_supported)),
@@ -369,12 +398,12 @@ class RestaurantDetailScreen extends StatelessWidget {
   }
 
   // ส่วนสำคัญ: วนลูปสร้างรายการเมนูตามข้อมูลที่มีจริง (Dynamic)
-  Widget _buildDynamicMenuList(String? fontFamily, RestaurantCardData data) {
-    if (data.menuItems.isEmpty) {
+  Widget _buildDynamicMenuList(String? fontFamily, List<MenuItem> menuItems) {
+    if (menuItems.isEmpty) {
       return const Center(
         child: Padding(
           padding: EdgeInsets.symmetric(vertical: 20),
-          child: Text("No items available."),
+          child: Text("No items available or Loading..."),
         ),
       );
     }
@@ -382,7 +411,7 @@ class RestaurantDetailScreen extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 25),
       child: Column(
-        children: data.menuItems.map((item) {
+        children: menuItems.map((item) {
           return _buildMenuItemRow(item.name, item.price, fontFamily);
         }).toList(),
       ),
@@ -390,7 +419,7 @@ class RestaurantDetailScreen extends StatelessWidget {
   }
 
   // แถวของแต่ละเมนู
-  Widget _buildMenuItemRow(String name, String price, String? fontFamily) {
+  Widget _buildMenuItemRow(String name, int price, String? fontFamily) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
@@ -430,7 +459,7 @@ class RestaurantDetailScreen extends StatelessWidget {
           ),
           // ราคา
           Text(
-            price,
+            '$price THB',
             style: TextStyle(
               fontSize: 16,
               fontWeight: FontWeight.bold,

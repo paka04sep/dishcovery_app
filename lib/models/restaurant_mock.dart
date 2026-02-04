@@ -1,13 +1,13 @@
 import '../models/restaurant_model.dart';
+import '../models/restaurant_details_model.dart';
 
-final List<RestaurantCardData> mockRestaurants = [
-  RestaurantCardData(
+final List<RestaurantDetailsData> mockRestaurants = [
+  RestaurantDetailsData(
     id: '1',
     name: 'บ้านสวนผัดไทย',
     cuisine: 'ไทย',
     priceRange: 2,
     rating: 4.5,
-    distance: 0,
     latitude: 13.7205,
     longitude: 100.5702,
     imageUrl: 'assets/images/res/r1/2.jpg',
@@ -16,12 +16,12 @@ final List<RestaurantCardData> mockRestaurants = [
     openingHours: '10:00 - 22:00',
     description: 'ร้านอาหารไทยต้นตำรับ เมนูแนะนำ ผัดไทย',
     menuItems: [
-      MenuItem(name: 'ผัดไทยกุ้งสด', price: '150 THB'),
-      MenuItem(name: 'ผัดไทยไข่เค็ม', price: '80 THB'),
-      MenuItem(name: 'ผัดไทยกุ้งกรอบ', price: '60 THB'),
-      MenuItem(name: 'ผัดไทยวุ้นเส้น', price: '70 THB'),
-      MenuItem(name: 'ผัดไทยทรงเครื่อง', price: '130 THB'),
-      MenuItem(name: 'ผัดไทยไข่เค็ม', price: '90 THB'),
+      MenuItem(name: 'ผัดไทยกุ้งสด', price: 150),
+      MenuItem(name: 'ผัดไทยไข่เค็ม', price: 80),
+      MenuItem(name: 'ผัดไทยกุ้งกรอบ', price: 60),
+      MenuItem(name: 'ผัดไทยวุ้นเส้น', price: 70),
+      MenuItem(name: 'ผัดไทยทรงเครื่อง', price: 130),
+      MenuItem(name: 'ผัดไทยไข่เค็ม', price: 90),
     ],
     galleryImages: [
       'assets/images/res/r1/1_1.jpg',
@@ -31,13 +31,13 @@ final List<RestaurantCardData> mockRestaurants = [
     ],
     status: SwipeStatus.yum,
   ),
-  RestaurantCardData(
+  RestaurantDetailsData(
     id: '2',
     name: 'ครัวคุณยาย',
     cuisine: 'ไทย',
     priceRange: 1,
     rating: 4.3,
-    distance: 0,
+    // distance: 0,
     latitude: 13.7150,
     longitude: 100.5650,
     imageUrl: 'assets/images/res/r2.jpg',
@@ -47,13 +47,13 @@ final List<RestaurantCardData> mockRestaurants = [
     description: 'อาหารไทยรสชาติต้นตำรับ บรรยากาศอบอุ่น',
     status: SwipeStatus.yum,
   ),
-  RestaurantCardData(
+  RestaurantDetailsData(
     id: '3',
     name: 'Sushi Masa',
     cuisine: 'ญี่ปุ่น',
     priceRange: 3,
     rating: 4.8,
-    distance: 0,
+    // distance: 0,
     latitude: 13.7280,
     longitude: 100.5350,
     imageUrl: 'assets/images/res/r3.jpg',
@@ -63,13 +63,13 @@ final List<RestaurantCardData> mockRestaurants = [
     description: 'ร้านซูชิพรีเมียม วัตถุดิบสดใหม่จากญี่ปุ่น',
     status: SwipeStatus.yum,
   ),
-  RestaurantCardData(
+  RestaurantDetailsData(
     id: '4',
     name: 'Tokyo Ramen House',
     cuisine: 'ญี่ปุ่น',
     priceRange: 2,
     rating: 4.4,
-    distance: 0,
+    // distance: 0,
     latitude: 13.7220,
     longitude: 100.5180,
     imageUrl: 'assets/images/res/r4.jpg',
@@ -79,13 +79,13 @@ final List<RestaurantCardData> mockRestaurants = [
     description: 'ราเมนสไตล์โตเกียว น้ำซุปเข้มข้น',
     status: SwipeStatus.pass,
   ),
-  RestaurantCardData(
+  RestaurantDetailsData(
     id: '5',
     name: 'Bella Italia',
     cuisine: 'อิตาเลียน',
     priceRange: 3,
     rating: 4.6,
-    distance: 2.8,
+    // distance: 2.8,
     latitude: 13.7400,
     longitude: 100.5480,
     imageUrl: 'assets/images/res/r5.jpg',
@@ -95,13 +95,13 @@ final List<RestaurantCardData> mockRestaurants = [
     description: 'ร้านอาหารอิตาเลียนต้นตำรับ พาสต้าทำสด',
     status: SwipeStatus.yum,
   ),
-  RestaurantCardData(
+  RestaurantDetailsData(
     id: '6',
     name: 'Pizza Roma',
     cuisine: 'อิตาเลียน',
     priceRange: 2,
     rating: 4.2,
-    distance: 1.8,
+    // distance: 1.8,
     latitude: 13.7550,
     longitude: 100.5620,
     imageUrl: 'assets/images/res/r6.jpg',
@@ -111,13 +111,13 @@ final List<RestaurantCardData> mockRestaurants = [
     description: 'พิซซ่าเตาอิฐ สไตล์โรมัน',
     status: SwipeStatus.pass,
   ),
-  RestaurantCardData(
+  RestaurantDetailsData(
     id: '7',
     name: 'Seoul BBQ',
     cuisine: 'เกาหลี',
     priceRange: 2,
     rating: 4.5,
-    distance: 1.3,
+    // distance: 1.3,
     latitude: 13.7470,
     longitude: 100.5520,
     imageUrl: 'assets/images/res/r7.jpg',
@@ -127,13 +127,13 @@ final List<RestaurantCardData> mockRestaurants = [
     description: 'บาร์บีคิวเกาหลี เนื้อคุณภาพพรีเมียม',
     status: SwipeStatus.pass,
   ),
-  RestaurantCardData(
+  RestaurantDetailsData(
     id: '8',
     name: 'Kimchi House',
     cuisine: 'เกาหลี',
     priceRange: 1,
     rating: 4.1,
-    distance: 0.9,
+    // distance: 0.9,
     latitude: 13.7750,
     longitude: 100.5720,
     imageUrl: 'assets/images/res/r8.jpg',
@@ -143,13 +143,13 @@ final List<RestaurantCardData> mockRestaurants = [
     description: 'อาหารเกาหลีราคาประหยัด รสชาติต้นตำรับ',
     status: SwipeStatus.yum,
   ),
-  RestaurantCardData(
+  RestaurantDetailsData(
     id: '9',
     name: 'Taco Fiesta',
     cuisine: 'เม็กซิกัน',
     priceRange: 2,
     rating: 4.3,
-    distance: 2.3,
+    // distance: 2.3,
     latitude: 13.7320,
     longitude: 100.5820,
     imageUrl: 'assets/images/res/r9.jpg',
@@ -159,13 +159,13 @@ final List<RestaurantCardData> mockRestaurants = [
     description: 'ทาโก้และบูริโต้สไตล์เม็กซิกัน',
     status: SwipeStatus.yum,
   ),
-  RestaurantCardData(
+  RestaurantDetailsData(
     id: '10',
     name: 'El Mariachi',
     cuisine: 'เม็กซิกัน',
     priceRange: 2,
     rating: 4.4,
-    distance: 1.7,
+    // distance: 1.7,
     latitude: 13.7190,
     longitude: 100.5850,
     imageUrl: 'assets/images/res/r10.jpg.jpg',
@@ -175,13 +175,13 @@ final List<RestaurantCardData> mockRestaurants = [
     description: 'อาหารเม็กซิกันรสจัดจ้าน บรรยากาศสนุกสนาน',
     status: SwipeStatus.yum,
   ),
-  RestaurantCardData(
+  RestaurantDetailsData(
     id: '11',
     name: 'Dim Sum Palace',
     cuisine: 'จีน',
     priceRange: 2,
     rating: 4.6,
-    distance: 1.4,
+    // distance: 1.4,
     latitude: 13.7380,
     longitude: 100.5110,
     imageUrl: 'assets/images/restaurants/chinese1.jpg',
@@ -191,13 +191,13 @@ final List<RestaurantCardData> mockRestaurants = [
     description: 'ติ่มซำฮ่องกง ขนมจีบสดใหม่ทุกวัน',
     status: SwipeStatus.yum,
   ),
-  RestaurantCardData(
+  RestaurantDetailsData(
     id: '12',
     name: 'Golden Dragon',
     cuisine: 'จีน',
     priceRange: 3,
     rating: 4.7,
-    distance: 2.5,
+    // distance: 2.5,
     latitude: 13.7220,
     longitude: 100.5150,
     imageUrl: 'assets/images/restaurants/chinese2.jpg',
