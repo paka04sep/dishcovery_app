@@ -27,7 +27,7 @@ enum SwipeStatus { yum, pass, none, fav }
 class RestaurantCardData {
   final String id;
   final String name;
-  final String cuisine;
+  final List<String> cuisine; // Changed to List<String>
   final int priceRange; // 1, 2, or 3
   final double rating;
   final double latitude; // Added latitude
@@ -52,7 +52,7 @@ class RestaurantCardData {
   RestaurantCardData copyWith({
     String? id,
     String? name,
-    String? cuisine,
+    List<String>? cuisine,
     int? priceRange,
     double? rating,
     double? latitude,
@@ -77,10 +77,18 @@ class RestaurantCardData {
 
   // ฟังก์ชันแปลง JSON เป็น Restaurant object
   factory RestaurantCardData.fromJson(Map<String, dynamic> json) {
+    // Helper to parse cuisine safely
+    List<String> parseCuisine(dynamic value) {
+      if (value == null) return [];
+      if (value is List) return value.map((e) => e.toString()).toList();
+      if (value is String) return [value];
+      return [];
+    }
+
     return RestaurantCardData(
       id: json['id'] as String,
       name: json['name'] as String,
-      cuisine: json['cuisine'] as String,
+      cuisine: parseCuisine(json['cuisine']),
       priceRange: json['priceRange'] as int,
       rating: (json['rating'] as num).toDouble(),
       latitude: (json['latitude'] as num).toDouble(),
@@ -114,10 +122,18 @@ class RestaurantCardData {
       return defaultValue;
     }
 
+    // Helper to parse cuisine safely
+    List<String> parseCuisine(dynamic value) {
+      if (value == null) return [];
+      if (value is List) return value.map((e) => e.toString()).toList();
+      if (value is String) return [value];
+      return [];
+    }
+
     return RestaurantCardData(
       id: id,
       name: data['name'] ?? '',
-      cuisine: data['cuisine'] ?? '',
+      cuisine: parseCuisine(data['cuisine']),
       priceRange: parseInt(data['priceRange'], 1),
       rating: parseDouble(data['rating'], 0.0),
       latitude: parseDouble(data['latitude'], 0.0),

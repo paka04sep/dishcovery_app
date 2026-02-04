@@ -5,7 +5,7 @@ final List<RestaurantDetailsData> mockRestaurants = [
   RestaurantDetailsData(
     id: '1',
     name: 'บ้านสวนผัดไทย',
-    cuisine: 'ไทย',
+    cuisine: ['ไทย', 'ผัดไทย'],
     priceRange: 2,
     rating: 4.5,
     latitude: 13.7205,
@@ -33,7 +33,7 @@ final List<RestaurantDetailsData> mockRestaurants = [
   RestaurantDetailsData(
     id: '2',
     name: 'ครัวคุณยาย',
-    cuisine: 'ไทย',
+    cuisine: ['ไทย'],
     priceRange: 1,
     rating: 4.3,
     latitude: 13.7150,
@@ -47,7 +47,7 @@ final List<RestaurantDetailsData> mockRestaurants = [
   RestaurantDetailsData(
     id: '3',
     name: 'Sushi Masa',
-    cuisine: 'ญี่ปุ่น',
+    cuisine: ['ญี่ปุ่น'],
     priceRange: 3,
     rating: 4.8,
     // distance: 0,
@@ -62,7 +62,7 @@ final List<RestaurantDetailsData> mockRestaurants = [
   RestaurantDetailsData(
     id: '4',
     name: 'Tokyo Ramen House',
-    cuisine: 'ญี่ปุ่น',
+    cuisine: ['ญี่ปุ่น', 'ราเมน'],
     priceRange: 2,
     rating: 4.4,
     // distance: 0,
@@ -77,7 +77,7 @@ final List<RestaurantDetailsData> mockRestaurants = [
   RestaurantDetailsData(
     id: '5',
     name: 'Bella Italia',
-    cuisine: 'อิตาเลียน',
+    cuisine: ['อิตาเลียน'],
     priceRange: 3,
     rating: 4.6,
     // distance: 2.8,
@@ -92,7 +92,7 @@ final List<RestaurantDetailsData> mockRestaurants = [
   RestaurantDetailsData(
     id: '6',
     name: 'Pizza Roma',
-    cuisine: 'อิตาเลียน',
+    cuisine: ['อิตาเลียน', 'พิซซ่า'],
     priceRange: 2,
     rating: 4.2,
     // distance: 1.8,
@@ -107,7 +107,7 @@ final List<RestaurantDetailsData> mockRestaurants = [
   RestaurantDetailsData(
     id: '7',
     name: 'Seoul BBQ',
-    cuisine: 'เกาหลี',
+    cuisine: ['เกาหลี', 'ปิ้งย่าง'],
     priceRange: 2,
     rating: 4.5,
     // distance: 1.3,
@@ -122,7 +122,7 @@ final List<RestaurantDetailsData> mockRestaurants = [
   RestaurantDetailsData(
     id: '8',
     name: 'Kimchi House',
-    cuisine: 'เกาหลี',
+    cuisine: ['เกาหลี'],
     priceRange: 1,
     rating: 4.1,
     // distance: 0.9,
@@ -137,7 +137,7 @@ final List<RestaurantDetailsData> mockRestaurants = [
   RestaurantDetailsData(
     id: '9',
     name: 'Taco Fiesta',
-    cuisine: 'เม็กซิกัน',
+    cuisine: ['เม็กซิกัน'],
     priceRange: 2,
     rating: 4.3,
     // distance: 2.3,
@@ -152,7 +152,7 @@ final List<RestaurantDetailsData> mockRestaurants = [
   RestaurantDetailsData(
     id: '10',
     name: 'El Mariachi',
-    cuisine: 'เม็กซิกัน',
+    cuisine: ['เม็กซิกัน'],
     priceRange: 2,
     rating: 4.4,
     // distance: 1.7,
@@ -167,7 +167,7 @@ final List<RestaurantDetailsData> mockRestaurants = [
   RestaurantDetailsData(
     id: '11',
     name: 'Dim Sum Palace',
-    cuisine: 'จีน',
+    cuisine: ['จีน', 'ติ่มซำ'],
     priceRange: 2,
     rating: 4.6,
     // distance: 1.4,
@@ -182,7 +182,7 @@ final List<RestaurantDetailsData> mockRestaurants = [
   RestaurantDetailsData(
     id: '12',
     name: 'Golden Dragon',
-    cuisine: 'จีน',
+    cuisine: ['จีน'],
     priceRange: 3,
     rating: 4.7,
     // distance: 2.5,

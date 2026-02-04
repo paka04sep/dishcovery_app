@@ -54,11 +54,19 @@ class RestaurantDetailsData extends RestaurantCardData {
     return defaultValue;
   }
 
+  // Helper to parse cuisine safely
+  static List<String> _parseCuisine(dynamic value) {
+    if (value == null) return [];
+    if (value is List) return value.map((e) => e.toString()).toList();
+    if (value is String) return [value];
+    return [];
+  }
+
   @override
   RestaurantDetailsData copyWith({
     String? id,
     String? name,
-    String? cuisine,
+    List<String>? cuisine,
     int? priceRange,
     double? rating,
     double? latitude,
@@ -98,7 +106,7 @@ class RestaurantDetailsData extends RestaurantCardData {
     return RestaurantDetailsData(
       id: id,
       name: data['name'] ?? '',
-      cuisine: data['cuisine'] ?? '',
+      cuisine: _parseCuisine(data['cuisine']),
       priceRange: _parseInt(data['priceRange'], 1),
       rating: _parseDouble(data['rating'], 0.0),
       latitude: _parseDouble(data['latitude'], 0.0),

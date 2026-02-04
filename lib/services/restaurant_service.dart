@@ -367,8 +367,11 @@ class RestaurantService extends ChangeNotifier {
         for (final pref in _userPreferences) {
           final keywords = _getCuisineKeywords(pref);
           for (final keyword in keywords) {
-            if (r.cuisine.contains(keyword) || r.cuisine == 'อาหารทั่วไป') {
-              return true;
+            // Check if any of the restaurant's cuisines contain the keyword
+            for (final c in r.cuisine) {
+              if (c.contains(keyword) || c == 'อาหารทั่วไป') {
+                return true;
+              }
             }
           }
         }

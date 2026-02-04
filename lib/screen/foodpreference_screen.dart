@@ -74,14 +74,14 @@ class _FoodPreferenceScreenState extends State<FoodPreferenceScreen> {
     {'name': 'ข้าวมันไก่', 'icon': Icons.set_meal},
     {'name': 'อาหารตามสั่ง', 'icon': Icons.restaurant},
 
-    {'name': 'ซีฟู้ด', 'icon': Icons.sailing_rounded},
+    {'name': 'ส้มตำ ไก่ย่าง', 'icon': Icons.food_bank},
     {'name': 'ปิ้งย่าง', 'icon': Icons.outdoor_grill_rounded},
     {'name': 'ชาบู / สุกี้', 'icon': Icons.soup_kitchen_rounded},
 
     {'name': 'เบเกอรี่', 'icon': Icons.cake_rounded},
     {'name': 'ของหวาน', 'icon': Icons.icecream_rounded},
     {'name': 'ไอศกรีม', 'icon': Icons.icecream},
-    {'name': 'คุกกี้', 'icon': Icons.cookie},
+    {'name': 'เครป', 'icon': Icons.egg},
 
     {'name': 'กาแฟ', 'icon': Icons.local_cafe_rounded},
     {'name': 'ชา / ชานม', 'icon': Icons.emoji_food_beverage_rounded},
@@ -90,8 +90,6 @@ class _FoodPreferenceScreenState extends State<FoodPreferenceScreen> {
     {'name': 'อาหารเพื่อสุขภาพ', 'icon': Icons.eco_rounded},
     {'name': 'มังสวิรัติ', 'icon': Icons.grass_rounded},
     {'name': 'คลีน', 'icon': Icons.spa_rounded},
-
-    {'name': 'ไข่', 'icon': Icons.egg},
   ];
 
   List<List<T>> chunkList<T>(List<T> list, int chunkCount) {

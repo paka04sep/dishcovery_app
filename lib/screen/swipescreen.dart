@@ -547,7 +547,7 @@ class _SwipScreenState extends State<SwipScreen>
                     Row(
                       children: [
                         Text(
-                          '${data.cuisine} · ',
+                          '${data.cuisine.join(' | ')} · ',
                           style: AppTextStyles.restaurantDetails.copyWith(),
                         ),
                         Text(

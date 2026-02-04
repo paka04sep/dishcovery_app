@@ -79,19 +79,19 @@ class PlacesService {
 
     // Map Types to Cuisine
     List<dynamic> types = json['types'] ?? [];
-    String cuisine = "อาหารทั่วไป";
-    if (types.contains('bakery'))
-      cuisine = "เบเกอรี่";
-    else if (types.contains('cafe'))
-      cuisine = "คาเฟ่";
-    else if (types.contains('bar'))
-      cuisine = "บาร์";
-    // This is a naive mapping, can be improved
+    List<String> cuisines = [];
+
+    if (types.contains('bakery')) cuisines.add("เบเกอรี่");
+    if (types.contains('cafe')) cuisines.add("คาเฟ่");
+    if (types.contains('bar')) cuisines.add("บาร์");
+    if (types.contains('restaurant')) cuisines.add("อาหารทั่วไป");
+
+    if (cuisines.isEmpty) cuisines.add("อาหารทั่วไป");
 
     return RestaurantCardData(
       id: json['place_id'] ?? '',
       name: json['name'] ?? 'Unknown',
-      cuisine: cuisine,
+      cuisine: cuisines,
       priceRange: priceLevel,
       rating: (json['rating'] as num?)?.toDouble() ?? 0.0,
       latitude: (geometry['lat'] as num).toDouble(),

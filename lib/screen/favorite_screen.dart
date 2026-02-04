@@ -95,7 +95,7 @@ class FavoriteScreen extends StatelessWidget {
                       Row(
                         children: [
                           Text(
-                            '${data.cuisine} · ',
+                            '${data.cuisine.join(' | ')} · ',
                             style: AppTextStyles.restaurantDetails.copyWith(
                               fontSize: 16,
                             ),

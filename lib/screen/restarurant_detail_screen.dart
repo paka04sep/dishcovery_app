@@ -197,8 +197,8 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                     const SizedBox(height: 4),
                     Text(
                       details != null
-                          ? '${data.cuisine}  •  ${details.address}'
-                          : '${data.cuisine} ...', // Loading address
+                          ? '${data.cuisine.join(' | ')}  •  ${details.address}'
+                          : '${data.cuisine.join(' |')} ...', // Loading address
                       style: AppTextStyles.restaurantInDetails.copyWith(),
                     ),
                   ],
