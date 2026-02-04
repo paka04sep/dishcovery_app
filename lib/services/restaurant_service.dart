@@ -11,11 +11,25 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:dishcovery_app/models/user_model.dart';
 
 class RestaurantService extends ChangeNotifier {
-  // Singleton pattern
-  static final RestaurantService instance = RestaurantService._internal();
+  // Singleton pattern (Nullable to allow reset)
+  static RestaurantService? _instance;
+
+  static RestaurantService get instance {
+    _instance ??= RestaurantService._internal();
+    return _instance!;
+  }
 
   factory RestaurantService() {
     return instance;
+  }
+
+  // Allow resetting the instance (e.g. on logout)
+  static void reset() {
+    if (_instance != null) {
+      _instance!.dispose();
+      _instance = null;
+      if (kDebugMode) print("RestaurantService Instance Destroyed/Reset.");
+    }
   }
 
   RestaurantService._internal() {
@@ -43,8 +57,11 @@ class RestaurantService extends ChangeNotifier {
   Future<void> _initializeData() async {
     // 0. Setup Auth Listener to handle login/logout automatically
     _setupAuthListener();
+    // Data loading is now deferred to the Auth Listener
+  }
 
-    // 2. Get User Location (Independent of Auth)
+  Future<void> _fetchRestaurants() async {
+    // 2. Get User Location (Fresh check)
     Position? position = await _getCurrentLocation();
     if (position != null) {
       _lastKnownLat = position.latitude;
@@ -53,13 +70,8 @@ class RestaurantService extends ChangeNotifier {
 
     List<RestaurantCardData> fetchedRestaurants = [];
 
-    // ... (rest of restaurant loading logic)
-    // Need to trigger restaurant loading independently or let it wait?
-    // Let's load restaurants initially anyway, status will be mapped based on _userModel which is null initially until auth triggers
-
     // CRM: Toggle for Mock Data vs Real Data
     if (AppConfig.useMockData) {
-      // ... (existing logic)
       if (kDebugMode) print("DEBUG: Using Mock Data + Firestore");
 
       // Process Mock Data
@@ -78,7 +90,6 @@ class RestaurantService extends ChangeNotifier {
 
       fetchedRestaurants = [...mockList, ...firestoreList];
     } else {
-      // ... (existing logic)
       // Try fetching from Firestore first
       List<RestaurantCardData> firestoreList =
           await fetchRestaurantsFromFirestore();
@@ -113,8 +124,19 @@ class RestaurantService extends ChangeNotifier {
       User? user,
     ) async {
       if (user == null) {
-        if (kDebugMode) print("Auth Listener: User logged out. Clearing data.");
-        clearUserData();
+        if (kDebugMode) print("Auth Listener: User logged out.");
+
+        // Only reset if we actually had a user session (prevent infinite loop on cold start)
+        if (_userModel != null) {
+          if (kDebugMode)
+            print(
+              "Destorying RestaurantService instance to force fresh start.",
+            );
+          clearUserData();
+          RestaurantService.reset();
+        } else {
+          clearUserData();
+        }
       } else {
         if (kDebugMode)
           print("Auth Listener: User logged in (${user.uid}). Fetching data.");
@@ -123,7 +145,11 @@ class RestaurantService extends ChangeNotifier {
         _isLoadingUser = true;
         notifyListeners(); // UI should show loading/init screen
 
+        // 1. Fetch User Data
         await fetchUserModel();
+
+        // 2. Fetch Restaurants (Fresh for this user session)
+        await _fetchRestaurants();
 
         // Finish loading
         _isLoadingUser = false;
@@ -135,7 +161,12 @@ class RestaurantService extends ChangeNotifier {
   void clearUserData() {
     _userModel = null;
     _userPreferences = [];
+    _isLoadingUser = false;
+    _isReady = false;
+    _restaurants = [];
     notifyListeners();
+    // Do not call reset() here to avoid loop if called from listener.
+    // Reset is manually called or handled in auth listener
   }
 
   @override
@@ -389,6 +420,28 @@ class RestaurantService extends ChangeNotifier {
   // Update status (Swipe Action)
   Future<void> swipeRestaurant(String id, SwipeStatus newStatus) async {
     if (newStatus == SwipeStatus.none) return;
+
+    final currentUser = FirebaseAuth.instance.currentUser;
+    if (kDebugMode)
+      print("CURRENT USER IN SERVICE: ${_userModel?.uid}"); // Debug Print
+
+    if (currentUser == null) {
+      if (kDebugMode) print("Error: No authenticated user.");
+      return;
+    }
+
+    // Race Condition Fix: Ensure _userModel matches current Auth User
+    // If we just logged in as B, but _userModel is null or A, we must reload.
+    if (_userModel == null || _userModel!.uid != currentUser.uid) {
+      if (kDebugMode)
+        print("DEBUG: User Model mismatch detected. Forcing reload...");
+      await fetchUserModel();
+
+      if (_userModel == null || _userModel!.uid != currentUser.uid) {
+        if (kDebugMode) print("Critical Error: Failed to sync user model.");
+        return;
+      }
+    }
 
     // 1. Optimistic Update Local State
     final index = _restaurants.indexWhere((r) => r.id == id);
