@@ -115,6 +115,28 @@ class _RestaurantDetailsScreenState extends State<RestaurantDetailsScreen> {
                 ],
               ),
             ),
+            // Switch to User Profile Button
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+              child: SizedBox(
+                width: double.infinity,
+                height: 50,
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(context);
+                  },
+                  icon: const Icon(Icons.person_outline),
+                  label: const Text("Switch to User Profile"),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF539DF3),
+                    side: const BorderSide(color: Color(0xFF539DF3)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ),
+            ),
           ],
         ),
       ),
