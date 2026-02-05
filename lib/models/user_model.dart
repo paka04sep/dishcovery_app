@@ -63,6 +63,7 @@ class UserHistory {
 class UserModel {
   final String uid;
   final String? email;
+  final String role; // Added role field
   final List<String> preferences;
   final UserStats stats;
   final UserHistory history;
@@ -72,6 +73,7 @@ class UserModel {
   UserModel({
     required this.uid,
     this.email,
+    this.role = 'user', // Default to 'user'
     this.preferences = const [],
     required this.stats,
     required this.history,
@@ -92,6 +94,7 @@ class UserModel {
     return UserModel(
       uid: doc.id,
       email: data['email'] as String?,
+      role: data['role'] as String? ?? 'user', // Parse role, default to 'user'
       preferences: List<String>.from(data['preferences'] ?? []),
       stats: data['stats'] != null
           ? UserStats.fromMap(data['stats'] as Map<String, dynamic>)
@@ -107,6 +110,7 @@ class UserModel {
   Map<String, dynamic> toJson() {
     return {
       'email': email,
+      'role': role, // Include role in JSON
       'preferences': preferences,
       'stats': stats.toMap(),
       'history': history.toMap(),

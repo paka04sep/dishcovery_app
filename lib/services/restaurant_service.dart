@@ -88,7 +88,8 @@ class RestaurantService extends ChangeNotifier {
         if (kDebugMode) print("Error fetching/merging Firestore data: $e");
       }
 
-      fetchedRestaurants = [...mockList, ...firestoreList];
+      // fetchedRestaurants = [...mockList, ...firestoreList];
+      fetchedRestaurants = [...firestoreList];
     } else {
       // Try fetching from Firestore first
       List<RestaurantCardData> firestoreList =
@@ -235,6 +236,8 @@ class RestaurantService extends ChangeNotifier {
 
   Future<void> fetchUserModel() async {
     final user = FirebaseAuth.instance.currentUser;
+    final token = await user!.getIdTokenResult(true);
+    print(token.claims);
     if (user != null) {
       try {
         final docRef = FirebaseFirestore.instance

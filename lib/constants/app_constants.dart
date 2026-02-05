@@ -85,7 +85,7 @@ class AppTextStyles {
   // ข้อความรายละเอียดชื่อร้านหน้าการ์ด
   static const TextStyle restaurantDetails = TextStyle(
     fontFamily: 'Sukumvit',
-    fontSize: 18,
+    fontSize: 16,
     color: AppColors.white,
   );
 

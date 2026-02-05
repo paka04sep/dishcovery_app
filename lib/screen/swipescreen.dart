@@ -569,7 +569,7 @@ class _SwipScreenState extends State<SwipScreen>
                           child: Text(
                             ' " ${data.description} " ',
                             style: AppTextStyles.restaurantDetails.copyWith(
-                              fontSize: 16,
+                              fontSize: 14,
                             ),
                             overflow: TextOverflow.ellipsis,
                             maxLines: 1,

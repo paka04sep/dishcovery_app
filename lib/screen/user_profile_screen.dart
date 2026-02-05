@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import '../starting_screen/loading_screen.dart';
 import 'business_screen.dart';
 import 'foodpreference_screen.dart';
+import 'package:dishcovery_app/screen/admin/admin_dashboard_screen.dart';
+import 'package:dishcovery_app/services/restaurant_service.dart';
 
 class UserProfileScreen extends StatelessWidget {
   const UserProfileScreen({super.key});
@@ -101,6 +103,44 @@ class UserProfileScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 15),
+
+            // Admin Dashboard Button (Only if Admin)
+            ListenableBuilder(
+              listenable: RestaurantService.instance, // Or AuthService
+              builder: (context, child) {
+                final isAdmin =
+                    RestaurantService.instance.userModel?.role == 'admin';
+                if (!isAdmin) return const SizedBox.shrink();
+
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 15),
+                  child: SizedBox(
+                    width: double.infinity,
+                    height: 45,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AdminDashboardScreen(),
+                          ),
+                        );
+                      },
+                      icon: const Icon(Icons.admin_panel_settings),
+                      label: const Text("Admin Dashboard"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.black87,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
+            ),
 
             // Credit & Challenges
             Row(
