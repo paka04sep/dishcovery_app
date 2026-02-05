@@ -349,8 +349,7 @@ class HistoryScreen extends StatelessWidget {
     return ListenableBuilder(
       listenable: RestaurantService.instance,
       builder: (context, child) {
-        final historyList = RestaurantService.instance.history.reversed
-            .toList();
+        final historyList = RestaurantService.instance.history;
         return Scaffold(
           extendBodyBehindAppBar: true,
           appBar: _buildAppBar(context),

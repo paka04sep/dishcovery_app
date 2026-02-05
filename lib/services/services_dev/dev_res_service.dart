@@ -70,41 +70,201 @@ class DevResService {
   ];
 
   final Map<String, List<Map<String, dynamic>>> _cuisineMenus = {
+    // ===== THAI =====
     'อาหารไทย': [
       {'name': 'ผัดกะเพรา', 'price': 50},
       {'name': 'ต้มยำกุ้ง', 'price': 150},
       {'name': 'แกงเขียวหวาน', 'price': 80},
-      {'name': 'ส้มตำ', 'price': 40},
+      {'name': 'มัสมั่นไก่', 'price': 120},
+      {'name': 'ทอดมันกุ้ง', 'price': 100},
+      {'name': 'ปลากะพงทอดน้ำปลา', 'price': 350},
     ],
     'อาหารอีสาน': [
       {'name': 'ส้มตำปูปลาร้า', 'price': 40},
       {'name': 'ลาบหมู', 'price': 60},
       {'name': 'คอหมูย่าง', 'price': 80},
+      {'name': 'น้ำตกหมู', 'price': 70},
+      {'name': 'ซุปหน่อไม้', 'price': 50},
+      {'name': 'ไก่ย่างวิเชียร', 'price': 120},
     ],
+    'อาหารเหนือ': [
+      {'name': 'ข้าวซอยไก่', 'price': 60},
+      {'name': 'ขนมจีนน้ำเงี้ยว', 'price': 50},
+      {'name': 'ไส้อั่ว', 'price': 80},
+      {'name': 'แกงฮังเล', 'price': 100},
+      {'name': 'น้ำพริกหนุ่ม', 'price': 60},
+      {'name': 'แคบหมู', 'price': 40},
+    ],
+    'อาหารใต้': [
+      {'name': 'แกงส้มปลากะพง', 'price': 150},
+      {'name': 'คั่วกลิ้งหมู', 'price': 80},
+      {'name': 'ผัดสะตอกุ้งสด', 'price': 150},
+      {'name': 'หมูฮ้อง', 'price': 120},
+      {'name': 'ข้าวยำปักษ์ใต้', 'price': 60},
+    ],
+
+    // ===== ASIAN =====
     'อาหารญี่ปุ่น': [
       {'name': 'Salmon Sashimi', 'price': 180},
       {'name': 'Ramen', 'price': 120},
       {'name': 'Sushi Set', 'price': 250},
+      {'name': 'Tempura Set', 'price': 150},
+      {'name': 'Katsudon', 'price': 100},
+      {'name': 'Takoyaki', 'price': 60},
     ],
     'อาหารเกาหลี': [
       {'name': 'Kimchi Soup', 'price': 120},
       {'name': 'Bibimbap', 'price': 150},
-      {'name': 'Korean BBQ Set', 'price': 399},
+      {'name': 'Korean Fried Chicken', 'price': 180},
+      {'name': 'Tteokbokki', 'price': 100},
+      {'name': 'Jajangmyeon', 'price': 120},
+    ],
+    'อาหารจีน': [
+      {'name': 'ติ่มซำชุดรวม', 'price': 250},
+      {'name': 'เป็ดปักกิ่ง', 'price': 800},
+      {'name': 'กระเพาะปลา', 'price': 150},
+      {'name': 'หม่าล่าหม้อไฟ', 'price': 350},
+      {'name': 'บะหมี่เกี๊ยว', 'price': 60},
+    ],
+
+    // ===== WESTERN / FAST FOOD =====
+    'อาหารตะวันตก': [
+      {'name': 'Ribeye Steak', 'price': 450},
+      {'name': 'Carbonara Pasta', 'price': 180},
+      {'name': 'Ceasar Salad', 'price': 120},
+      {'name': 'Fish and Chips', 'price': 220},
+      {'name': 'Truffle Soup', 'price': 150},
     ],
     'ฟาสต์ฟู้ด': [
       {'name': 'Burger Set', 'price': 159},
       {'name': 'French Fries', 'price': 59},
       {'name': 'Fried Chicken', 'price': 39},
+      {'name': 'Hot Dog', 'price': 49},
+      {'name': 'Nuggets', 'price': 69},
     ],
+    'เบอร์เกอร์': [
+      {'name': 'Cheeseburger', 'price': 120},
+      {'name': 'Bacon Burger', 'price': 150},
+      {'name': 'Wagyu Burger', 'price': 250},
+      {'name': 'Chicken Burger', 'price': 90},
+    ],
+    'พิซซ่า': [
+      {'name': 'Pizza Pepperoni', 'price': 299},
+      {'name': 'Pizza Hawaiian', 'price': 299},
+      {'name': 'Pizza Seafood', 'price': 359},
+      {'name': 'Garlic Bread', 'price': 89},
+    ],
+    'ไก่ทอด': [
+      {'name': 'ไก่ทอดหาดใหญ่', 'price': 50},
+      {'name': 'ไก่ทอดเกาหลี', 'price': 150},
+      {'name': 'ปีกไก่ทอดน้ำปลา', 'price': 80},
+      {'name': 'ไก่ป๊อป', 'price': 40},
+    ],
+
+    // ===== COMMON THAI DISHES =====
+    'ก๋วยเตี๋ยว': [
+      {'name': 'ก๋วยเตี๋ยวเรือ', 'price': 40},
+      {'name': 'บะหมี่เกี๊ยวหมูแดง', 'price': 50},
+      {'name': 'เย็นตาโฟ', 'price': 50},
+      {'name': 'ก๋วยเตี๋ยวต้มยำ', 'price': 60},
+    ],
+    'ข้าวแกง': [
+      {'name': 'ข้าวราดแกง 2 อย่าง', 'price': 40},
+      {'name': 'ไข่พะโล้', 'price': 40},
+      {'name': 'พะแนงหมู', 'price': 50},
+    ],
+    'ข้าวมันไก่': [
+      {'name': 'ข้าวมันไก่ต้ม', 'price': 50},
+      {'name': 'ข้าวมันไก่ทอด', 'price': 50},
+      {'name': 'ข้าวมันไก่ผสม', 'price': 60},
+    ],
+    'อาหารตามสั่ง': [
+      {'name': 'คะน้าหมูกรอบ', 'price': 50},
+      {'name': 'หมูทอดกระเทียม', 'price': 50},
+      {'name': 'ผัดพริกแกง', 'price': 50},
+      {'name': 'ข้าวผัด', 'price': 50},
+    ],
+    'ส้มตำ ไก่ย่าง': [
+      {'name': 'ตำไทย', 'price': 40},
+      {'name': 'ตำถาด', 'price': 120},
+      {'name': 'ไก้ย่างครึ่งตัว', 'price': 100},
+    ],
+
+    // ===== GRILL / HOTPOT =====
+    'ปิ้งย่าง': [
+      {'name': 'Buffet Pork Set', 'price': 299},
+      {'name': 'Premium Beef Set', 'price': 599},
+      {'name': 'Seafood Grill', 'price': 499},
+    ],
+    'ชาบู / สุกี้': [
+      {'name': 'Shabu Buffet', 'price': 299},
+      {'name': 'Suki Set', 'price': 199},
+      {'name': 'Wagyu Beef Slices', 'price': 120},
+    ],
+
+    // ===== DESSERT =====
     'เบเกอรี่': [
       {'name': 'Croissant', 'price': 65},
       {'name': 'Cheesecake', 'price': 120},
       {'name': 'Coffee Scone', 'price': 55},
+      {'name': 'Brownie', 'price': 60},
+    ],
+    'ของหวาน': [
+      {'name': 'บิงซู', 'price': 150},
+      {'name': 'ฮันนี่โทสต์', 'price': 180},
+      {'name': 'บัวลอย', 'price': 30},
+      {'name': 'ข้าวเหนียวมะม่วง', 'price': 80},
+    ],
+    'ไอศกรีม': [
+      {'name': 'Ice Cream Scoop', 'price': 40},
+      {'name': 'Sundae', 'price': 80},
+      {'name': 'Banana Split', 'price': 120},
+    ],
+    'เครป': [
+      {'name': 'เครปเย็น', 'price': 80},
+      {'name': 'เครปญี่ปุ่น', 'price': 40},
+    ],
+
+    // ===== DRINK =====
+    'กาแฟ': [
+      {'name': 'Iced Latte', 'price': 80},
+      {'name': 'Americano', 'price': 70},
+      {'name': 'Dirty Coffee', 'price': 90},
+      {'name': 'Cold Brew', 'price': 100},
+    ],
+    'ชา / ชานม': [
+      {'name': 'Bubble Milk Tea', 'price': 50},
+      {'name': 'Thai Tea', 'price': 40},
+      {'name': 'Green Tea Latte', 'price': 60},
+    ],
+    'เครื่องดื่ม': [
+      {'name': 'Italian Soda', 'price': 50},
+      {'name': 'Smoothie', 'price': 80},
+      {'name': 'Fruit Juice', 'price': 40},
+    ],
+
+    // ===== HEALTH =====
+    'อาหารเพื่อสุขภาพ': [
+      {'name': 'Salad Bowl', 'price': 120},
+      {'name': 'Quinoa Rice', 'price': 80},
+      {'name': 'Chicken Breast Stick', 'price': 40},
+    ],
+    'มังสวิรัติ': [
+      {'name': 'ผัดผักรวมมิตร', 'price': 60},
+      {'name': 'ต้มจับฉ่าย', 'price': 50},
+      {'name': 'เต้าหู้ทอด', 'price': 40},
+    ],
+    'คลีน': [
+      {'name': 'ข้าวน้ำพริกปลาทูคลีน', 'price': 80},
+      {'name': 'สลัดอกไก่', 'price': 80},
+      {'name': 'แซนวิชโฮลวีท', 'price': 60},
     ],
     'คาเฟ่': [
+      // Keep existing 'คาเฟ่' as well for backward compat or if used
       {'name': 'Iced Latte', 'price': 80},
       {'name': 'Americano', 'price': 70},
       {'name': 'Matcha Latte', 'price': 90},
+      {'name': 'Cake of the Day', 'price': 120},
     ],
   };
 

@@ -82,57 +82,89 @@ class _SwipScreenState extends State<SwipScreen>
       final freshSwipable = RestaurantService.instance.swipableRestaurants;
       final allRestaurants = RestaurantService.instance.restaurants;
 
-      // 1. Check if we need to reload due to Filtering Changes.
-      // We only reload if a card is "Filtered Out".
-      // A card is "Filtered Out" if:
-      // - locally it is NONE (visible)
-      // - globally it is STILL NONE (hasn't been swiped)
-      // - BUT it is missing from `freshSwipable`.
+      // New Robust Logic:
+      // 1. Preserve "History" (Swiped Cards) to keep indices stable for CardSwiper.
+      // 2. Preserve "Current Card" (The one being looked at) so It doesn't switch mid-view.
+      // 3. Replace "Future" (Next cards) with the latest 'freshSwipable' (which is re-ranked).
 
-      bool hasInvalidItems = restaurantCards.any((card) {
-        final currentStatus = RestaurantService.instance.getRestaurantStatus(
-          card.id,
+      // Step A: Separate previously swiped/processed cards from 'restaurantCards'
+      final historyAndCurrent = <RestaurantCardData>[];
+
+      // Find the first card that hasn't been swiped yet (User is likely viewing this)
+      int? firstUnswipedIndex;
+      for (int i = 0; i < restaurantCards.length; i++) {
+        final status = RestaurantService.instance.getRestaurantStatus(
+          restaurantCards[i].id,
         );
-
-        if (currentStatus != SwipeStatus.none) {
-          // FIX: If the card has been swiped (YUM/PASS/FAV), we must NOT remove it from
-          // the local 'restaurantCards' list immediately. Removing it causes the
-          // CardSwiper to shift its underlying list while animating, leading to
-          // an "off-by-one" skip (e.g., swiping card 1 shows card 3).
-          // We return 'false' here to indicate this card is still "valid" for the
-          // purpose of the current Swiper state.
-          return false;
+        if (status == SwipeStatus.none) {
+          firstUnswipedIndex = i;
+          break;
         }
-
-        // If status is NONE, verification logic:
-        // Detect if it was filtered out by preferences/distance (missing from freshSwipable)
-        bool isInFresh = freshSwipable.any((r) => r.id == card.id);
-        return !isInFresh;
-      });
-
-      // Also reload if we are empty but data came in (initial load case)
-      if (restaurantCards.isEmpty && freshSwipable.isNotEmpty) {
-        hasInvalidItems = true;
       }
 
-      if (hasInvalidItems) {
+      if (firstUnswipedIndex != null) {
+        // Keep everything up to and including the current card
+        historyAndCurrent.addAll(
+          restaurantCards.sublist(0, firstUnswipedIndex + 1),
+        );
+      } else {
+        // All cards swiped? Just keep them all.
+        historyAndCurrent.addAll(restaurantCards);
+      }
+
+      // Update details of preserved cards (in case of data changes)
+      final preservedList = historyAndCurrent.map((card) {
+        return allRestaurants.firstWhere(
+          (r) => r.id == card.id,
+          orElse: () => card,
+        );
+      }).toList();
+
+      // Step B: Build the Future List from freshSwipable
+      // Exclude cards that are already in 'preservedList' to avoid duplicates
+      final Set<String> preservedIds = preservedList.map((e) => e.id).toSet();
+      final futureList = freshSwipable
+          .where((r) => !preservedIds.contains(r.id))
+          .toList();
+
+      // Step C: Combine
+      final newCombinedList = [...preservedList, ...futureList];
+
+      // Step D: Update State if different
+      bool isDifferent = false;
+      if (restaurantCards.length != newCombinedList.length) {
+        isDifferent = true;
+      } else {
+        for (int i = 0; i < restaurantCards.length; i++) {
+          if (restaurantCards[i].id != newCombinedList[i].id) {
+            isDifferent = true;
+            break;
+          }
+        }
+      }
+
+      // Initial load edge case
+      if (restaurantCards.isEmpty && freshSwipable.isNotEmpty) {
+        isDifferent = true;
+      }
+
+      if (isDifferent) {
+        // debugPrint("DEBUG: SwipeScreen Queue Updated with Re-ranked Data");
         setState(() {
-          restaurantCards = freshSwipable;
+          restaurantCards = newCombinedList;
           _isFinished = restaurantCards.isEmpty;
         });
-        return;
+      } else {
+        // Just update content
+        setState(() {
+          restaurantCards = restaurantCards.map((card) {
+            return allRestaurants.firstWhere(
+              (r) => r.id == card.id,
+              orElse: () => card,
+            );
+          }).toList();
+        });
       }
-
-      // 2. Standard Update (Status Changes)
-      // Update existing cards in place without changing list order/size
-      setState(() {
-        restaurantCards = restaurantCards.map((card) {
-          return allRestaurants.firstWhere(
-            (r) => r.id == card.id,
-            orElse: () => card,
-          );
-        }).toList();
-      });
     }
   }
 

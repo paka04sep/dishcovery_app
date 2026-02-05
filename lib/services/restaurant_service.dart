@@ -9,6 +9,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:dishcovery_app/models/user_model.dart';
+import 'package:dishcovery_app/services/recommendation_engine.dart';
+import 'package:dishcovery_app/utils/cuisine_keywords.dart';
 
 class RestaurantService extends ChangeNotifier {
   // Singleton pattern (Nullable to allow reset)
@@ -37,7 +39,12 @@ class RestaurantService extends ChangeNotifier {
   }
 
   List<RestaurantCardData> _restaurants = [];
+  final RecommendationEngine _recommendationEngine = RecommendationEngine();
   List<String> _userPreferences = [];
+
+  // Store chronological swipe events: [{restaurantId: '...', action: '...', timestamp: DateTime}]
+  List<Map<String, dynamic>> _swipeLogs = [];
+
   double _userMaxDistance = 50.0; // Default max distance
   bool _isReady = false; // Add isReady flag
   bool _isLoadingUser = false; // Flag to track if user data is being fetched
@@ -152,6 +159,9 @@ class RestaurantService extends ChangeNotifier {
         // 2. Fetch Restaurants (Fresh for this user session)
         await _fetchRestaurants();
 
+        // 3. Fetch Swipe Logs for Chronological History
+        await _fetchSwipeLogs();
+
         // Finish loading
         _isLoadingUser = false;
         notifyListeners(); // UI should show content
@@ -162,6 +172,7 @@ class RestaurantService extends ChangeNotifier {
   void clearUserData() {
     _userModel = null;
     _userPreferences = [];
+    _swipeLogs = []; // Clear logs
     _isLoadingUser = false;
     _isReady = false;
     _restaurants = [];
@@ -368,7 +379,7 @@ class RestaurantService extends ChangeNotifier {
     if (_userPreferences.isNotEmpty) {
       filtered = filtered.where((r) {
         for (final pref in _userPreferences) {
-          final keywords = _getCuisineKeywords(pref);
+          final keywords = CuisineUtils.getKeywords(pref);
           for (final keyword in keywords) {
             // Check if any of the restaurant's cuisines contain the keyword
             for (final c in r.cuisine) {
@@ -386,41 +397,77 @@ class RestaurantService extends ChangeNotifier {
       if (kDebugMode) print("Debug: No User Preferences, skipping filter.");
     }
 
+    // Sort by Recommendation Score
+    if (_userModel != null) {
+      // Update profile based on current history
+      _recommendationEngine.updateUserTasteProfile(_userModel!, _restaurants);
+      // Rank
+      filtered = _recommendationEngine.rankRestaurants(filtered, _userModel!);
+    }
+
     return filtered;
   }
 
-  List<String> _getCuisineKeywords(String preference) {
-    if (preference.contains("อาหารไทย") ||
-        preference == "อาหารอีสาน" ||
-        preference == "อาหารเหนือ" ||
-        preference == "อาหารใต้") {
-      return ["ไทย", "อีสาน", "เหนือ", "ใต้"];
-    }
-    if (preference.contains("ญี่ปุ่น")) return ["ญี่ปุ่น", "ซูชิ", "ราเมน"];
-    if (preference.contains("เกาหลี")) return ["เกาหลี", "ปิ้งย่าง"];
-    if (preference.contains("จีน")) return ["จีน", "ติ่มซำ"];
-    if (preference.contains("ตะวันตก") ||
-        preference.contains("ฟาสต์ฟู้ด") ||
-        preference.contains("เบอร์เกอร์") ||
-        preference == "พิซซ่า") {
-      return ["อิตาเลียน", "เม็กซิกัน", "เบอร์เกอร์", "สเต็ก", "พิซซ่า"];
-    }
-    if (preference.contains("อินเดีย")) return ["อินเดีย"];
-    if (preference.contains("เวียดนาม")) return ["เวียดนาม"];
-
-    return [preference.replaceAll("อาหาร", "").trim()];
-  }
-
+  // Get History Sorted by Time (Newest First)
   List<RestaurantCardData> get history {
-    return _restaurants
-        .where((r) => getRestaurantStatus(r.id) != SwipeStatus.none)
-        .toList();
+    if (_swipeLogs.isEmpty) return [];
+
+    // Extract IDs in order (Newest is at index 0 because we sort DESC)
+    // Use LinkedHashSet or just map to preserve order and remove duplicates if any
+    final Set<String> validIds = {};
+    final List<RestaurantCardData> sortedList = [];
+
+    for (final log in _swipeLogs) {
+      final rId = log['restaurantId'] as String;
+      // Only add if not already added (though standard flow shouldn't have dupes for active status)
+      // And check current status is valid (not none)
+      if (!validIds.contains(rId)) {
+        final status = getRestaurantStatus(rId);
+        if (status != SwipeStatus.none) {
+          final restaurant = _restaurants.firstWhere(
+            (r) => r.id == rId,
+            orElse: () => _restaurants.first,
+          ); // Fallback safe
+          if (restaurant.id == rId) {
+            // Check if found correctly
+            validIds.add(rId);
+            sortedList.add(restaurant);
+          }
+        }
+      }
+    }
+    return sortedList;
   }
 
+  // Get Favorites Sorted by Time (Newest Fav First)
   List<RestaurantCardData> get favorites {
-    return _restaurants
-        .where((r) => getRestaurantStatus(r.id) == SwipeStatus.fav)
-        .toList();
+    if (_swipeLogs.isEmpty) return [];
+
+    final Set<String> validIds = {};
+    final List<RestaurantCardData> sortedList = [];
+
+    for (final log in _swipeLogs) {
+      final rId = log['restaurantId'] as String;
+
+      // We only care if the *current* status is FAV.
+      // But we want the order of when it was swiped.
+      // _swipeLogs is ordered Newest -> Oldest.
+
+      if (!validIds.contains(rId)) {
+        final status = getRestaurantStatus(rId);
+        if (status == SwipeStatus.fav) {
+          final restaurant = _restaurants.firstWhere(
+            (r) => r.id == rId,
+            orElse: () => _restaurants.first,
+          );
+          if (restaurant.id == rId) {
+            validIds.add(rId);
+            sortedList.add(restaurant);
+          }
+        }
+      }
+    }
+    return sortedList;
   }
 
   // Update status (Swipe Action)
@@ -458,7 +505,7 @@ class RestaurantService extends ChangeNotifier {
       swipedRestaurant = _restaurants[index];
       // oldStatus already set
 
-      // Update UserModel locally for immediate UI feedback
+      // Optimistic Update Local State
       if (_userModel != null) {
         // Remove from old lists
         _userModel!.history.yum.remove(id);
@@ -466,19 +513,30 @@ class RestaurantService extends ChangeNotifier {
         _userModel!.history.fav.remove(id);
 
         // Add to new list
+        String actionStr = '';
         switch (newStatus) {
           case SwipeStatus.yum:
             _userModel!.history.yum.add(id);
+            actionStr = 'yum';
             break;
           case SwipeStatus.pass:
             _userModel!.history.passed.add(id);
+            actionStr = 'pass';
             break;
           case SwipeStatus.fav:
             _userModel!.history.fav.add(id);
+            actionStr = 'fav';
             break;
           default:
             break;
         }
+
+        // Optimistic Update Swipe Logs (Add to Top)
+        _swipeLogs.insert(0, {
+          'restaurantId': id,
+          'action': actionStr,
+          'timestamp': DateTime.now(), // Local time for immediate UI update
+        });
       }
 
       notifyListeners();
@@ -680,5 +738,35 @@ class RestaurantService extends ChangeNotifier {
       if (kDebugMode) print("Error fetching details: $e");
     }
     return null;
+  }
+
+  // Fetch Swipe Logs from Firestore
+  Future<void> _fetchSwipeLogs() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      if (kDebugMode) print("DEBUG: Fetching Swipe Logs...");
+      final snapshot = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .collection('swipes')
+          .orderBy('timestamp', descending: true) // Newest first
+          .get();
+
+      _swipeLogs = snapshot.docs.map((doc) {
+        final data = doc.data();
+        // Convert Timestamp to DateTime
+        if (data['timestamp'] is Timestamp) {
+          data['timestamp'] = (data['timestamp'] as Timestamp).toDate();
+        }
+        return data;
+      }).toList();
+
+      if (kDebugMode) print("DEBUG: Loaded ${_swipeLogs.length} logs.");
+    } catch (e) {
+      if (kDebugMode) print("Error fetching swipe logs: $e");
+    }
+    notifyListeners();
   }
 }

@@ -144,13 +144,29 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     });
   }
 
+  void _selectAll() {
+    final allIds = RestaurantService.instance.restaurants
+        .map((r) => r.id)
+        .toList();
+    setState(() {
+      if (_selectedIds.length == allIds.length) {
+        // Deselect all
+        _selectedIds.clear();
+        _isSelectionMode = false;
+      } else {
+        // Select all
+        _selectedIds.addAll(allIds);
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9F9),
       appBar: AppBar(
         title: _isSelectionMode
-            ? Text("$_selectedIds selected")
+            ? Text("${_selectedIds.length} selected")
             : const Text(
                 "Admin Dashboard",
                 style: TextStyle(
@@ -174,6 +190,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               )
             : const BackButton(),
         actions: [
+          if (_isSelectionMode)
+            IconButton(
+              onPressed: _selectAll,
+              icon: const Icon(Icons.select_all),
+              tooltip: 'Select All',
+            ),
           if (_isSelectionMode)
             IconButton(
               onPressed: _deleteSelectedRestaurants,
