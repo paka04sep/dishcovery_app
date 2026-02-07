@@ -1,3 +1,4 @@
+import 'package:dishcovery_app/starting_screen/onboarding_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -77,7 +78,7 @@ class AuthWrapper extends StatelessWidget {
 
               // If it's first login (or doc doesn't exist yet), go to preferences
               if (isFirstLogin) {
-                return const FoodPreferenceScreen();
+                return const OnboardingScreen();
               }
 
               // Otherwise go to main app

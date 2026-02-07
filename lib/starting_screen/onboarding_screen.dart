@@ -1,6 +1,5 @@
-// lib/onboarding_screen.dart
-
 import 'package:dishcovery_app/constants/app_constants.dart';
+import 'package:dishcovery_app/screen/foodpreference_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:smooth_page_indicator/smooth_page_indicator.dart';
 import '/starting_screen/signin_screen.dart';
@@ -16,7 +15,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPageIndex = 0; // สถานะปัจจุบันของหน้า
 
-  // 💡 ข้อมูลสำหรับแต่ละหน้าแนะนำ (ตามรูปภาพ) 💡
+  //   ข้อมูลสำหรับแต่ละหน้าแนะนำ (ตามรูปภาพ)
   final List<Map<String, String>> onboardingData = [
     {
       'title': 'Swipe. Discover. Dine.',
@@ -36,7 +35,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     },
   ];
 
-  // 💡 กำหนดสีหลักของแอป (ใช้จาก LoadingScreen หรือตามต้องการ) 💡
+  //   กำหนดสีหลักของแอป (ใช้จาก LoadingScreen หรือตามต้องการ)
 
   @override
   void initState() {
@@ -59,12 +58,12 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     super.dispose();
   }
 
-  // 💡 สร้าง Logic การกดปุ่ม (ใช้ร่วมกันสำหรับ NEXT/GET START) 💡
+  //   สร้าง Logic การกดปุ่ม (ใช้ร่วมกันสำหรับ NEXT/GET START)
   void _onNextPressed() {
     if (_currentPageIndex == onboardingData.length - 1) {
       // หน้าสุดท้าย: ไปหน้าหลัก
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (context) => const SignInScreen()),
+        MaterialPageRoute(builder: (context) => const FoodPreferenceScreen()),
       );
     } else {
       // หน้าอื่นๆ: เลื่อนไปหน้าถัดไป
@@ -102,7 +101,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           ),
         ),
 
-        // 💡 ใช้ Stack เพื่อวาง PageView และปุ่มซ้อนกัน 💡
+        //   ใช้ Stack เพื่อวาง PageView และปุ่มซ้อนกัน
         child: Stack(
           children: [
             // 1. PageView (แสดงเนื้อหาแต่ละหน้า)
@@ -197,7 +196,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     );
   }
 
-  // 💡 Widget สำหรับสร้างเนื้อหาของแต่ละหน้า (ไม่มีการเปลี่ยนแปลง) 💡
+  //   Widget สำหรับสร้างเนื้อหาของแต่ละหน้า (ไม่มีการเปลี่ยนแปลง)
   Widget buildOnboardingPage(Map<String, String> data) {
     final String? fontFamily = Theme.of(
       context,

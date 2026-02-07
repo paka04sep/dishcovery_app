@@ -111,4 +111,12 @@ class AppTextStyles {
     fontWeight: FontWeight.bold,
     color: Colors.grey,
   );
+
+  // ข้อความปุ่ม Sign In
+  static const TextStyle signinText = TextStyle(
+    fontFamily: 'Sukumvit',
+    fontSize: 18,
+    fontWeight: FontWeight.w600,
+    color: AppColors.black,
+  );
 }

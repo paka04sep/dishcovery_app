@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'package:dishcovery_app/starting_screen/signin_screen.dart';
+
 import '/starting_screen/onboarding_screen.dart';
 import 'package:flutter/material.dart';
 import '../main.dart';
@@ -49,7 +51,7 @@ class _LoadingScreenState extends State<LoadingScreen>
       Timer(const Duration(seconds: 3), () {
         if (mounted) {
           Navigator.of(context).pushReplacement(
-            MaterialPageRoute(builder: (context) => const OnboardingScreen()),
+            MaterialPageRoute(builder: (context) => const SignInScreen()),
           );
         }
       });
