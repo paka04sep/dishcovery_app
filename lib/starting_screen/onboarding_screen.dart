@@ -14,33 +14,36 @@ class OnboardingScreen extends StatefulWidget {
 class _OnboardingScreenState extends State<OnboardingScreen> {
   final PageController _pageController = PageController();
   int _currentPageIndex = 0; // สถานะปัจจุบันของหน้า
+  bool _playAnimation = false;
 
   //   ข้อมูลสำหรับแต่ละหน้าแนะนำ (ตามรูปภาพ)
   final List<Map<String, String>> onboardingData = [
     {
-      'title': 'Swipe. Discover. Dine.',
-      'description': 'Turn every swipe into a new dining adventure.',
-      'button_text': 'NEXT',
+      'title': 'หิวเมื่อไหร่ ก็ปัดเลย',
+      'description': 'เจอร้านถูกใจได้เร็วแบบทันใจ',
+      'button_text': 'ถัดไป',
     },
     {
-      'title': 'Turn On GPS',
-      'description':
-          'Enable location to discover the best restaurants near you.',
-      'button_text': 'NEXT',
+      'title': 'เปิดตำแหน่ง เพื่อดูร้านใกล้ตัว',
+      'description': 'เราจะช่วยแนะนำร้านเด็ด ๆ รอบตัวคุณแบบเรียลไทม์',
+      'button_text': 'ถัดไป',
     },
     {
-      'title': 'Ready to Dishcover?',
-      'description': 'Find your next favorite meal in just one swipe.',
-      'button_text': 'GET START', // ปุ่มสุดท้าย
+      'title': 'ได้เวลาหาของอร่อยแล้ว',
+      'description': 'ปัดดูร้านอาหารที่ชอบ แล้วไปอิ่มกันเลย',
+      'button_text': 'เริ่มต้นใช้งาน',
     },
   ];
-
-  //   กำหนดสีหลักของแอป (ใช้จาก LoadingScreen หรือตามต้องการ)
 
   @override
   void initState() {
     super.initState();
     _pageController.addListener(_onPageChange);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      setState(() {
+        _playAnimation = true;
+      });
+    });
   }
 
   void _onPageChange() {
@@ -109,7 +112,7 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
               controller: _pageController,
               itemCount: onboardingData.length,
               itemBuilder: (context, index) {
-                return buildOnboardingPage(onboardingData[index]);
+                return buildOnboardingPage(onboardingData[index], index);
               },
             ),
 
@@ -128,8 +131,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                       controller: _pageController,
                       count: onboardingData.length,
                       effect: ExpandingDotsEffect(
-                        activeDotColor: AppColors.black,
-                        dotColor: AppColors.black.withOpacity(0.5),
+                        activeDotColor: AppColors.white,
+                        dotColor: AppColors.white.withOpacity(0.5),
                         dotHeight: 8,
                         dotWidth: 8,
                         spacing: 8,
@@ -158,10 +161,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         ),
                         child: Text(
                           onboardingData[_currentPageIndex]['button_text']!,
+                          style: AppTextStyles.signinText.copyWith(),
                         ),
                       ),
                     ),
-
+                    const SizedBox(height: 8),
                     // ปุ่ม SKIP (ถ้าไม่ใช่หน้าสุดท้าย)
                     Opacity(
                       // Opacity: 1.0 ถ้าไม่ใช่หน้าสุดท้าย, 0.0 ถ้าเป็นหน้าสุดท้าย
@@ -177,10 +181,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           onPressed:
                               _onSkipPressed, // Logic การกดปุ่ม SKIP ยังคงเดิม
                           child: Text(
-                            'SKIP',
-                            style: TextStyle(
-                              color: Colors.white.withOpacity(0.6),
-                              fontSize: 16,
+                            'ข้าม',
+                            style: AppTextStyles.signinText.copyWith(
+                              color: Colors.white.withValues(alpha: 0.5),
                             ),
                           ),
                         ),
@@ -197,43 +200,78 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 
   //   Widget สำหรับสร้างเนื้อหาของแต่ละหน้า (ไม่มีการเปลี่ยนแปลง)
-  Widget buildOnboardingPage(Map<String, String> data) {
-    final String? fontFamily = Theme.of(
-      context,
-    ).textTheme.bodyLarge?.fontFamily;
+  Widget buildOnboardingPage(Map<String, String> data, int index) {
+    final bool active = _playAnimation && index == _currentPageIndex;
 
-    // เราต้องปรับ padding ด้านล่างของเนื้อหาแต่ละหน้า
-    // เพื่อให้ไม่ชนกับปุ่มควบคุมที่ Positioned ไว้
     return Padding(
-      padding: const EdgeInsets.fromLTRB(
-        20,
-        0,
-        20,
-        100,
-      ), // เพิ่ม Padding ด้านล่าง 220
+      padding: const EdgeInsets.fromLTRB(20, 0, 20, 100),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Image.asset('assets/images/logo1.0.png', width: 156, height: 156),
-          const SizedBox(height: 30),
-          Text(
-            data['title']!,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.bold,
-              color: AppColors.black,
-              fontFamily: fontFamily,
+          /// LOGO
+          AnimatedScale(
+            scale: active ? 1 : 0.8,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeOutBack,
+            child: AnimatedOpacity(
+              opacity: active ? 1 : 0,
+              duration: const Duration(milliseconds: 400),
+              child: Image.asset(
+                'assets/images/logo1.0.png',
+                width: 156,
+                height: 156,
+              ),
             ),
           ),
+
+          const SizedBox(height: 30),
+
+          /// TITLE
+          AnimatedSlide(
+            offset: active ? Offset.zero : const Offset(0, 0.3),
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeOut,
+            child: AnimatedOpacity(
+              opacity: active ? 1 : 0,
+              duration: const Duration(milliseconds: 500),
+              child: Text(
+                data['title']!,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.signinText.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 22,
+                  shadows: [
+                    Shadow(
+                      blurRadius: 10,
+                      color: Colors.black.withOpacity(0.3),
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+
           const SizedBox(height: 15),
-          Text(
-            data['description']!,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              fontSize: 16,
-              color: AppColors.black.withOpacity(0.8),
-              fontFamily: fontFamily,
+
+          /// DESCRIPTION
+          AnimatedSlide(
+            offset: active ? Offset.zero : const Offset(0, 0.5),
+            duration: const Duration(milliseconds: 600),
+            curve: Curves.easeOut,
+            child: AnimatedOpacity(
+              opacity: active ? 1 : 0,
+              duration: const Duration(milliseconds: 600),
+              child: Text(
+                data['description']!,
+                textAlign: TextAlign.center,
+                style: AppTextStyles.signinText.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w300,
+                  fontSize: 18,
+                ),
+              ),
             ),
           ),
         ],

@@ -232,7 +232,6 @@ class _FoodPreferenceScreenState extends State<FoodPreferenceScreen> {
   @override
   Widget build(BuildContext context) {
     final rows = chunkList(_foodOptions, 5);
-    // กำหนด Font Family ถ้ามีการตั้งค่าใน Theme
 
     return Scaffold(
       // กำหนดสีพื้นหลังเป็นสีขาว
@@ -240,9 +239,10 @@ class _FoodPreferenceScreenState extends State<FoodPreferenceScreen> {
       appBar: widget.isEditMode
           ? AppBar(
               title: GradientText(
-                text: 'Edit Preferences!',
-                style: AppTextStyles.secondaryTitle.copyWith(
-                  fontWeight: FontWeight.w100,
+                text: 'แก้ไขประเภทอาหารที่คุณชอบ',
+                style: AppTextStyles.signinText.copyWith(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
               backgroundColor: Colors.white,
@@ -279,10 +279,10 @@ class _FoodPreferenceScreenState extends State<FoodPreferenceScreen> {
               // 2. ส่วนเลือกประเภทอาหาร
               GradientText(
                 text:
-                    'Choose your favorite type food (${_selectedFoodTypes.length}/$_maxSelection)',
-                style: AppTextStyles.secondaryTitle.copyWith(
+                    'ประเภทอาหารที่คุณชอบ (${_selectedFoodTypes.length}/$_maxSelection)',
+                style: AppTextStyles.signinText.copyWith(
                   fontSize: 24,
-                  fontWeight: FontWeight.normal,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 15),
@@ -354,11 +354,8 @@ class _FoodPreferenceScreenState extends State<FoodPreferenceScreen> {
 
               // 3. ส่วนเลือกความชอบระยะทาง
               GradientText(
-                text: 'What is your preferred distance?',
-                style: AppTextStyles.secondaryTitle.copyWith(
-                  fontSize: 24,
-                  fontWeight: FontWeight.normal,
-                ),
+                text: 'ระยะทางที่สะดวกสำหรับคุณ',
+                style: AppTextStyles.signinText.copyWith(fontSize: 24),
               ),
               const SizedBox(height: 35),
 
@@ -484,8 +481,9 @@ class _FoodPreferenceScreenState extends State<FoodPreferenceScreen> {
                     elevation: 15,
                   ),
                   child: Text(
-                    widget.isEditMode ? 'SAVE' : 'NEXT',
-                    style: AppTextStyles.buttonText.copyWith(
+                    widget.isEditMode ? 'บันทึกค่า' : 'ต่อไป',
+                    style: AppTextStyles.signinText.copyWith(
+                      fontSize: 20,
                       color: AppColors.black, // ข้อความเป็นสีขาวบนปุ่มสีดำ
                     ),
                   ),

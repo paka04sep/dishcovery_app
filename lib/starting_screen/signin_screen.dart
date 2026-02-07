@@ -429,7 +429,7 @@ class _SignInScreenState extends State<SignInScreen>
                     // ใส่ TextField แบบเส้นใต้ตามดีไซน์ของคุณที่นี่
                     children: [
                       Text(
-                        _isSignUp ? "สมัครสมาชิก" : "เข้าสู่ระบบด้วยอีเมล",
+                        _isSignUp ? "สมัครสมาชิก" : "เข้าสู่ระบบ",
                         style: AppTextStyles.signinText.copyWith(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
