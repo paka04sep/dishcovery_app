@@ -25,11 +25,6 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // ดึงค่า Font Family จาก Theme เพื่อความสม่ำเสมอ
-    final String? fontFamily = Theme.of(
-      context,
-    ).textTheme.bodyLarge?.fontFamily;
-
     return Scaffold(
       backgroundColor: Colors.white,
       body: Stack(
@@ -58,19 +53,14 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                     const SizedBox(height: 60),
 
                     // 2. ส่วนหัว: รูปภาพหลักของร้านพร้อม Overlay ชื่อร้าน
-                    _buildHeaderSection(
-                      context,
-                      fontFamily,
-                      currentRestaurant,
-                      details,
-                    ),
+                    _buildHeaderSection(context, currentRestaurant, details),
 
                     const SizedBox(height: 30),
 
                     // 3. ส่วนแกลเลอรี (Gallery Images)
                     if (details != null &&
                         details.galleryImages.isNotEmpty) ...[
-                      _buildSectionTitle('GALLERY', fontFamily),
+                      _buildSectionTitle('GALLERY'),
                       const SizedBox(height: 12),
                       _buildGalleryHorizontalList(details.galleryImages),
                       const SizedBox(height: 30),
@@ -81,18 +71,14 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                     ],
 
                     // 4. ส่วนรายการเมนูและราคา (Dynamic Menu Section)
-                    _buildMenuHeader(fontFamily),
+                    _buildMenuHeader(),
                     const SizedBox(height: 15),
-                    _buildDynamicMenuList(fontFamily, details?.menuItems ?? []),
+                    _buildDynamicMenuList(details?.menuItems ?? []),
 
                     const SizedBox(height: 40),
 
                     // 5. ปุ่มดูสถานที่ (Location Button)
-                    _buildLocationButton(
-                      context,
-                      fontFamily,
-                      currentRestaurant,
-                    ),
+                    _buildLocationButton(context, currentRestaurant),
 
                     // เว้นที่ว่างด้านล่างเพื่อให้เนื้อหาไม่โดน Bottom Bar บัง
                     const SizedBox(height: 120),
@@ -114,7 +100,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
   // ส่วนหัว: รูปภาพใหญ่และ Gradient
   Widget _buildHeaderSection(
     BuildContext context,
-    String? fontFamily,
+
     RestaurantCardData data,
     RestaurantDetailsData? details,
   ) {
@@ -262,7 +248,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
             const SizedBox(width: 8),
             Text(
               isFav ? 'ลบออกจากรายการโปรด?' : 'เพิ่มในรายการโปรด?',
-              style: AppTextStyles.restaurantName.copyWith(
+              style: AppTextStyles.refreshText.copyWith(
                 fontSize: 22,
                 color: Colors.black,
               ),
@@ -317,7 +303,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
   }
 
   // หัวข้อ Section
-  Widget _buildSectionTitle(String title, String? fontFamily) {
+  Widget _buildSectionTitle(String title) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 25),
       child: Text(
@@ -326,7 +312,6 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
           fontSize: 20,
           fontWeight: FontWeight.bold,
           color: Colors.black87,
-          fontFamily: fontFamily,
         ),
       ),
     );
@@ -372,7 +357,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
   }
 
   // หัวข้อเมนูและราคา
-  Widget _buildMenuHeader(String? fontFamily) {
+  Widget _buildMenuHeader() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 25),
       child: Row(
@@ -380,19 +365,11 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
         children: [
           Text(
             'MENU',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              fontFamily: fontFamily,
-            ),
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
           Text(
             'PRICE',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-              fontFamily: fontFamily,
-            ),
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -400,7 +377,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
   }
 
   // ส่วนสำคัญ: วนลูปสร้างรายการเมนูตามข้อมูลที่มีจริง (Dynamic)
-  Widget _buildDynamicMenuList(String? fontFamily, List<MenuItem> menuItems) {
+  Widget _buildDynamicMenuList(List<MenuItem> menuItems) {
     if (menuItems.isEmpty) {
       return const Center(
         child: Padding(
@@ -414,14 +391,14 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 25),
       child: Column(
         children: menuItems.map((item) {
-          return _buildMenuItemRow(item.name, item.price, fontFamily);
+          return _buildMenuItemRow(item.name, item.price);
         }).toList(),
       ),
     );
   }
 
   // แถวของแต่ละเมนู
-  Widget _buildMenuItemRow(String name, int price, String? fontFamily) {
+  Widget _buildMenuItemRow(String name, int price) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 10),
       child: Row(
@@ -462,11 +439,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
           // ราคา
           Text(
             '$price THB',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              fontFamily: fontFamily,
-            ),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -474,11 +447,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
   }
 
   // ปุ่ม Location
-  Widget _buildLocationButton(
-    BuildContext context,
-    String? fontFamily,
-    RestaurantCardData data,
-  ) {
+  Widget _buildLocationButton(BuildContext context, RestaurantCardData data) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 40),
       child: Container(
@@ -519,7 +488,6 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
               fontSize: 18,
               fontWeight: FontWeight.bold,
               letterSpacing: 2.5,
-              fontFamily: fontFamily,
             ),
           ),
         ),

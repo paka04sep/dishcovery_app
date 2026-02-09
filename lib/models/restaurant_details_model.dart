@@ -4,7 +4,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 class RestaurantDetailsData extends RestaurantCardData {
   final String address;
   final String phone;
-  final String openingHours;
+  // final String openingHours; // Inherited from RestaurantCardData
   final List<MenuItem> menuItems;
   final List<String> galleryImages;
 
@@ -19,23 +19,20 @@ class RestaurantDetailsData extends RestaurantCardData {
     required super.imageUrl,
     required super.description,
     super.createdAt,
+    super.openingHours, // Pass to super
     required this.address,
     required this.phone,
-    required this.openingHours,
+    // required this.openingHours, // Removed
     this.menuItems = const [],
     this.galleryImages = const [],
   });
 
-  // Helper to parse String safely (Copied from previous implementation just in case)
-  static String _parseString(dynamic value) {
-    if (value == null) return '';
-    if (value is String) return value;
-    if (value is Map) {
-      return value['full']?.toString() ??
-          value['text']?.toString() ??
-          value.toString();
-    }
-    return value.toString();
+  // Helper to parse Map safely
+  static Map<String, dynamic> _parseOpeningHours(dynamic value) {
+    if (value == null) return {};
+    if (value is Map<String, dynamic>) return value;
+    if (value is Map) return Map<String, dynamic>.from(value);
+    return {};
   }
 
   // HelperSafe Parse Int
@@ -76,7 +73,7 @@ class RestaurantDetailsData extends RestaurantCardData {
     DateTime? createdAt,
     String? address,
     String? phone,
-    String? openingHours,
+    Map<String, dynamic>? openingHours,
     List<MenuItem>? menuItems,
     List<String>? galleryImages,
   }) {
@@ -120,7 +117,7 @@ class RestaurantDetailsData extends RestaurantCardData {
           : null,
       address: data['address'] ?? '',
       phone: data['phone'] ?? '',
-      openingHours: _parseString(data['openingHours']),
+      openingHours: _parseOpeningHours(data['openingHours']),
       menuItems:
           (data['menuItems'] as List<dynamic>?)
               ?.map(

@@ -121,6 +121,7 @@ class _SignInScreenState extends State<SignInScreen>
     _passwordController.clear();
     _confirmPasswordController.clear();
     _clearValidation();
+    _obscurePassword = true;
   }
 
   void _clearValidation() {
@@ -251,7 +252,7 @@ class _SignInScreenState extends State<SignInScreen>
               onTap: () => setState(() {
                 _showEmailForm = false;
                 _isSignUp = false;
-                _clearFields(); // เคลียร์ค่าเมื่อปิด
+                _clearFields();
               }),
               child: Container(
                 width: double.infinity,

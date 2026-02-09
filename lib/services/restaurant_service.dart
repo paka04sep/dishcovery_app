@@ -11,6 +11,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:dishcovery_app/models/user_model.dart';
 import 'package:dishcovery_app/services/recommendation_engine.dart';
 import 'package:dishcovery_app/utils/cuisine_keywords.dart';
+import 'package:dishcovery_app/utils/time_utils.dart';
 
 class RestaurantService extends ChangeNotifier {
   // Singleton pattern (Nullable to allow reset)
@@ -404,6 +405,13 @@ class RestaurantService extends ChangeNotifier {
       // Rank
       filtered = _recommendationEngine.rankRestaurants(filtered, _userModel!);
     }
+
+    // NEW: Filter out "Closed" restaurants
+    // "ร้านที่ปิดจะไม่แสดงที่หน้า swipescreen.dart"
+    filtered = filtered.where((r) {
+      final status = TimeUtils.getRestaurantStatus(r.openingHours);
+      return status != RestaurantStatus.closed;
+    }).toList();
 
     return filtered;
   }

@@ -10,7 +10,9 @@ import '../models/restaurant_model.dart';
 import 'user_profile_screen.dart';
 import 'package:dishcovery_app/services/restaurant_service.dart';
 import 'restarurant_detail_screen.dart';
-import '../constants/app_bottom_nav_user.dart';
+import 'package:dishcovery_app/constants/app_bottom_nav_user.dart';
+import 'package:dishcovery_app/widgets/pulse_status_widget.dart';
+import 'package:dishcovery_app/utils/time_utils.dart';
 
 class SwipScreen extends StatefulWidget {
   const SwipScreen({super.key});
@@ -395,24 +397,6 @@ class _SwipScreenState extends State<SwipScreen>
             style: AppTextStyles.refreshText.copyWith(fontSize: 14),
           ),
           const SizedBox(height: 30),
-          // ElevatedButton(
-          //   onPressed: () {
-          //     setState(() {
-          //       _isFinished = false; // รีเซ็ตค่าเพื่อกลับไปแสดง Swiper
-          //     });
-          //     _loadRestaurants();
-          //   },
-          //   style: ElevatedButton.styleFrom(
-          //     backgroundColor: AppColors.primaryBlue,
-          //     shape: RoundedRectangleBorder(
-          //       borderRadius: BorderRadius.circular(30),
-          //     ),
-          //   ),
-          //   child: Text(
-          //     "Refresh List",
-          //     style: AppTextStyles.refreshText.copyWith(fontSize: 14),
-          //   ),
-          // ),
         ],
       ),
     );
@@ -529,7 +513,16 @@ class _SwipScreenState extends State<SwipScreen>
                 ),
               ),
 
-              // 2. Interactive Overlays (YUM, PASS, FAV)
+              // 2. Pulse Status Widget (Top Right)
+              Positioned(
+                top: 15,
+                right: 15,
+                child: PulseStatusWidget(
+                  status: TimeUtils.getRestaurantStatus(data.openingHours),
+                ),
+              ),
+
+              // 3. Interactive Overlays (YUM, PASS, FAV)
               // YUM Overlay (สีเขียว, ขวา)
               if (yumProgress > 0)
                 _buildSwipeOverlay(
@@ -560,7 +553,7 @@ class _SwipScreenState extends State<SwipScreen>
                   angle: 0.0,
                 ),
 
-              // 3. รายละเอียดร้านอาหาร
+              // 4. รายละเอียดร้านอาหาร
               Positioned(
                 left: 20,
                 right: 20,
@@ -687,38 +680,6 @@ class _SwipScreenState extends State<SwipScreen>
       ),
     );
   }
-
-  // Widget สำหรับแสดงข้อมูลเป็นแถว
-  // Widget _buildInfoRow(IconData icon, String label, String value) {
-  //   return Padding(
-  //     padding: const EdgeInsets.symmetric(vertical: 4.0),
-  //     child: Row(
-  //       children: [
-  //         Icon(icon, color: Colors.white, size: 18),
-  //         const SizedBox(width: 10),
-  //         Text(
-  //           "$label: ",
-  //           style: const TextStyle(
-  //             color: Colors.white70,
-  //             fontWeight: FontWeight.w500,
-  //             fontSize: 14,
-  //           ),
-  //         ),
-  //         Flexible(
-  //           child: Text(
-  //             value,
-  //             style: const TextStyle(
-  //               color: Colors.white,
-  //               fontWeight: FontWeight.bold,
-  //               fontSize: 14,
-  //             ),
-  //             overflow: TextOverflow.ellipsis,
-  //           ),
-  //         ),
-  //       ],
-  //     ),
-  //   );
-  // }
 
   // Widget สำหรับปุ่มควบคุม
   Widget _buildActionButton({

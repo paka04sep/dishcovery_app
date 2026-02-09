@@ -80,13 +80,24 @@ class AppTextStyles {
     fontSize: 32,
     fontWeight: FontWeight.bold,
     color: AppColors.white,
+    shadows: [
+      Shadow(color: Colors.black, offset: const Offset(3, 2), blurRadius: 20),
+    ],
   );
 
   // ข้อความรายละเอียดชื่อร้านหน้าการ์ด
-  static const TextStyle restaurantDetails = TextStyle(
+  static TextStyle restaurantDetails = TextStyle(
     fontFamily: 'Sukumvit',
     fontSize: 16,
     color: AppColors.white,
+    fontWeight: FontWeight.bold,
+    shadows: [
+      Shadow(
+        color: Colors.black.withOpacity(0.4),
+        offset: Offset(3, 2),
+        blurRadius: 10,
+      ),
+    ],
   );
 
   // ข้อความรายละเอียดชื่อร้านในการ์ด

@@ -34,7 +34,8 @@ class RestaurantCardData {
   final double longitude; // Added longitude
   final String imageUrl;
   final String description;
-  final DateTime? createdAt; // Added createdAt
+  final Map<String, dynamic> openingHours; // Changed to Map
+  final DateTime? createdAt;
 
   RestaurantCardData({
     required this.id,
@@ -46,6 +47,7 @@ class RestaurantCardData {
     required this.longitude,
     required this.imageUrl,
     required this.description,
+    this.openingHours = const {}, // Default empty map
     this.createdAt,
   });
 
@@ -59,6 +61,7 @@ class RestaurantCardData {
     double? longitude,
     String? imageUrl,
     String? description,
+    Map<String, dynamic>? openingHours,
     DateTime? createdAt,
   }) {
     return RestaurantCardData(
@@ -71,6 +74,7 @@ class RestaurantCardData {
       longitude: longitude ?? this.longitude,
       imageUrl: imageUrl ?? this.imageUrl,
       description: description ?? this.description,
+      openingHours: openingHours ?? this.openingHours,
       createdAt: createdAt ?? this.createdAt,
     );
   }
@@ -85,6 +89,14 @@ class RestaurantCardData {
       return [];
     }
 
+    // Helper to parse openingHours safely
+    Map<String, dynamic> parseOpeningHours(dynamic value) {
+      if (value == null) return {};
+      if (value is Map<String, dynamic>) return value;
+      if (value is Map) return Map<String, dynamic>.from(value);
+      return {};
+    }
+
     return RestaurantCardData(
       id: json['id'] as String,
       name: json['name'] as String,
@@ -95,6 +107,7 @@ class RestaurantCardData {
       longitude: (json['longitude'] as num).toDouble(),
       imageUrl: json['imageUrl'] as String,
       description: json['description'] as String,
+      openingHours: parseOpeningHours(json['openingHours']),
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : null,
@@ -130,6 +143,14 @@ class RestaurantCardData {
       return [];
     }
 
+    // Helper to parse openingHours safely
+    Map<String, dynamic> parseOpeningHours(dynamic value) {
+      if (value == null) return {};
+      if (value is Map<String, dynamic>) return value;
+      if (value is Map) return Map<String, dynamic>.from(value);
+      return {};
+    }
+
     return RestaurantCardData(
       id: id,
       name: data['name'] ?? '',
@@ -140,6 +161,7 @@ class RestaurantCardData {
       longitude: parseDouble(data['longitude'], 0.0),
       imageUrl: data['imageUrl'] ?? '',
       description: data['description'] ?? '',
+      openingHours: parseOpeningHours(data['openingHours']),
       createdAt: data['created_at'] != null
           ? (data['created_at'] is Timestamp
                 ? (data['created_at'] as Timestamp).toDate()
@@ -160,6 +182,7 @@ class RestaurantCardData {
       'longitude': longitude,
       'imageUrl': imageUrl,
       'description': description,
+      'openingHours': openingHours,
       'created_at': createdAt?.toIso8601String(),
     };
   }

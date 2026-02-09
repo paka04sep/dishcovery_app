@@ -13,7 +13,29 @@ final List<RestaurantDetailsData> mockRestaurants = [
     imageUrl: 'assets/images/res/r1/2.jpg',
     address: '123 ถนนสุขุมวิท แขวงคลองเตย กรุงเทพฯ',
     phone: '0212345678',
-    openingHours: '10:00 - 22:00',
+    openingHours: {
+      'mon': [
+        {'open': '10:00', 'close': '22:00'},
+      ],
+      'tue': [
+        {'open': '10:00', 'close': '22:00'},
+      ],
+      'wed': [
+        {'open': '10:00', 'close': '22:00'},
+      ],
+      'thu': [
+        {'open': '10:00', 'close': '22:00'},
+      ],
+      'fri': [
+        {'open': '10:00', 'close': '22:00'},
+      ],
+      'sat': [
+        {'open': '10:00', 'close': '22:00'},
+      ],
+      'sun': [
+        {'open': '10:00', 'close': '22:00'},
+      ],
+    },
     description: 'ร้านอาหารไทยต้นตำรับ เมนูแนะนำ ผัดไทย',
     menuItems: [
       MenuItem(name: 'ผัดไทยกุ้งสด', price: 150),
@@ -41,7 +63,29 @@ final List<RestaurantDetailsData> mockRestaurants = [
     imageUrl: 'assets/images/res/r2.jpg',
     address: '456 ถนนพระราม 4 แขวงคลองเตย กรุงเทพฯ',
     phone: '0223456789',
-    openingHours: '09:00 - 21:00',
+    openingHours: {
+      'mon': [
+        {'open': '09:00', 'close': '21:00'},
+      ],
+      'tue': [
+        {'open': '09:00', 'close': '21:00'},
+      ],
+      'wed': [
+        {'open': '09:00', 'close': '21:00'},
+      ],
+      'thu': [
+        {'open': '09:00', 'close': '21:00'},
+      ],
+      'fri': [
+        {'open': '09:00', 'close': '21:00'},
+      ],
+      'sat': [
+        {'open': '09:00', 'close': '21:00'},
+      ],
+      'sun': [
+        {'open': '09:00', 'close': '21:00'},
+      ],
+    },
     description: 'อาหารไทยรสชาติต้นตำรับ บรรยากาศอบอุ่น',
   ),
   RestaurantDetailsData(
@@ -56,7 +100,29 @@ final List<RestaurantDetailsData> mockRestaurants = [
     imageUrl: 'assets/images/res/r3.jpg',
     address: '789 ถนนสีลม แขวงสีลม กรุงเทพฯ',
     phone: '0234567890',
-    openingHours: '11:30 - 23:00',
+    openingHours: {
+      'mon': [
+        {'open': '11:30', 'close': '23:00'},
+      ],
+      'tue': [
+        {'open': '11:30', 'close': '23:00'},
+      ],
+      'wed': [
+        {'open': '11:30', 'close': '23:00'},
+      ],
+      'thu': [
+        {'open': '11:30', 'close': '23:00'},
+      ],
+      'fri': [
+        {'open': '11:30', 'close': '23:00'},
+      ],
+      'sat': [
+        {'open': '11:30', 'close': '23:00'},
+      ],
+      'sun': [
+        {'open': '11:30', 'close': '23:00'},
+      ],
+    },
     description: 'ร้านซูชิพรีเมียม วัตถุดิบสดใหม่จากญี่ปุ่น',
   ),
   RestaurantDetailsData(
@@ -71,7 +137,29 @@ final List<RestaurantDetailsData> mockRestaurants = [
     imageUrl: 'assets/images/res/r4.jpg',
     address: '321 ถนนสาทร แขวงสาทร กรุงเทพฯ',
     phone: '0245678901',
-    openingHours: '11:00 - 22:00',
+    openingHours: {
+      'mon': [
+        {'open': '11:00', 'close': '22:00'},
+      ],
+      'tue': [
+        {'open': '11:00', 'close': '22:00'},
+      ],
+      'wed': [
+        {'open': '11:00', 'close': '22:00'},
+      ],
+      'thu': [
+        {'open': '11:00', 'close': '22:00'},
+      ],
+      'fri': [
+        {'open': '11:00', 'close': '22:00'},
+      ],
+      'sat': [
+        {'open': '11:00', 'close': '22:00'},
+      ],
+      'sun': [
+        {'open': '11:00', 'close': '22:00'},
+      ],
+    },
     description: 'ราเมนสไตล์โตเกียว น้ำซุปเข้มข้น',
   ),
   RestaurantDetailsData(
@@ -86,7 +174,29 @@ final List<RestaurantDetailsData> mockRestaurants = [
     imageUrl: 'assets/images/res/r5.jpg',
     address: '654 ถนนวิทยุ แขวงลุมพินี กรุงเทพฯ',
     phone: '0256789012',
-    openingHours: '12:00 - 23:00',
+    openingHours: {
+      'mon': [
+        {'open': '12:00', 'close': '23:00'},
+      ],
+      'tue': [
+        {'open': '12:00', 'close': '23:00'},
+      ],
+      'wed': [
+        {'open': '12:00', 'close': '23:00'},
+      ],
+      'thu': [
+        {'open': '12:00', 'close': '23:00'},
+      ],
+      'fri': [
+        {'open': '12:00', 'close': '23:00'},
+      ],
+      'sat': [
+        {'open': '12:00', 'close': '23:00'},
+      ],
+      'sun': [
+        {'open': '12:00', 'close': '23:00'},
+      ],
+    },
     description: 'ร้านอาหารอิตาเลียนต้นตำรับ พาสต้าทำสด',
   ),
   RestaurantDetailsData(
@@ -101,7 +211,29 @@ final List<RestaurantDetailsData> mockRestaurants = [
     imageUrl: 'assets/images/res/r6.jpg',
     address: '987 ถนนพระราม 9 แขวงห้วยขวาง กรุงเทพฯ',
     phone: '0267890123',
-    openingHours: '11:00 - 22:30',
+    openingHours: {
+      'mon': [
+        {'open': '11:00', 'close': '22:30'},
+      ],
+      'tue': [
+        {'open': '11:00', 'close': '22:30'},
+      ],
+      'wed': [
+        {'open': '11:00', 'close': '22:30'},
+      ],
+      'thu': [
+        {'open': '11:00', 'close': '22:30'},
+      ],
+      'fri': [
+        {'open': '11:00', 'close': '22:30'},
+      ],
+      'sat': [
+        {'open': '11:00', 'close': '22:30'},
+      ],
+      'sun': [
+        {'open': '11:00', 'close': '22:30'},
+      ],
+    },
     description: 'พิซซ่าเตาอิฐ สไตล์โรมัน',
   ),
   RestaurantDetailsData(
@@ -116,7 +248,29 @@ final List<RestaurantDetailsData> mockRestaurants = [
     imageUrl: 'assets/images/res/r7.jpg',
     address: '147 ถนนเพชรบุรี แขวงมักกะสัน กรุงเทพฯ',
     phone: '0278901234',
-    openingHours: '11:30 - 23:30',
+    openingHours: {
+      'mon': [
+        {'open': '11:30', 'close': '23:30'},
+      ],
+      'tue': [
+        {'open': '11:30', 'close': '23:30'},
+      ],
+      'wed': [
+        {'open': '11:30', 'close': '23:30'},
+      ],
+      'thu': [
+        {'open': '11:30', 'close': '23:30'},
+      ],
+      'fri': [
+        {'open': '11:30', 'close': '23:30'},
+      ],
+      'sat': [
+        {'open': '11:30', 'close': '23:30'},
+      ],
+      'sun': [
+        {'open': '11:30', 'close': '23:30'},
+      ],
+    },
     description: 'บาร์บีคิวเกาหลี เนื้อคุณภาพพรีเมียม',
   ),
   RestaurantDetailsData(
@@ -131,7 +285,29 @@ final List<RestaurantDetailsData> mockRestaurants = [
     imageUrl: 'assets/images/res/r8.jpg',
     address: '258 ถนนรัชดาภิเษก แขวงดินแดง กรุงเทพฯ',
     phone: '0289012345',
-    openingHours: '10:00 - 22:00',
+    openingHours: {
+      'mon': [
+        {'open': '10:00', 'close': '22:00'},
+      ],
+      'tue': [
+        {'open': '10:00', 'close': '22:00'},
+      ],
+      'wed': [
+        {'open': '10:00', 'close': '22:00'},
+      ],
+      'thu': [
+        {'open': '10:00', 'close': '22:00'},
+      ],
+      'fri': [
+        {'open': '10:00', 'close': '22:00'},
+      ],
+      'sat': [
+        {'open': '10:00', 'close': '22:00'},
+      ],
+      'sun': [
+        {'open': '10:00', 'close': '22:00'},
+      ],
+    },
     description: 'อาหารเกาหลีราคาประหยัด รสชาติต้นตำรับ',
   ),
   RestaurantDetailsData(
@@ -146,7 +322,29 @@ final List<RestaurantDetailsData> mockRestaurants = [
     imageUrl: 'assets/images/res/r9.jpg',
     address: '369 ถนนทองหล่อ แขวงคลองตัน กรุงเทพฯ',
     phone: '0290123456',
-    openingHours: '11:00 - 23:00',
+    openingHours: {
+      'mon': [
+        {'open': '11:00', 'close': '23:00'},
+      ],
+      'tue': [
+        {'open': '11:00', 'close': '23:00'},
+      ],
+      'wed': [
+        {'open': '11:00', 'close': '23:00'},
+      ],
+      'thu': [
+        {'open': '11:00', 'close': '23:00'},
+      ],
+      'fri': [
+        {'open': '11:00', 'close': '23:00'},
+      ],
+      'sat': [
+        {'open': '11:00', 'close': '23:00'},
+      ],
+      'sun': [
+        {'open': '11:00', 'close': '23:00'},
+      ],
+    },
     description: 'ทาโก้และบูริโต้สไตล์เม็กซิกัน',
   ),
   RestaurantDetailsData(
@@ -161,7 +359,32 @@ final List<RestaurantDetailsData> mockRestaurants = [
     imageUrl: 'assets/images/res/r10.jpg.jpg',
     address: '741 ถนนเอกมัย แขวงคลองตันเหนือ กรุงเทพฯ',
     phone: '0201234567',
-    openingHours: '12:00 - 00:00',
+    openingHours: {
+      'mon': [
+        {'open': '12:00', 'close': '00:00'},
+      ],
+      'tue': [
+        {'open': '12:00', 'close': '00:00'},
+      ],
+      'wed': [
+        {'open': '12:00', 'close': '00:00'},
+      ],
+      'thu': [
+        {'open': '12:00', 'close': '00:00'},
+      ],
+      'friday': [
+        {'open': '12:00', 'close': '00:00'},
+      ], // Typo fix ideally but 'fri' is key
+      'fri': [
+        {'open': '12:00', 'close': '00:00'},
+      ],
+      'sat': [
+        {'open': '12:00', 'close': '00:00'},
+      ],
+      'sun': [
+        {'open': '12:00', 'close': '00:00'},
+      ],
+    },
     description: 'อาหารเม็กซิกันรสจัดจ้าน บรรยากาศสนุกสนาน',
   ),
   RestaurantDetailsData(
@@ -176,7 +399,29 @@ final List<RestaurantDetailsData> mockRestaurants = [
     imageUrl: 'assets/images/restaurants/chinese1.jpg',
     address: '852 ถนนเยาวราช แขวงสัมพันธวงศ์ กรุงเทพฯ',
     phone: '0212345679',
-    openingHours: '07:00 - 15:00',
+    openingHours: {
+      'mon': [
+        {'open': '07:00', 'close': '15:00'},
+      ],
+      'tue': [
+        {'open': '07:00', 'close': '15:00'},
+      ],
+      'wed': [
+        {'open': '07:00', 'close': '15:00'},
+      ],
+      'thu': [
+        {'open': '07:00', 'close': '15:00'},
+      ],
+      'fri': [
+        {'open': '07:00', 'close': '15:00'},
+      ],
+      'sat': [
+        {'open': '07:00', 'close': '15:00'},
+      ],
+      'sun': [
+        {'open': '07:00', 'close': '15:00'},
+      ],
+    },
     description: 'ติ่มซำฮ่องกง ขนมจีบสดใหม่ทุกวัน',
   ),
   RestaurantDetailsData(
@@ -191,7 +436,29 @@ final List<RestaurantDetailsData> mockRestaurants = [
     imageUrl: 'assets/images/restaurants/chinese2.jpg',
     address: '963 ถนนเจริญกรุง แขวงบางรัก กรุงเทพฯ',
     phone: '0223456780',
-    openingHours: '11:00 - 22:00',
+    openingHours: {
+      'mon': [
+        {'open': '11:00', 'close': '22:00'},
+      ],
+      'tue': [
+        {'open': '11:00', 'close': '22:00'},
+      ],
+      'wed': [
+        {'open': '11:00', 'close': '22:00'},
+      ],
+      'thu': [
+        {'open': '11:00', 'close': '22:00'},
+      ],
+      'fri': [
+        {'open': '11:00', 'close': '22:00'},
+      ],
+      'sat': [
+        {'open': '11:00', 'close': '22:00'},
+      ],
+      'sun': [
+        {'open': '11:00', 'close': '22:00'},
+      ],
+    },
     description: 'ร้านอาหารจีนกวางตุ้ง เป็ดปักกิ่งสูตรต้นตำรับ',
   ),
 ];

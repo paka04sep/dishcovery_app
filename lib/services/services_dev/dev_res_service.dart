@@ -268,6 +268,57 @@ class DevResService {
     ],
   };
 
+  // Helper to generate random opening hours
+  Map<String, List<Map<String, String>>> _generateRandomOpeningHours() {
+    final days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
+    final Map<String, List<Map<String, String>>> schedule = {};
+
+    // Pick a pattern:
+    // 0: Same everyday
+    // 1: Weekday / Weekend different
+    // 2: Random Closed days
+
+    int pattern = _random.nextInt(3);
+
+    String openTime = '10:00';
+    String closeTime = '22:00';
+
+    // Helper to format time
+    String fmt(int h, int m) =>
+        '${h.toString().padLeft(2, '0')}:${m.toString().padLeft(2, '0')}';
+
+    // Randomize base hours
+    int startH = 8 + _random.nextInt(5); // 08:00 - 12:00
+    int dur = 8 + _random.nextInt(6); // 8h - 13h duration
+    int endH = startH + dur;
+
+    if (endH >= 24)
+      endH -=
+          24; // Simple wrap for now, though logic usually expects "02:00" for next day
+
+    // But simplified for generation:
+    openTime = fmt(startH, 0);
+    closeTime = fmt(endH, 0);
+
+    for (var day in days) {
+      bool isOpen = true;
+      if (pattern == 2 && _random.nextDouble() < 0.15) {
+        // 15% chance to close
+        isOpen = false;
+      }
+
+      if (isOpen) {
+        schedule[day] = [
+          {'open': openTime, 'close': closeTime},
+        ];
+      } else {
+        schedule[day] = []; // Closed
+      }
+    }
+
+    return schedule;
+  }
+
   // Helper to get random item from list
   T _getRandomItem<T>(List<T> list) {
     return list[_random.nextInt(list.length)];
@@ -398,7 +449,7 @@ class DevResService {
             'A wonderful place for ${selectedCuisines.join(', ')} lovers.',
         'address': 'Random Address in Bangkok',
         'phone': '080-000-${_random.nextInt(9999).toString().padLeft(4, '0')}',
-        'openingHours': '10:00 - 22:00',
+        'openingHours': _generateRandomOpeningHours(),
         'galleryImages': [
           'https://placehold.co/600x400/png?text=Gallery+1',
           'https://placehold.co/600x400/png?text=Gallery+2',

@@ -1,8 +1,12 @@
+import 'dart:ui';
+
 import 'package:dishcovery_app/constants/app_bottom_nav_user.dart';
 import 'package:dishcovery_app/services/restaurant_service.dart';
 import 'package:dishcovery_app/screen/history_screen.dart';
 import 'package:dishcovery_app/screen/swipescreen.dart';
 import 'package:dishcovery_app/screen/user_profile_screen.dart';
+import 'package:dishcovery_app/utils/time_utils.dart';
+import 'package:dishcovery_app/widgets/pulse_status_widget.dart';
 import 'package:flutter/material.dart';
 import 'package:dishcovery_app/constants/app_constants.dart';
 import 'package:dishcovery_app/models/restaurant_model.dart';
@@ -13,6 +17,8 @@ class FavoriteScreen extends StatelessWidget {
 
   // Widget สำหรับสร้างการ์ดในหน้า Favorite
   Widget _buildFavoriteCard(BuildContext context, RestaurantCardData data) {
+    final openStatus = TimeUtils.getRestaurantStatus(data.openingHours);
+    final bool isClosed = openStatus == RestaurantStatus.closed;
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0, horizontal: 16.0),
       child: GestureDetector(
@@ -36,131 +42,165 @@ class FavoriteScreen extends StatelessWidget {
               ),
             ],
           ),
-          child: ClipRRect(
-            borderRadius: BorderRadius.circular(15.0),
-            child: Stack(
-              children: [
-                // รูปภาพพื้นหลัง
-                Positioned.fill(
-                  child: data.imageUrl.startsWith('http')
-                      ? Image.network(
-                          data.imageUrl,
-                          fit: BoxFit.cover,
-                          color: Colors.black.withOpacity(0.4),
-                          colorBlendMode: BlendMode.darken,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Container(
-                                color: Colors.grey.shade600,
-                                child: const Center(
-                                  child: Icon(
-                                    Icons.broken_image,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                        )
-                      : Image.asset(
-                          data.imageUrl,
-                          fit: BoxFit.cover,
-                          color: Colors.black.withOpacity(
-                            0.4,
-                          ), // Overlay สีดำจาง ๆ
-                          colorBlendMode: BlendMode.darken,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Container(
-                                color: Colors.grey.shade600,
-                                child: const Center(
-                                  child: Text(
-                                    "No Image",
-                                    style: TextStyle(color: Colors.white),
-                                  ),
-                                ),
-                              ),
-                        ),
-                ),
 
-                // รายละเอียดร้านอาหาร
-                Positioned(
-                  top: 20,
-                  left: 20,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        data.name,
-                        style: AppTextStyles.restaurantName.copyWith(
-                          fontSize: 28,
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          Text(
-                            '${data.cuisine.join(' | ')} · ',
-                            style: AppTextStyles.restaurantDetails.copyWith(
-                              fontSize: 16,
-                            ),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              // รูปภาพพื้นหลัง
+              Positioned.fill(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(15.0),
+                  child: ColorFiltered(
+                    colorFilter: isClosed
+                        ? const ColorFilter.mode(
+                            Colors.grey,
+                            BlendMode.saturation, // ตัดสีออก
+                          )
+                        : const ColorFilter.mode(
+                            Colors.transparent,
+                            BlendMode.dst,
                           ),
-                          Text(
-                            '${data.getPriceSymbol()} ',
-                            style: AppTextStyles.restaurantDetails.copyWith(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                    child: data.imageUrl.startsWith('http')
+                        ? Image.network(
+                            data.imageUrl,
+                            fit: BoxFit.cover,
+                            color: Colors.black.withOpacity(
+                              isClosed ? 0.55 : 0.28,
                             ),
-                          ),
-                          Text(
-                            ' · ${RestaurantService.instance.getDistance(data)} กม.',
-                            style: AppTextStyles.restaurantDetails.copyWith(
-                              fontSize: 16,
+                            colorBlendMode: BlendMode.darken,
+                            errorBuilder: (context, error, stackTrace) =>
+                                Container(
+                                  color: Colors.grey.shade600,
+                                  child: const Center(
+                                    child: Icon(
+                                      Icons.broken_image,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                          )
+                        : Image.asset(
+                            data.imageUrl,
+                            fit: BoxFit.cover,
+                            color: Colors.black.withOpacity(
+                              isClosed ? 0.55 : 0.28,
                             ),
+                            colorBlendMode: BlendMode.darken,
+                            errorBuilder: (context, error, stackTrace) =>
+                                Container(
+                                  color: Colors.grey.shade600,
+                                  child: const Center(
+                                    child: Text(
+                                      "No Image",
+                                      style: TextStyle(color: Colors.white),
+                                    ),
+                                  ),
+                                ),
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        data.description,
-                        style: AppTextStyles.restaurantDetails.copyWith(
-                          fontSize: 16,
-                        ),
-                      ),
-                    ],
                   ),
                 ),
-
-                // ไอคอนดาวมุมขวาล่าง
-                Positioned(
-                  right: 10,
-                  bottom: 10,
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      borderRadius: BorderRadius.circular(50),
-                      onTap: () {
-                        _showRemoveFavoriteDialog(context, data);
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: Colors.black.withOpacity(0.1),
+              ),
+              Positioned(
+                top: 15,
+                right: 15,
+                child: PulseStatusWidget(
+                  status: TimeUtils.getRestaurantStatus(data.openingHours),
+                  size: 11,
+                ),
+              ),
+              // รายละเอียดร้านอาหาร
+              Positioned(
+                top: 20,
+                left: 20,
+                right: 1,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      data.name,
+                      style: AppTextStyles.restaurantName.copyWith(
+                        fontSize: 28,
+                        color: Colors.white.withOpacity(isClosed ? 0.5 : 1),
+                      ),
+                    ),
+                    Row(
+                      children: [
+                        Text(
+                          '${data.cuisine.join(' | ')} · ',
+                          style: AppTextStyles.restaurantDetails.copyWith(
+                            fontSize: 16,
+                            color: Colors.white.withOpacity(isClosed ? 0.5 : 1),
+                          ),
                         ),
-                        child: Icon(
-                          Icons.star,
-                          color: Colors.amber.shade600,
-                          size: 35, // Slightly smaller to fit padding
-                          shadows: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.5),
-                              blurRadius: 5,
-                              offset: const Offset(2, 2),
+                        Text(
+                          '${data.getPriceSymbol()} ',
+                          style: AppTextStyles.restaurantDetails.copyWith(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.white.withOpacity(isClosed ? 0.5 : 1),
+                          ),
+                        ),
+                        Text(
+                          ' · ${RestaurantService.instance.getDistance(data)} กม.',
+                          style: AppTextStyles.restaurantDetails.copyWith(
+                            fontSize: 16,
+                            color: Colors.white.withOpacity(isClosed ? 0.5 : 1),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      data.description,
+                      style: AppTextStyles.restaurantDetails.copyWith(
+                        fontSize: 14,
+                        color: Colors.white.withOpacity(isClosed ? 0.5 : 1),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              // ไอคอนดาวมุมขวาล่าง
+              Positioned(
+                right: -12,
+                bottom: -12,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(30),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                    child: Material(
+                      color: Colors.white.withOpacity(0.15),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(30),
+                        onTap: () => _showRemoveFavoriteDialog(context, data),
+                        child: Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: Colors.white.withOpacity(0.25),
                             ),
-                          ],
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.25),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: Icon(
+                            Icons.star_rounded,
+                            color: Colors.amber.shade400,
+                            size: 26,
+                          ),
                         ),
                       ),
                     ),
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
@@ -189,7 +229,7 @@ class FavoriteScreen extends StatelessWidget {
             const SizedBox(width: 8),
             Text(
               'ลบออกจากรายการโปรด?',
-              style: AppTextStyles.restaurantName.copyWith(
+              style: AppTextStyles.refreshText.copyWith(
                 fontSize: 22,
                 color: Colors.black,
               ),

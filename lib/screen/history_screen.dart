@@ -1,9 +1,9 @@
-// lib/history_screen.dart
-
 import 'package:dishcovery_app/constants/app_bottom_nav_user.dart';
 import 'package:dishcovery_app/constants/app_constants.dart';
 import 'package:dishcovery_app/services/restaurant_service.dart';
 import 'package:dishcovery_app/screen/user_profile_screen.dart';
+import 'package:dishcovery_app/utils/time_utils.dart';
+import 'package:dishcovery_app/widgets/pulse_status_widget.dart';
 import 'package:flutter/material.dart';
 import '../models/restaurant_model.dart';
 import 'restarurant_detail_screen.dart';
@@ -17,10 +17,11 @@ class HistoryScreen extends StatelessWidget {
     // กำหนดสีและข้อความตามสถานะการปัด
     Color statusColor;
     String statusText;
-
+    final openStatus = TimeUtils.getRestaurantStatus(data.openingHours);
     final currentStatus = RestaurantService.instance.getRestaurantStatus(
       data.id,
     );
+    final bool isClosed = openStatus == RestaurantStatus.closed;
 
     switch (currentStatus) {
       case SwipeStatus.yum:
@@ -60,54 +61,67 @@ class HistoryScreen extends StatelessWidget {
               children: [
                 // รูปภาพพื้นหลัง
                 Positioned.fill(
-                  child: data.imageUrl.startsWith('http')
-                      ? Image.network(
-                          data.imageUrl,
-                          fit: BoxFit.cover,
-                          color: Colors.black.withOpacity(0.4),
-                          colorBlendMode: BlendMode.darken,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Container(
-                                color: Colors.grey.shade600,
-                                child: const Center(
-                                  child: Icon(
-                                    Icons.broken_image,
-                                    color: Colors.white,
+                  child: ColorFiltered(
+                    colorFilter: openStatus == RestaurantStatus.closed
+                        ? const ColorFilter.mode(
+                            Colors.grey,
+                            BlendMode.saturation,
+                          )
+                        : const ColorFilter.mode(
+                            Colors.transparent,
+                            BlendMode.dst,
+                          ),
+                    child: data.imageUrl.startsWith('http')
+                        ? Image.network(
+                            data.imageUrl,
+                            fit: BoxFit.cover,
+                            color: Colors.black.withOpacity(
+                              openStatus == RestaurantStatus.closed ? 0.6 : 0.4,
+                            ),
+                            colorBlendMode: BlendMode.darken,
+                            errorBuilder: (context, error, stackTrace) =>
+                                Container(
+                                  color: Colors.grey.shade600,
+                                  child: const Center(
+                                    child: Icon(
+                                      Icons.broken_image,
+                                      color: Colors.white,
+                                    ),
                                   ),
                                 ),
-                              ),
-                        )
-                      : Image.asset(
-                          data.imageUrl,
-                          fit: BoxFit.cover,
-                          color: Colors.black.withOpacity(
-                            0.4,
-                          ), // เพิ่ม Overlay สีดำจาง ๆ
-                          colorBlendMode: BlendMode.darken,
-                          errorBuilder: (context, error, stackTrace) =>
-                              Container(
-                                color: Colors.grey.shade600,
-                                child: const Center(
-                                  child: Text(
-                                    "No Image",
-                                    style: TextStyle(color: Colors.white),
+                          )
+                        : Image.asset(
+                            data.imageUrl,
+                            fit: BoxFit.cover,
+                            color: Colors.black.withOpacity(
+                              openStatus == RestaurantStatus.closed ? 0.6 : 0.4,
+                            ),
+                            colorBlendMode: BlendMode.darken,
+                            errorBuilder: (context, error, stackTrace) =>
+                                Container(
+                                  color: Colors.grey.shade600,
+                                  child: const Center(
+                                    child: Text(
+                                      "No Image",
+                                      style: TextStyle(color: Colors.white),
+                                    ),
                                   ),
                                 ),
-                              ),
-                        ),
-                ),
-
-                // Overlay สีเขียว/แดง ตามสถานะ
-                Positioned.fill(
-                  child: Container(
-                    color: statusColor.withOpacity(0.2), // สีโปร่งใสตามสถานะ
+                          ),
                   ),
                 ),
+                // Overlay สีเขียว/แดง ตามสถานะ
+                // Positioned.fill(
+                //   child: Container(
+                //     color: statusColor.withOpacity(0.2), // สีโปร่งใสตามสถานะ
+                //   ),
+                // ),
 
                 // รายละเอียดร้านอาหาร
                 Positioned(
                   top: 20,
                   left: 20,
+                  right: 1,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -115,6 +129,14 @@ class HistoryScreen extends StatelessWidget {
                         data.name,
                         style: AppTextStyles.restaurantName.copyWith(
                           fontSize: 28,
+                          color: Colors.white.withOpacity(isClosed ? 0.4 : 1),
+                          shadows: [
+                            Shadow(
+                              color: Colors.black,
+                              offset: const Offset(3, 2),
+                              blurRadius: 10,
+                            ),
+                          ],
                         ),
                       ),
                       Row(
@@ -123,6 +145,9 @@ class HistoryScreen extends StatelessWidget {
                             '${data.cuisine.join(' | ')} · ',
                             style: AppTextStyles.restaurantDetails.copyWith(
                               fontSize: 16,
+                              color: Colors.white.withOpacity(
+                                isClosed ? 0.6 : 1,
+                              ),
                             ),
                           ),
                           Text(
@@ -130,12 +155,18 @@ class HistoryScreen extends StatelessWidget {
                             style: AppTextStyles.restaurantDetails.copyWith(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
+                              color: Colors.white.withOpacity(
+                                isClosed ? 0.6 : 1,
+                              ),
                             ),
                           ),
                           Text(
                             ' · ${RestaurantService.instance.getDistance(data)} กม.',
                             style: AppTextStyles.restaurantDetails.copyWith(
                               fontSize: 16,
+                              color: Colors.white.withOpacity(
+                                isClosed ? 0.6 : 1,
+                              ),
                             ),
                           ),
                         ],
@@ -144,13 +175,22 @@ class HistoryScreen extends StatelessWidget {
                       Text(
                         data.description,
                         style: AppTextStyles.restaurantDetails.copyWith(
-                          fontSize: 16,
+                          fontSize: 14,
+                          color: Colors.white.withOpacity(isClosed ? 0.6 : 1),
                         ),
                       ),
                     ],
                   ),
                 ),
 
+                Positioned(
+                  top: 15,
+                  right: 15,
+                  child: PulseStatusWidget(
+                    status: TimeUtils.getRestaurantStatus(data.openingHours),
+                    size: 11,
+                  ),
+                ),
                 // ข้อความสถานะ "YUM!" / "PASS"
                 Positioned(
                   right: -15, // เลื่อนออกจากขอบเล็กน้อย
@@ -202,7 +242,7 @@ class HistoryScreen extends StatelessWidget {
               const SizedBox(width: 8),
               Text(
                 'ดูร้านนี้อีกครั้งไหม?',
-                style: AppTextStyles.restaurantName.copyWith(
+                style: AppTextStyles.refreshText.copyWith(
                   color: Colors.black,
                   fontSize: 24,
                 ),
@@ -350,6 +390,7 @@ class HistoryScreen extends StatelessWidget {
       listenable: RestaurantService.instance,
       builder: (context, child) {
         final historyList = RestaurantService.instance.history;
+
         return Scaffold(
           extendBodyBehindAppBar: true,
           appBar: _buildAppBar(context),

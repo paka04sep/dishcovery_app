@@ -23,6 +23,28 @@ class UserProfileScreen extends StatelessWidget {
         //   onPressed: () => Navigator.pop(context),
         // ),
         actions: [
+          ListenableBuilder(
+            listenable: RestaurantService.instance,
+            builder: (context, child) {
+              final isAdmin =
+                  RestaurantService.instance.userModel?.role == 'admin';
+
+              if (!isAdmin) return const SizedBox.shrink();
+
+              return IconButton(
+                icon: const Icon(Icons.manage_accounts, color: Colors.black),
+                tooltip: 'Admin Dashboard',
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AdminDashboardScreen(),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
           IconButton(
             icon: const Icon(Icons.notifications_outlined, color: Colors.black),
             onPressed: () {},
@@ -103,44 +125,6 @@ class UserProfileScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 15),
-
-            // Admin Dashboard Button (Only if Admin)
-            ListenableBuilder(
-              listenable: RestaurantService.instance, // Or AuthService
-              builder: (context, child) {
-                final isAdmin =
-                    RestaurantService.instance.userModel?.role == 'admin';
-                if (!isAdmin) return const SizedBox.shrink();
-
-                return Padding(
-                  padding: const EdgeInsets.only(bottom: 15),
-                  child: SizedBox(
-                    width: double.infinity,
-                    height: 45,
-                    child: ElevatedButton.icon(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const AdminDashboardScreen(),
-                          ),
-                        );
-                      },
-                      icon: const Icon(Icons.admin_panel_settings),
-                      label: const Text("Admin Dashboard"),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.black87,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                    ),
-                  ),
-                );
-              },
-            ),
 
             // Credit & Challenges
             Row(

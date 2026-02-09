@@ -113,7 +113,7 @@ class _FoodPreferenceScreenState extends State<FoodPreferenceScreen> {
           SnackBar(
             behavior: SnackBarBehavior.floating,
             margin: const EdgeInsets.all(16),
-            backgroundColor: AppColors.midblue,
+            backgroundColor: Colors.grey.shade900,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
@@ -127,7 +127,6 @@ class _FoodPreferenceScreenState extends State<FoodPreferenceScreen> {
                     'เลือกได้สูงสุด $_maxSelection ประเภทเท่านั้น',
                     style: AppTextStyles.refreshText.copyWith(
                       color: Colors.white,
-                      fontWeight: FontWeight.normal,
                     ),
                   ),
                 ),
@@ -146,7 +145,7 @@ class _FoodPreferenceScreenState extends State<FoodPreferenceScreen> {
         SnackBar(
           behavior: SnackBarBehavior.floating,
           margin: const EdgeInsets.all(16),
-          backgroundColor: Colors.orange.shade400,
+          backgroundColor: Colors.grey.shade900,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
           ),
@@ -157,7 +156,7 @@ class _FoodPreferenceScreenState extends State<FoodPreferenceScreen> {
               SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'กรุณาเลือกประเภทอาหารที่คุณชื่นชอบอย่างน้อย 1 ประเภทก่อนดำเนินการต่อ',
+                  'กรุณาเลือกประเภทอาหารอย่างน้อย 1 ประเภท',
                   style: AppTextStyles.refreshText.copyWith(
                     color: Colors.white,
                   ),
@@ -318,12 +317,11 @@ class _FoodPreferenceScreenState extends State<FoodPreferenceScreen> {
                                 const SizedBox(width: 6),
                                 Text(
                                   name,
-                                  style: AppTextStyles.restaurantDetails
-                                      .copyWith(
-                                        color: AppColors.black,
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                      ),
+                                  style: AppTextStyles.signinText.copyWith(
+                                    color: AppColors.black,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
                               ],
                             ),
