@@ -8,7 +8,7 @@ import 'package:flutter/material.dart';
 
 import '../services/auth_service.dart';
 import '../starting_screen/auth_wrapper.dart';
-import 'waveclipper.dart';
+import '../utils/waveclipper.dart';
 
 class SignInScreen extends StatefulWidget {
   const SignInScreen({super.key});
@@ -489,8 +489,8 @@ class _SignInScreenState extends State<SignInScreen>
                               ),
                             ),
                             Text(
-                              "Show Password",
-                              style: TextStyle(
+                              "แสดงรหัสผ่าน",
+                              style: AppTextStyles.signinText.copyWith(
                                 color: Colors.grey[600],
                                 fontSize: 13,
                               ),
@@ -595,8 +595,8 @@ class _SignInScreenState extends State<SignInScreen>
                               }
                             }, // TODO: Forgot Password Logic
                             child: Text(
-                              "Forgot Password?",
-                              style: TextStyle(
+                              "ลืมรหัสผ่าน?",
+                              style: AppTextStyles.signinText.copyWith(
                                 color: Colors.grey[600],
                                 fontSize: 14,
                               ),
@@ -611,10 +611,11 @@ class _SignInScreenState extends State<SignInScreen>
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           Text(
-                            _isSignUp
-                                ? "Have Account? "
-                                : "Don't Have Account? ",
-                            style: TextStyle(color: Colors.grey[600]),
+                            _isSignUp ? "มีบัญชีอยู่แล้ว? " : "ยังไม่มีบัญชี? ",
+                            style: AppTextStyles.signinText.copyWith(
+                              color: Colors.grey[600],
+                              fontSize: 14,
+                            ),
                           ),
                           GestureDetector(
                             onTap: () {
@@ -624,9 +625,10 @@ class _SignInScreenState extends State<SignInScreen>
                               });
                             },
                             child: Text(
-                              _isSignUp ? "Sign In" : "Sign Up",
-                              style: TextStyle(
+                              _isSignUp ? "เข้าสู่ระบบ" : "สมัครสมาชิก",
+                              style: AppTextStyles.signinText.copyWith(
                                 color: AppColors.primaryBlue,
+                                fontSize: 16,
                                 fontWeight: FontWeight.bold,
                                 decoration: TextDecoration.underline,
                               ),

@@ -2,8 +2,6 @@ import 'dart:math';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dishcovery_app/services/restaurant_service.dart';
 import 'package:flutter/foundation.dart';
-import 'package:firebase_storage/firebase_storage.dart';
-import 'dart:typed_data';
 
 class DevResService {
   // Singleton pattern for easy access
@@ -407,12 +405,68 @@ class DevResService {
           .take(_random.nextInt(3) + 1)
           .toList();
 
-      // Generate Menu Items
+      // 3. Generate Categories
+      final List<Map<String, dynamic>> categories = [];
+      final List<String> categoryNames = [
+        'Recommended',
+        'Main Dish',
+        'Appetizer',
+        'Dessert',
+        'Drinks',
+      ];
+
+      for (int i = 0; i < categoryNames.length; i++) {
+        categories.add({
+          'id': 'cat_${i + 1}',
+          'name': categoryNames[i],
+          'order': i + 1,
+        });
+      }
+
+      // 4. Generate Menu Items with Categories
       final List<Map<String, dynamic>> menuItems = [];
+
+      // Helper to assign category
+      String assignCategory(String itemName) {
+        if (itemName.contains('Salad') ||
+            itemName.contains('Soup') ||
+            itemName.contains('Fries') ||
+            itemName.contains('Nuggets'))
+          return 'cat_3'; // Appetizer
+        if (itemName.contains('Cake') ||
+            itemName.contains('Cream') ||
+            itemName.contains('Toast'))
+          return 'cat_4'; // Dessert
+        if (itemName.contains('Coffee') ||
+            itemName.contains('Tea') ||
+            itemName.contains('Soda') ||
+            itemName.contains('Juice'))
+          return 'cat_5'; // Drinks
+        return 'cat_2'; // Main Dish default
+      }
+
       for (final cuisine in selectedCuisines) {
         final possibleDishes = _cuisineMenus[cuisine] ?? [];
         if (possibleDishes.isNotEmpty) {
-          menuItems.add(_getRandomItem(possibleDishes));
+          // Pick 3-5 dishes per cuisine
+          final pickedDishes = possibleDishes.toList()..shuffle(_random);
+          final selectedDishes = pickedDishes.take(3 + _random.nextInt(3));
+
+          for (final dish in selectedDishes) {
+            final catId = assignCategory(dish['name']);
+            final isRec = _random.nextDouble() < 0.2; // 20% recommend
+
+            menuItems.add({
+              'name': dish['name'],
+              'price': dish['price'],
+              'id': 'menu_${menuItems.length + 1}',
+              'category': catId,
+              'isRecommended': isRec,
+              'isAvailable': true,
+              'menuImage':
+                  'https://placehold.co/200x200?text=${dish['name'].replaceAll(' ', '+')}',
+            });
+          }
         }
       }
 
@@ -433,13 +487,13 @@ class DevResService {
       // Rating: 3.5 to 5.0
       final rating = 3.5 + _random.nextDouble() * 1.5;
 
-      // 3. Write to Firestore
+      // 5. Write to Firestore
       final docRef = _firestore.collection('restaurants').doc(nextId);
       final data = {
         'id': nextId,
         'name': name,
         'cuisine': selectedCuisines,
-        'priceRange': priceRange,
+        'priceRange': (priceRange.length), // Convert $$$ to int length (1-4)
         'rating': double.parse(rating.toStringAsFixed(1)),
         'latitude': lat,
         'longitude': lng,
@@ -462,13 +516,24 @@ class DevResService {
 
       // Subcollection menuItems
       for (final menu in menuItems) {
-        final menuRef = docRef.collection('menuItems').doc();
+        final menuRef = docRef
+            .collection('menuItems')
+            .doc(menu['id']); // Use generated ID
         batch.set(menuRef, menu);
+      }
+
+      // Subcollection menuCategories
+      for (final cat in categories) {
+        final catRef = docRef.collection('menuCategories').doc(cat['id']);
+        batch.set(catRef, cat);
       }
 
       await batch.commit();
 
-      if (kDebugMode) print("DevRes: Created $nextId");
+      if (kDebugMode)
+        print(
+          "DevRes: Created $nextId with ${menuItems.length} items and ${categories.length} categories.",
+        );
     } catch (e) {
       if (kDebugMode) print("Error generating restaurant: $e");
       rethrow;

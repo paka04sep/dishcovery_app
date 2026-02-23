@@ -42,6 +42,8 @@ class RestaurantService extends ChangeNotifier {
   List<RestaurantCardData> _restaurants = [];
   final RecommendationEngine _recommendationEngine = RecommendationEngine();
   List<String> _userPreferences = [];
+  List<String> _userPriceRangePreferences = [];
+  bool _showClosedRestaurants = false;
 
   // Store chronological swipe events: [{restaurantId: '...', action: '...', timestamp: DateTime}]
   List<Map<String, dynamic>> _swipeLogs = [];
@@ -173,6 +175,8 @@ class RestaurantService extends ChangeNotifier {
   void clearUserData() {
     _userModel = null;
     _userPreferences = [];
+    _userPriceRangePreferences = [];
+    _showClosedRestaurants = false;
     _swipeLogs = []; // Clear logs
     _isLoadingUser = false;
     _isReady = false;
@@ -220,7 +224,9 @@ class RestaurantService extends ChangeNotifier {
           .collection('restaurants')
           .get();
       return snapshot.docs.map((doc) {
-        return RestaurantCardData.fromFirestore(doc.data(), doc.id);
+        final data = doc.data();
+        // Cast if necessary
+        return RestaurantCardData.fromFirestore(data, doc.id);
       }).toList();
     } catch (e) {
       if (kDebugMode) print("Error fetching from Firestore: $e");
@@ -294,6 +300,8 @@ class RestaurantService extends ChangeNotifier {
           }
 
           _userPreferences = _userModel?.preferences ?? [];
+          _userPriceRangePreferences = _userModel?.priceRangePreference ?? [];
+          _showClosedRestaurants = _userModel?.showClosedRestaurants ?? false;
 
           // Update lastActiveAt
           await docRef.update({'lastActiveAt': FieldValue.serverTimestamp()});
@@ -324,6 +332,8 @@ class RestaurantService extends ChangeNotifier {
 
           _userModel = newUser;
           _userPreferences = [];
+          _userPriceRangePreferences = [];
+          _showClosedRestaurants = false;
           notifyListeners();
         }
       } catch (e) {
@@ -355,9 +365,19 @@ class RestaurantService extends ChangeNotifier {
     await fetchUserModel();
   }
 
-  void updatePreferences(List<String> prefs, double distance) {
+  void updateCuisinePreferences(List<String> prefs) {
     _userPreferences = prefs;
+    notifyListeners();
+  }
+
+  void updateDistanceAndPriceRange(
+    double distance,
+    List<String> priceRanges,
+    bool showClosedRestaurants,
+  ) {
     _userMaxDistance = distance;
+    _userPriceRangePreferences = priceRanges;
+    _showClosedRestaurants = showClosedRestaurants;
     notifyListeners();
   }
 
@@ -398,6 +418,17 @@ class RestaurantService extends ChangeNotifier {
       if (kDebugMode) print("Debug: No User Preferences, skipping filter.");
     }
 
+    // Filter by Price Range
+    if (_userPriceRangePreferences.isNotEmpty) {
+      filtered = filtered.where((r) {
+        return _userPriceRangePreferences.any((priceRange) {
+          final prefix = priceRange.split(' ').first; // e.g. '฿', '฿฿', '฿฿฿'
+          final requiredPriceInt = prefix.length;
+          return r.priceRange == requiredPriceInt;
+        });
+      }).toList();
+    }
+
     // Sort by Recommendation Score
     if (_userModel != null) {
       // Update profile based on current history
@@ -408,10 +439,12 @@ class RestaurantService extends ChangeNotifier {
 
     // NEW: Filter out "Closed" restaurants
     // "ร้านที่ปิดจะไม่แสดงที่หน้า swipescreen.dart"
-    filtered = filtered.where((r) {
-      final status = TimeUtils.getRestaurantStatus(r.openingHours);
-      return status != RestaurantStatus.closed;
-    }).toList();
+    if (!_showClosedRestaurants) {
+      filtered = filtered.where((r) {
+        final status = TimeUtils.getRestaurantStatus(r.openingHours);
+        return status != RestaurantStatus.closed;
+      }).toList();
+    }
 
     return filtered;
   }
@@ -688,13 +721,14 @@ class RestaurantService extends ChangeNotifier {
       if (doc.exists && doc.data() != null) {
         if (kDebugMode) print("DEBUG: Restaurant document found.");
         RestaurantDetailsData details = RestaurantDetailsData.fromFirestore(
-          doc.data()!,
-          doc.id,
+          doc,
+          doc.data(),
         );
         if (kDebugMode)
           print("DEBUG: Parsed Gallery Images: ${details.galleryImages}");
 
         // Fetch subcollection 'menuItems'
+        List<MenuItem> fetchedMenuItems = [];
         try {
           if (kDebugMode) print("DEBUG: Fetching menuItems subcollection...");
           final menuSnapshot = await FirebaseFirestore.instance
@@ -703,36 +737,73 @@ class RestaurantService extends ChangeNotifier {
               .collection('menuItems')
               .get();
 
-          if (kDebugMode)
-            print(
-              "DEBUG: Subcollection docs count: ${menuSnapshot.docs.length}",
-            );
-
           if (menuSnapshot.docs.isNotEmpty) {
-            final menuList = menuSnapshot.docs.map((mDoc) {
+            fetchedMenuItems = menuSnapshot.docs.map((mDoc) {
               final data = mDoc.data();
-              // if (kDebugMode)
-              //   print("DEBUG: Menu item data: $data"); // debug แสดงรายการอาหาร
-              return MenuItem.fromFirestore(data);
+              // Ensure ID is passed if needed, or just let fromJson handle it if in data
+              // If data doesn't have ID, we might want to inject it.
+              // But MenuItem.fromJson reads 'id' field.
+              // Let's ensure 'id' is in data or add it.
+              final dataWithId = Map<String, dynamic>.from(data);
+              dataWithId['id'] = mDoc.id;
+              return MenuItem.fromJson(dataWithId);
             }).toList();
 
-            // Override empty menu with subcollection data
-            details = details.copyWith(menuItems: menuList);
             if (kDebugMode)
               print(
-                "DEBUG: Updated details with ${menuList.length} menu items.",
+                "DEBUG: Updated details with ${fetchedMenuItems.length} menu items.",
               );
           } else {
-            if (kDebugMode)
-              print("DEBUG: No menu items found in subcollection.");
+            // If no subcollection, maybe use embedded items (parsed in fromFirestore)
+            // But usually we prefer subcollection if active.
+            // If fetchedMenuItems is empty, we keep details.menuItems (from embedded)
+            if (details.menuItems.isNotEmpty) {
+              fetchedMenuItems = details.menuItems;
+            }
           }
         } catch (e) {
           if (kDebugMode) print("Error fetching menu items subcollection: $e");
+          fetchedMenuItems = details.menuItems; // Fallback
         }
+
+        // Fetch subcollection 'menuCategories'
+        List<MenuCategory> fetchedCategories = [];
+        try {
+          if (kDebugMode)
+            print("DEBUG: Fetching menuCategories subcollection...");
+          final catSnapshot = await FirebaseFirestore.instance
+              .collection('restaurants')
+              .doc(id)
+              .collection('menuCategories')
+              .orderBy('order')
+              .get();
+
+          if (catSnapshot.docs.isNotEmpty) {
+            fetchedCategories = catSnapshot.docs.map((cDoc) {
+              final data = Map<String, dynamic>.from(cDoc.data());
+              data['id'] = cDoc.id;
+              return MenuCategory.fromJson(data);
+            }).toList();
+          } else {
+            fetchedCategories = details.menuCategories;
+          }
+        } catch (e) {
+          if (kDebugMode) print("Error fetching menu categories: $e");
+          fetchedCategories = details.menuCategories;
+        }
+
+        // Merge updates
+        details = details.copyWith(
+          menuItems: fetchedMenuItems,
+          menuCategories: fetchedCategories,
+        );
 
         // Update local cache to trigger UI update
         final index = _restaurants.indexWhere((r) => r.id == id);
         if (index != -1) {
+          // We can't replace RestaurantCardData with RestaurantDetailsData directly in the list
+          // if the list is typed as RestaurantCardData. (It is).
+          // But Dart allows it since Details IS Card.
           _restaurants[index] = details;
           notifyListeners();
         }

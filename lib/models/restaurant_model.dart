@@ -2,23 +2,70 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class MenuItem {
+  final String id;
   final String name;
   final int price;
+  final String menuImage;
+  final String category; // categoryId or name
+  final bool isRecommended;
+  final bool isAvailable;
 
-  MenuItem({required this.name, required this.price});
+  MenuItem({
+    required this.name,
+    required this.price,
+    this.id = '',
+    this.menuImage = '',
+    this.category = '',
+    this.isRecommended = false,
+    this.isAvailable = true,
+  });
 
-  factory MenuItem.fromFirestore(Map<String, dynamic> data) {
-    int parseInt(dynamic value, int defaultValue) {
-      if (value == null) return defaultValue;
-      if (value is int) return value;
-      if (value is String) return int.tryParse(value) ?? defaultValue;
-      return defaultValue;
-    }
-
+  factory MenuItem.fromJson(Map<String, dynamic> json) {
     return MenuItem(
-      name: data['name'] ?? '',
-      price: parseInt(data['price'], 0),
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? 'Unknown',
+      price: (json['price'] as num?)?.toInt() ?? 0,
+      menuImage: json['menuImage'] as String? ?? '',
+      category: json['category'] as String? ?? '',
+      isRecommended: json['isRecommended'] as bool? ?? false,
+      isAvailable: json['isAvailable'] as bool? ?? true,
     );
+  }
+
+  // maintain compatibility if used
+  factory MenuItem.fromFirestore(Map<String, dynamic> data) =>
+      MenuItem.fromJson(data);
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'price': price,
+      'menuImage': menuImage,
+      'category': category,
+      'isRecommended': isRecommended,
+      'isAvailable': isAvailable,
+    };
+  }
+}
+
+class MenuCategory {
+  final String id;
+  final String name;
+  final int order;
+
+  MenuCategory({required this.id, required this.name, required this.order});
+
+  factory MenuCategory.fromJson(Map<String, dynamic> json) {
+    return MenuCategory(
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      order: (json['order'] as num?)?.toInt() ?? 0,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {'id': id, 'name': name, 'order': order};
   }
 }
 

@@ -65,6 +65,8 @@ class UserModel {
   final String? email;
   final String role; // Added role field
   final List<String> preferences;
+  final List<String> priceRangePreference;
+  final bool showClosedRestaurants;
   final UserStats stats;
   final UserHistory history;
   final DateTime? createdAt;
@@ -75,6 +77,8 @@ class UserModel {
     this.email,
     this.role = 'user', // Default to 'user'
     this.preferences = const [],
+    this.priceRangePreference = const [],
+    this.showClosedRestaurants = false,
     required this.stats,
     required this.history,
     this.createdAt,
@@ -96,6 +100,10 @@ class UserModel {
       email: data['email'] as String?,
       role: data['role'] as String? ?? 'user', // Parse role, default to 'user'
       preferences: List<String>.from(data['preferences'] ?? []),
+      priceRangePreference: List<String>.from(
+        data['priceRangePreference'] ?? [],
+      ),
+      showClosedRestaurants: data['showClosedRestaurants'] as bool? ?? false,
       stats: data['stats'] != null
           ? UserStats.fromMap(data['stats'] as Map<String, dynamic>)
           : UserStats(),
@@ -112,6 +120,8 @@ class UserModel {
       'email': email,
       'role': role, // Include role in JSON
       'preferences': preferences,
+      'priceRangePreference': priceRangePreference,
+      'showClosedRestaurants': showClosedRestaurants,
       'stats': stats.toMap(),
       'history': history.toMap(),
       'createdAt':

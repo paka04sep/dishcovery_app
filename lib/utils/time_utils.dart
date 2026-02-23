@@ -2,6 +2,13 @@ import 'package:flutter/material.dart';
 
 enum RestaurantStatus { open, closingSoon, closed }
 
+class OpeningHourGroup {
+  final String label;
+  final String time;
+
+  const OpeningHourGroup({required this.label, required this.time});
+}
+
 class TimeUtils {
   // Parse "10:00 - 22:00"
   // Return RestaurantStatus
@@ -162,5 +169,88 @@ class TimeUtils {
       debugPrint("Error parsing time range: $e");
       return RestaurantStatus.open;
     }
+  }
+
+  static const List<String> _orderedDays = [
+    'mon',
+    'tue',
+    'wed',
+    'thu',
+    'fri',
+    'sat',
+    'sun',
+  ];
+
+  static const Map<String, String> _dayDisplayTH = {
+    'mon': 'จันทร์',
+    'tue': 'อังคาร',
+    'wed': 'พุธ',
+    'thu': 'พฤหัส',
+    'fri': 'ศุกร์',
+    'sat': 'เสาร์',
+    'sun': 'อาทิตย์',
+  };
+
+  static String _slotToRangeString(Map slot) {
+    final open = slot['open']?.toString();
+    final close = slot['close']?.toString();
+
+    if (open == null || close == null) return 'ปิด';
+    return '$open - $close';
+  }
+
+  static String _getDayTime(dynamic daySchedule) {
+    if (daySchedule == null) return 'ปิด';
+
+    if (daySchedule is List && daySchedule.isNotEmpty) {
+      final slot = daySchedule.first;
+      if (slot is Map) {
+        return _slotToRangeString(slot);
+      }
+    }
+
+    return 'ปิด';
+  }
+
+  static List<OpeningHourGroup> buildGroupedOpeningHours(
+    Map<String, dynamic> openingHours,
+  ) {
+    final List<OpeningHourGroup> result = [];
+
+    String? currentTime;
+    List<String> bufferDays = [];
+
+    for (final dayKey in _orderedDays) {
+      final time = _getDayTime(openingHours[dayKey]);
+
+      if (currentTime == null) {
+        currentTime = time;
+        bufferDays.add(dayKey);
+        continue;
+      }
+
+      if (time == currentTime) {
+        bufferDays.add(dayKey);
+      } else {
+        result.add(_createGroup(bufferDays, currentTime));
+        bufferDays = [dayKey];
+        currentTime = time;
+      }
+    }
+
+    if (bufferDays.isNotEmpty) {
+      result.add(_createGroup(bufferDays, currentTime!));
+    }
+
+    return result;
+  }
+
+  static OpeningHourGroup _createGroup(List<String> days, String time) {
+    final first = _dayDisplayTH[days.first]!;
+    final last = _dayDisplayTH[days.last]!;
+
+    final label = days.length == 1 ? first : '$first - $last';
+
+    return OpeningHourGroup(label: label, time: time);
   }
 }

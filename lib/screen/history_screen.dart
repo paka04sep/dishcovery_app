@@ -3,7 +3,7 @@ import 'package:dishcovery_app/constants/app_constants.dart';
 import 'package:dishcovery_app/services/restaurant_service.dart';
 import 'package:dishcovery_app/screen/user_profile_screen.dart';
 import 'package:dishcovery_app/utils/time_utils.dart';
-import 'package:dishcovery_app/widgets/pulse_status_widget.dart';
+import 'package:dishcovery_app/utils/pulse_status_widget.dart';
 import 'package:flutter/material.dart';
 import '../models/restaurant_model.dart';
 import 'restarurant_detail_screen.dart';
@@ -338,12 +338,13 @@ class HistoryScreen extends StatelessWidget {
     return AppBar(
       backgroundColor: Colors.transparent,
       elevation: 0,
-      automaticallyImplyLeading: false,
-
-      // leading: IconButton(
-      //   icon: const Icon(Icons.arrow_back_ios, color: AppColors.black),
-      //   onPressed: () => Navigator.pop(context),
-      // ),
+      leading: IconButton(
+        icon: const Icon(Icons.arrow_back_ios, color: AppColors.black),
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const SwipScreen()),
+        ),
+      ),
       centerTitle: false,
       titleSpacing: 0,
 

@@ -1,6 +1,8 @@
+import 'package:dishcovery_app/services/restaurant_service.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import '../constants/app_constants.dart';
+import '../models/restaurant_details_model.dart';
 import '../models/restaurant_model.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'dart:io';
@@ -75,10 +77,6 @@ class _RestaurantMapScreenState extends State<RestaurantMapScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final String? fontFamily = Theme.of(
-      context,
-    ).textTheme.bodyLarge?.fontFamily;
-
     return Scaffold(
       backgroundColor: Colors.white,
       body: Stack(
@@ -93,7 +91,7 @@ class _RestaurantMapScreenState extends State<RestaurantMapScreen> {
                   right: 20,
                   bottom: 10,
                 ),
-                child: _buildRestaurantHeader(fontFamily),
+                child: _buildRestaurantHeader(),
               ),
 
               // แผนที่
@@ -137,7 +135,7 @@ class _RestaurantMapScreenState extends State<RestaurantMapScreen> {
                 ),
               ),
 
-              _buildActionButtons(context, fontFamily),
+              _buildActionButtons(context),
             ],
           ),
 
@@ -148,9 +146,17 @@ class _RestaurantMapScreenState extends State<RestaurantMapScreen> {
     );
   }
 
-  Widget _buildRestaurantHeader(String? fontFamily) {
+  Widget _buildRestaurantHeader() {
+    final currentRestaurant = RestaurantService.instance.restaurants.firstWhere(
+      (r) => r.id == widget.restaurant.id,
+      orElse: () => widget.restaurant,
+    );
+
+    final details = currentRestaurant is RestaurantDetailsData
+        ? currentRestaurant
+        : null;
+
     return Container(
-      height: 120,
       width: double.infinity,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(15),
@@ -162,35 +168,71 @@ class _RestaurantMapScreenState extends State<RestaurantMapScreen> {
         ),
       ),
       child: Container(
-        padding: const EdgeInsets.all(15),
+        padding: EdgeInsets.fromLTRB(10, 60, 10, 10),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(15),
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
+            colors: [Colors.transparent, Colors.black.withOpacity(0.9)],
+            stops: const [0.4, 0.9],
           ),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.end,
           crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min, // ทำให้มีความสูงตามเนื้อหา
           children: [
             Text(
               widget.restaurant.name.toUpperCase(),
               style: AppTextStyles.restaurantName.copyWith(fontSize: 26),
             ),
-
-            // const Text(
-            //   'DETAILS',
-            //   style: TextStyle(color: Colors.white70, fontSize: 14),
-            // ),
+            const SizedBox(height: 10),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(Icons.location_on, color: Colors.white70, size: 16),
+                const SizedBox(width: 4),
+                Expanded(
+                  child: Text(
+                    details?.address ?? 'กำลังโหลดที่อยู่...',
+                    style: AppTextStyles.restaurantDetails.copyWith(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white70,
+                      fontSize: 14,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 6),
+            Row(
+              children: [
+                const Icon(
+                  Icons.directions_car,
+                  color: Colors.white70,
+                  size: 16,
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  'ระยะห่าง: ${RestaurantService.instance.getDistance(currentRestaurant)} กม.',
+                  style: AppTextStyles.restaurantDetails.copyWith(
+                    color: Colors.white70,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildActionButtons(BuildContext context, String? fontFamily) {
+  Widget _buildActionButtons(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
       child: Container(
@@ -223,12 +265,12 @@ class _RestaurantMapScreenState extends State<RestaurantMapScreen> {
               const Icon(Icons.navigation),
               const SizedBox(width: 8),
               Text(
-                'START NAVIGATION',
-                style: TextStyle(
+                'นำทางเลย',
+                style: AppTextStyles.restaurantInDetails.copyWith(
+                  color: Colors.black,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  letterSpacing: 2.5,
-                  fontFamily: fontFamily,
+                  letterSpacing: 1.5,
                 ),
               ),
             ],
@@ -237,26 +279,6 @@ class _RestaurantMapScreenState extends State<RestaurantMapScreen> {
       ),
     );
   }
-
-  // Widget _buildActionButtons(String? fontFamily) {
-  // return Column(
-  // children: [ Padding( padding: const EdgeInsets.symmetric(vertical: 20),
-  // child: ElevatedButton.icon( onPressed: _launchNavigation,
-  // icon: const Icon(Icons.navigation),
-  // label: const Text("START NAVIGATION"),
-  // style: ElevatedButton.styleFrom(
-  // backgroundColor: Colors.white,
-  // foregroundColor: Colors.black,
-  // padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 15),
-  // shape: RoundedRectangleBorder( borderRadius: BorderRadius.circular(30),
-  // ),
-  // ),
-  // ),
-  // ),
-  // // _buildBottomNavBar(),
-  // /],
-  // /);
-  // /}
 
   //  ปุ่ม Back ลอยตัว
   Widget _buildFloatingBackButton(BuildContext context) {

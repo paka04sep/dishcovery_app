@@ -11,7 +11,7 @@ import 'user_profile_screen.dart';
 import 'package:dishcovery_app/services/restaurant_service.dart';
 import 'restarurant_detail_screen.dart';
 import 'package:dishcovery_app/constants/app_bottom_nav_user.dart';
-import 'package:dishcovery_app/widgets/pulse_status_widget.dart';
+import 'package:dishcovery_app/utils/pulse_status_widget.dart';
 import 'package:dishcovery_app/utils/time_utils.dart';
 
 class SwipScreen extends StatefulWidget {

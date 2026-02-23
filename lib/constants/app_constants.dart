@@ -106,6 +106,13 @@ class AppTextStyles {
     fontSize: 16,
     color: AppColors.white,
   );
+  // หัวข้อหมวดหมู่ในหน้าจอรายละเอียดร้าน
+  static const TextStyle restaurantHeaderDetails = TextStyle(
+    fontFamily: 'Sukumvit',
+    fontSize: 20,
+    fontWeight: FontWeight.bold,
+    color: AppColors.black,
+  );
 
   // ข้อความชื่อเมนูอาหาร
   static const TextStyle restaurantMenuItemName = TextStyle(
@@ -127,6 +134,14 @@ class AppTextStyles {
   static const TextStyle signinText = TextStyle(
     fontFamily: 'Sukumvit',
     fontSize: 18,
+    fontWeight: FontWeight.w600,
+    color: AppColors.black,
+  );
+
+  // ข้อความหัวข้อในหน้าจอโปรไฟล์
+  static const TextStyle profileText = TextStyle(
+    fontFamily: 'Sukumvit',
+    fontSize: 16,
     fontWeight: FontWeight.w600,
     color: AppColors.black,
   );

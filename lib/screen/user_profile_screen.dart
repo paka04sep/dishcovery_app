@@ -1,10 +1,13 @@
 import 'package:dishcovery_app/constants/app_bottom_nav_user.dart';
+import 'package:dishcovery_app/constants/app_constants.dart';
+import 'package:dishcovery_app/screen/swipescreen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:dishcovery_app/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import '../starting_screen/loading_screen.dart';
 import 'business_screen.dart';
 import 'foodpreference_screen.dart';
+import 'distance_pricerange.dart';
 import 'package:dishcovery_app/screen/admin/admin_dashboard_screen.dart';
 import 'package:dishcovery_app/services/restaurant_service.dart';
 
@@ -18,10 +21,13 @@ class UserProfileScreen extends StatelessWidget {
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.transparent,
-        // leading: IconButton(
-        //   icon: const Icon(Icons.arrow_back_ios_new, color: Colors.black),
-        //   onPressed: () => Navigator.pop(context),
-        // ),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_ios, color: AppColors.black),
+          onPressed: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const SwipScreen()),
+          ),
+        ),
         actions: [
           ListenableBuilder(
             listenable: RestaurantService.instance,
@@ -105,26 +111,29 @@ class UserProfileScreen extends StatelessWidget {
             const SizedBox(height: 25),
 
             // View My Profile Button
-            SizedBox(
-              width: double.infinity,
-              height: 45,
-              child: ElevatedButton(
-                onPressed: () {},
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFEEF5FF), // Light blue tint
-                  foregroundColor: Colors.blueAccent,
-                  elevation: 0,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-                child: const Text(
-                  "View My Profile",
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-            const SizedBox(height: 15),
+            // SizedBox(
+            //   width: double.infinity,
+            //   height: 45,
+            //   child: ElevatedButton(
+            //     onPressed: () {},
+            //     style: ElevatedButton.styleFrom(
+            //       backgroundColor: const Color(0xFFEEF5FF), // Light blue tint
+            //       foregroundColor: Colors.blueAccent,
+            //       elevation: 0,
+            //       shape: RoundedRectangleBorder(
+            //         borderRadius: BorderRadius.circular(10),
+            //       ),
+            //     ),
+            //     child: Text(
+            //       "โปรไฟล์ของฉัน",
+            //       style: AppTextStyles.profileText.copyWith(
+            //         fontSize: 16,
+            //         color: Colors.blue,
+            //       ),
+            //     ),
+            //   ),
+            // ),
+            // const SizedBox(height: 15),
 
             // Credit & Challenges
             Row(
@@ -132,41 +141,41 @@ class UserProfileScreen extends StatelessWidget {
                 Expanded(
                   child: _buildActionCard(
                     context,
-                    label: "Credits",
-                    icon: Icons.copyright,
+                    label: "สไตล์การกินของคุณ",
+                    icon: Icons.insert_chart_outlined,
                     onTap: () {},
                   ),
                 ),
-                const SizedBox(width: 15),
-                Expanded(
-                  child: _buildActionCard(
-                    context,
-                    label: "Challenges",
-                    icon: Icons.emoji_events_outlined,
-                    onTap: () {},
-                  ),
-                ),
+
+                // Expanded(
+                //   child: _buildActionCard(
+                //     context,
+                //     label: "Challenges",
+                //     icon: Icons.emoji_events_outlined,
+                //     onTap: () {},
+                //   ),
+                // ),
               ],
             ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 15),
 
             // Quick Menu Icons
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                _buildCircleMenu(
-                  icon: Icons.bookmark,
-                  label: "Saved",
-                  color: Colors.blueAccent,
-                ),
-              ],
-            ),
-            const SizedBox(height: 30),
+            // Row(
+            //   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+            //   children: [
+            //     _buildCircleMenu(
+            //       icon: Icons.bookmark,
+            //       label: "Saved",
+            //       color: Colors.blueAccent,
+            //     ),
+            //   ],
+            // ),
+            // const SizedBox(height: 30),
 
             // List Menu
             _buildListTile(
               icon: Icons.restaurant_outlined,
-              title: "Edit Food Preferences",
+              title: "ประเภทอาหารที่ชอบ",
               onTap: () {
                 Navigator.push(
                   context,
@@ -177,19 +186,21 @@ class UserProfileScreen extends StatelessWidget {
                 );
               },
             ),
+
             _buildListTile(
-              icon: Icons.help_outline,
-              title: "Help Center / Contact Us",
+              icon: Icons.location_on_outlined,
+              title: "ปรับการค้นหาร้านอาหาร",
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) =>
+                        const DistancePriceRangeScreen(isEditMode: true),
+                  ),
+                );
+              },
             ),
-            _buildListTile(
-              icon: Icons.work_outline,
-              title: "Work with DISHCOVERY",
-            ),
-            _buildListTile(icon: Icons.settings_outlined, title: "Settings"),
-            _buildListTile(
-              icon: Icons.person_outline,
-              title: "Edit User Profile",
-            ),
+
             _buildListTile(
               icon: Icons.store_outlined,
               title: "Switch to Restaurant Menu",
@@ -202,6 +213,11 @@ class UserProfileScreen extends StatelessWidget {
                 );
               },
             ),
+            _buildListTile(
+              icon: Icons.help_outline,
+              title: "Help Center / Contact Us",
+            ),
+            _buildListTile(icon: Icons.settings_outlined, title: "Settings"),
             const SizedBox(height: 20),
             Center(
               child: TextButton(
@@ -290,13 +306,7 @@ class UserProfileScreen extends StatelessWidget {
               children: [
                 Icon(icon, size: 20, color: Colors.black87),
                 const SizedBox(width: 8),
-                Text(
-                  label,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w600,
-                    color: Colors.black87,
-                  ),
-                ),
+                Text(label, style: AppTextStyles.profileText.copyWith()),
               ],
             ),
             const Icon(Icons.arrow_forward_ios, size: 12, color: Colors.grey),
@@ -342,14 +352,7 @@ class UserProfileScreen extends StatelessWidget {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 0),
       leading: Icon(icon, color: Colors.black87),
-      title: Text(
-        title,
-        style: const TextStyle(
-          fontWeight: FontWeight.w500,
-          fontSize: 16,
-          color: Colors.black87,
-        ),
-      ),
+      title: Text(title, style: AppTextStyles.profileText.copyWith()),
       onTap: onTap,
     );
   }
