@@ -15,7 +15,9 @@ import 'package:dishcovery_app/utils/pulse_status_widget.dart';
 import 'package:dishcovery_app/utils/time_utils.dart';
 
 class SwipScreen extends StatefulWidget {
-  const SwipScreen({super.key});
+  final bool showResetSuccessDialog;
+
+  const SwipScreen({super.key, this.showResetSuccessDialog = false});
 
   @override
   State<SwipScreen> createState() => _SwipScreenState();
@@ -58,6 +60,56 @@ class _SwipScreenState extends State<SwipScreen>
         });
       }
     });
+
+    if (widget.showResetSuccessDialog) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _showResetSuccessDialog();
+      });
+    }
+  }
+
+  void _showResetSuccessDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return AlertDialog(
+          title: Text(
+            "รีเซ็ตข้อมูลสำเร็จ",
+            style: AppTextStyles.profileText.copyWith(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.green,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          content: Text(
+            "ประวัติการปัดร้านของคุณถูกล้างเรียบร้อย\nมาเริ่มค้นหาร้านอาหารใหม่กันเถอะ!",
+            style: AppTextStyles.profileText.copyWith(
+              fontWeight: FontWeight.w400,
+              color: Colors.black.withValues(alpha: 0.8),
+            ),
+            textAlign: TextAlign.center,
+          ),
+          actionsAlignment: MainAxisAlignment.center,
+          actions: [
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.blue,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              child: Text(
+                "ตกลง",
+                style: AppTextStyles.profileText.copyWith(color: Colors.white),
+              ),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   void _loadRestaurants() {

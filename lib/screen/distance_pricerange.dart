@@ -153,12 +153,157 @@ class _DistancePriceRangeScreenState extends State<DistancePriceRangeScreen> {
     }
   }
 
-  String _getDistanceLabel(double value) {
-    if (value >= 50.0) {
-      return '> 50 KM';
-    }
-    return '${value.round()} KM';
+  Widget _buildDistanceCard() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(18, 20, 18, 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildDistanceHeader(),
+          const SizedBox(height: 18),
+          _buildDistanceSlider(),
+          const SizedBox(height: 10),
+          _buildDistanceScale(),
+        ],
+      ),
+    );
   }
+
+  Widget _buildDistanceHeader() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GradientText(
+          text: _formatDistance(_distanceValue),
+          style: AppTextStyles.restaurantInDetails.copyWith(
+            color: AppColors.black,
+            fontSize: 24,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Row(
+          children: [
+            Icon(
+              Icons.explore_outlined,
+              size: 18,
+              color: AppColors.primaryBlue,
+            ),
+            const SizedBox(width: 6),
+            Expanded(
+              child: Text(
+                _getDistanceDescription(_distanceValue),
+                style: AppTextStyles.restaurantInDetails.copyWith(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey.shade700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDistanceSlider() {
+    return SliderTheme(
+      data: SliderTheme.of(context).copyWith(
+        activeTrackColor: AppColors.primaryBlue,
+        inactiveTrackColor: Colors.grey.shade300,
+        thumbColor: AppColors.black,
+        overlayColor: AppColors.primaryBlue.withOpacity(0.15),
+        trackHeight: 6,
+        thumbShape: const RoundSliderThumbShape(enabledThumbRadius: 10),
+      ),
+      child: Slider(
+        value: _distanceValue,
+        min: 5.0,
+        max: 50.0,
+        onChanged: (double value) {
+          setState(() {
+            _distanceValue = value;
+          });
+        },
+      ),
+    );
+  }
+
+  Widget _buildDistanceScale() {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          "ใกล้",
+          style: AppTextStyles.restaurantInDetails.copyWith(
+            fontSize: 14,
+            color: Colors.grey,
+          ),
+        ),
+        Text(
+          "กำลังดี",
+          style: AppTextStyles.restaurantInDetails.copyWith(
+            fontSize: 14,
+            color: Colors.grey,
+          ),
+        ),
+        Text(
+          "ไกล",
+          style: AppTextStyles.restaurantInDetails.copyWith(
+            fontSize: 14,
+            color: Colors.grey,
+          ),
+        ),
+      ],
+    );
+  }
+
+  String _getDistanceDescription(double value) {
+    if (value <= 10) {
+      return "เน้นร้านใกล้ ๆ เดินทางสะดวก";
+    } else if (value <= 25) {
+      return "เพิ่มตัวเลือกมากขึ้นในย่านรอบตัวคุณ";
+    } else if (value <= 40) {
+      return "พร้อมลองร้านใหม่ในหลายพื้นที่";
+    } else {
+      return "เปิดรับร้านเด็ดทั่วเมือง";
+    }
+  }
+
+  String _formatDistance(double value) {
+    final rounded = value.round();
+
+    if (rounded <= 5) {
+      return "ใกล้มาก ($rounded km)";
+    } else if (rounded <= 15) {
+      return "ใกล้ ($rounded km)";
+    } else if (rounded <= 30) {
+      return "กำลังดี ($rounded km)";
+    } else if (rounded < 50) {
+      return "ไกลขึ้น ($rounded km)";
+    } else {
+      return "ไกลกว่า ($rounded km)";
+    }
+  }
+
+  // String _getDistanceLabel(double value) {
+  //   if (value >= 50.0) {
+  //     return '> 50 KM';
+  //   }
+  //   return '${value.round()} KM';
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -185,228 +330,148 @@ class _DistancePriceRangeScreenState extends State<DistancePriceRangeScreen> {
       body: Column(
         children: [
           Expanded(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(height: widget.isEditMode ? 8 : 35),
-                    if (!widget.isEditMode) ...[
-                      Row(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.topCenter,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: constraints.maxWidth,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Image.asset(
-                            'assets/images/logo1.0circle.png',
-                            width: 36,
-                            height: 36,
-                          ),
-                          const SizedBox(width: 10),
+                          SizedBox(height: widget.isEditMode ? 8 : 35),
+                          if (!widget.isEditMode) ...[
+                            Row(
+                              children: [
+                                Image.asset(
+                                  'assets/images/logo1.0circle.png',
+                                  width: 36,
+                                  height: 36,
+                                ),
+                                const SizedBox(width: 10),
+                                GradientText(
+                                  text: 'DISHCOVERY!',
+                                  style: AppTextStyles.secondaryTitle
+                                      .copyWith(),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 35),
+                          ],
+
                           GradientText(
-                            text: 'DISHCOVERY!',
-                            style: AppTextStyles.secondaryTitle.copyWith(),
+                            text: 'ระยะทางที่สะดวกสำหรับคุณ',
+                            style: AppTextStyles.signinText.copyWith(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
+                          const SizedBox(height: 45),
+
+                          _buildDistanceCard(),
+
+                          const SizedBox(height: 45),
+
+                          GradientText(
+                            text: 'เรทราคาที่คุณต้องการ',
+                            style: AppTextStyles.signinText.copyWith(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 25),
+
+                          Wrap(
+                            spacing: 10,
+                            runSpacing: 10,
+                            children: _priceRanges.map((range) {
+                              final isSelected = _selectedPriceRanges.contains(
+                                range,
+                              );
+                              return ChoiceChip(
+                                showCheckmark: false,
+                                label: Text(
+                                  range,
+                                  style: AppTextStyles.signinText.copyWith(
+                                    color: AppColors.black,
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                selected: isSelected,
+                                selectedColor: AppColors.lightBlue,
+                                backgroundColor: AppColors.white,
+                                onSelected: (_) => _togglePriceRange(range),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(24),
+                                  side: BorderSide(
+                                    color: isSelected
+                                        ? AppColors.primaryBlue
+                                        : AppColors.black,
+                                  ),
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                  horizontal: 16,
+                                ),
+                              );
+                            }).toList(),
+                          ),
+
+                          const SizedBox(height: 45),
+
+                          if (widget.isEditMode) ...[
+                            GradientText(
+                              text: 'แสดงร้านอาหารทั้งหมด',
+                              style: AppTextStyles.signinText.copyWith(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 25),
+                            Container(
+                              decoration: BoxDecoration(
+                                color: AppColors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: Colors.grey.shade300),
+                              ),
+                              child: SwitchListTile(
+                                title: Text(
+                                  'แสดงร้านที่ปิดแล้ว',
+                                  style: AppTextStyles.profileText.copyWith(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.black,
+                                  ),
+                                ),
+                                subtitle: Text(
+                                  'หากเปิดจะแสดงร้านที่ปิดอยู่ด้วย',
+                                  style: AppTextStyles.profileText.copyWith(
+                                    fontSize: 14,
+                                    color: Colors.grey.shade600,
+                                  ),
+                                ),
+
+                                value: _showClosedRestaurants,
+                                onChanged: (bool value) {
+                                  setState(() {
+                                    _showClosedRestaurants = value;
+                                  });
+                                },
+                                activeThumbColor: AppColors.primaryBlue,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
-                      const SizedBox(height: 35),
-                    ],
-
-                    GradientText(
-                      text: 'ระยะทางที่สะดวกสำหรับคุณ',
-                      style: AppTextStyles.signinText.copyWith(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
                     ),
-                    const SizedBox(height: 55),
-
-                    Column(
-                      children: [
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            final trackWidth = constraints.maxWidth;
-                            const double minDistance = 5.0;
-                            const double maxDistance = 50.0;
-                            final double ratio =
-                                (_distanceValue - minDistance) /
-                                (maxDistance - minDistance);
-                            const double iconSize = 30;
-                            final double position =
-                                (trackWidth * ratio) - (iconSize / 2);
-
-                            return SizedBox(
-                              height: iconSize,
-                              width: double.infinity,
-                              child: Stack(
-                                children: [
-                                  Positioned(
-                                    left: position.clamp(
-                                      0.0,
-                                      trackWidth - iconSize,
-                                    ),
-                                    child: const Icon(
-                                      Icons.person_pin_circle_rounded,
-                                      color: AppColors.black,
-                                      size: iconSize,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-
-                        SliderTheme(
-                          data: SliderTheme.of(context).copyWith(
-                            activeTrackColor: AppColors.primaryBlue,
-                            inactiveTrackColor: AppColors.black,
-                            thumbColor: AppColors.black,
-                            overlayColor: AppColors.primaryBlue.withOpacity(
-                              0.2,
-                            ),
-                            trackHeight: 6.0,
-                            valueIndicatorColor: AppColors.primaryBlue,
-                          ),
-                          child: Slider(
-                            value: _distanceValue,
-                            min: 5.0,
-                            max: 50.0,
-                            label: _getDistanceLabel(_distanceValue),
-                            onChanged: (double newValue) {
-                              setState(() {
-                                _distanceValue = newValue;
-                              });
-                            },
-                          ),
-                        ),
-
-                        LayoutBuilder(
-                          builder: (context, constraints) {
-                            final trackWidth = constraints.maxWidth;
-                            const double minDistance = 5.0;
-                            const double maxDistance = 50.0;
-                            final double ratio =
-                                (_distanceValue - minDistance) /
-                                (maxDistance - minDistance);
-                            const double textWidthApprox = 50.0;
-                            final double position =
-                                (trackWidth * ratio) - (textWidthApprox / 2);
-
-                            return SizedBox(
-                              height: 20,
-                              width: double.infinity,
-                              child: Stack(
-                                children: [
-                                  Positioned(
-                                    left: position.clamp(
-                                      0.0,
-                                      trackWidth - textWidthApprox,
-                                    ),
-                                    child: Text(
-                                      _getDistanceLabel(_distanceValue),
-                                      style: AppTextStyles.buttonText.copyWith(
-                                        color: AppColors.black,
-                                        fontSize: 16,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            );
-                          },
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 65),
-
-                    GradientText(
-                      text: 'เรทราคาที่คุณต้องการ',
-                      style: AppTextStyles.signinText.copyWith(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 25),
-
-                    Wrap(
-                      spacing: 10,
-                      runSpacing: 10,
-                      children: _priceRanges.map((range) {
-                        final isSelected = _selectedPriceRanges.contains(range);
-                        return ChoiceChip(
-                          showCheckmark: false,
-                          label: Text(
-                            range,
-                            style: AppTextStyles.signinText.copyWith(
-                              color: AppColors.black,
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          selected: isSelected,
-                          selectedColor: AppColors.lightBlue,
-                          backgroundColor: AppColors.white,
-                          onSelected: (_) => _togglePriceRange(range),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(24),
-                            side: BorderSide(
-                              color: isSelected
-                                  ? AppColors.primaryBlue
-                                  : AppColors.black,
-                            ),
-                          ),
-                          padding: const EdgeInsets.symmetric(
-                            vertical: 12,
-                            horizontal: 16,
-                          ),
-                        );
-                      }).toList(),
-                    ),
-
-                    const SizedBox(height: 45),
-
-                    if (widget.isEditMode) ...[
-                      GradientText(
-                        text: 'แสดงร้านอาหารทั้งหมด',
-                        style: AppTextStyles.signinText.copyWith(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 25),
-                      Container(
-                        decoration: BoxDecoration(
-                          color: AppColors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: Colors.grey.shade300),
-                        ),
-                        child: SwitchListTile(
-                          title: Text(
-                            'แสดงร้านที่ปิดแล้ว',
-                            style: AppTextStyles.profileText.copyWith(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.black,
-                            ),
-                          ),
-                          subtitle: Text(
-                            'หากเปิดจะแสดงร้านที่ปิดอยู่ด้วย',
-                            style: AppTextStyles.profileText.copyWith(
-                              fontSize: 14,
-                              color: Colors.grey.shade600,
-                            ),
-                          ),
-                          value: _showClosedRestaurants,
-                          onChanged: (bool value) {
-                            setState(() {
-                              _showClosedRestaurants = value;
-                            });
-                          },
-                          activeColor: AppColors.primaryBlue,
-                        ),
-                      ),
-                    ],
-                  ],
-                ),
+                  );
+                },
               ),
             ),
           ),
@@ -414,7 +479,7 @@ class _DistancePriceRangeScreenState extends State<DistancePriceRangeScreen> {
             padding: const EdgeInsets.only(
               left: 20,
               right: 20,
-              bottom: 50,
+              bottom: 30,
               top: 10,
             ),
             color: AppColors.white,

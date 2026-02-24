@@ -218,7 +218,6 @@ class _FoodPreferenceScreenState extends State<FoodPreferenceScreen> {
   @override
   Widget build(BuildContext context) {
     final rows = chunkList(_foodOptions, 8);
-
     return Scaffold(
       // กำหนดสีพื้นหลังเป็นสีขาว
       backgroundColor: AppColors.white,
@@ -244,108 +243,123 @@ class _FoodPreferenceScreenState extends State<FoodPreferenceScreen> {
       body: Column(
         children: [
           Expanded(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    SizedBox(height: widget.isEditMode ? 8 : 35),
-                    // 1. Header (Logo & Title) - อยู่ด้านบนสุด
-                    if (!widget.isEditMode) ...[
-                      Row(
-                        children: [
-                          Image.asset(
-                            'assets/images/logo1.0circle.png',
-                            width: 36,
-                            height: 36,
-                          ),
-                          const SizedBox(width: 10),
-                          GradientText(
-                            text: 'DISHCOVERY!',
-                            style: AppTextStyles.secondaryTitle.copyWith(),
-                          ),
-                        ],
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 8, 20, 20),
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  return FittedBox(
+                    fit: BoxFit.scaleDown,
+                    alignment: Alignment.topCenter,
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(
+                        maxWidth: constraints.maxWidth,
                       ),
-                      const SizedBox(height: 35),
-                    ],
-
-                    // 2. ส่วนเลือกประเภทอาหาร
-                    GradientText(
-                      text:
-                          'ประเภทอาหารที่คุณชอบ (${_selectedFoodTypes.length}/$_maxSelection)',
-                      style: AppTextStyles.signinText.copyWith(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 15),
-
-                    // ใช้ Wrap เพื่อจัดเรียง Chip ให้พอดีกับหน้าจอ
-                    SingleChildScrollView(
-                      scrollDirection: Axis.horizontal,
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
-                        children: List.generate(rows.length, (rowIndex) {
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 8),
-                            child: Wrap(
-                              spacing: 10, //  ระยะห่างแนวนอน (เล็กลง ดูชิดขึ้น)
-                              children: rows[rowIndex].map((option) {
-                                final String name = option['name'];
-                                final IconData icon = option['icon'];
-                                final bool isSelected = _selectedFoodTypes
-                                    .contains(name);
+                        children: [
+                          SizedBox(height: widget.isEditMode ? 8 : 35),
+                          // 1. Header (Logo & Title) - อยู่ด้านบนสุด
+                          if (!widget.isEditMode) ...[
+                            Row(
+                              children: [
+                                Image.asset(
+                                  'assets/images/logo1.0circle.png',
+                                  width: 36,
+                                  height: 36,
+                                ),
+                                const SizedBox(width: 10),
+                                GradientText(
+                                  text: 'DISHCOVERY!',
+                                  style: AppTextStyles.secondaryTitle
+                                      .copyWith(),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 35),
+                          ],
 
-                                return ChoiceChip(
-                                  showCheckmark: false,
-                                  materialTapTargetSize: MaterialTapTargetSize
-                                      .shrinkWrap, //   ลดพื้นที่แฝง
-                                  labelPadding: const EdgeInsets.symmetric(
-                                    horizontal: 4,
-                                  ),
-                                  label: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(icon, size: 18),
-                                      const SizedBox(width: 6),
-                                      Text(
-                                        name,
-                                        style: AppTextStyles.signinText
-                                            .copyWith(
-                                              color: AppColors.black,
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
+                          // 2. ส่วนเลือกประเภทอาหาร
+                          GradientText(
+                            text:
+                                'ประเภทอาหารที่คุณชอบ (${_selectedFoodTypes.length}/$_maxSelection)',
+                            style: AppTextStyles.signinText.copyWith(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          const SizedBox(height: 15),
+
+                          SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: List.generate(rows.length, (rowIndex) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(bottom: 8),
+                                  child: Wrap(
+                                    spacing: 10,
+                                    children: rows[rowIndex].map((option) {
+                                      final String name = option['name'];
+                                      final IconData icon = option['icon'];
+                                      final bool isSelected = _selectedFoodTypes
+                                          .contains(name);
+
+                                      return ChoiceChip(
+                                        showCheckmark: false,
+                                        materialTapTargetSize:
+                                            MaterialTapTargetSize.shrinkWrap,
+                                        labelPadding:
+                                            const EdgeInsets.symmetric(
+                                              horizontal: 4,
                                             ),
-                                      ),
-                                    ],
-                                  ),
-                                  selected: isSelected,
-                                  selectedColor: AppColors.lightBlue,
-                                  backgroundColor: AppColors.white,
-                                  onSelected: (_) => _toggleFoodSelection(name),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(24),
-                                    side: BorderSide(
-                                      color: isSelected
-                                          ? AppColors.primaryBlue
-                                          : AppColors.black,
-                                    ),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 18,
-                                    horizontal: 10,
+                                        label: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(icon, size: 18),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              name,
+                                              style: AppTextStyles.signinText
+                                                  .copyWith(
+                                                    color: AppColors.black,
+                                                    fontSize: 16,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
+                                        selected: isSelected,
+                                        selectedColor: AppColors.lightBlue,
+                                        backgroundColor: AppColors.white,
+                                        onSelected: (_) =>
+                                            _toggleFoodSelection(name),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(
+                                            24,
+                                          ),
+                                          side: BorderSide(
+                                            color: isSelected
+                                                ? AppColors.primaryBlue
+                                                : AppColors.black,
+                                          ),
+                                        ),
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 10,
+                                          horizontal: 8,
+                                        ),
+                                      );
+                                    }).toList(),
                                   ),
                                 );
-                              }).toList(),
+                              }),
                             ),
-                          );
-                        }),
+                          ),
+                          const SizedBox(height: 20),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 20),
-                  ],
-                ),
+                  );
+                },
               ),
             ),
           ),
@@ -354,7 +368,7 @@ class _FoodPreferenceScreenState extends State<FoodPreferenceScreen> {
             padding: const EdgeInsets.only(
               left: 20,
               right: 20,
-              bottom: 50,
+              bottom: 30,
               top: 10,
             ),
             color: AppColors.white,

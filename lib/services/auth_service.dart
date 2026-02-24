@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class AuthService {
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
@@ -74,5 +75,55 @@ class AuthService {
   Future<void> signOut() async {
     await _googleSignIn.signOut();
     await _firebaseAuth.signOut();
+  }
+
+  // Re-authenticate
+  Future<void> reauthenticate(String password) async {
+    final user = _firebaseAuth.currentUser;
+    if (user == null || user.email == null) {
+      throw Exception("No user currently logged in.");
+    }
+    AuthCredential credential = EmailAuthProvider.credential(
+      email: user.email!,
+      password: password,
+    );
+    await user.reauthenticateWithCredential(credential);
+  }
+
+  // Delete Account
+  Future<void> deleteAccount(String password) async {
+    final user = _firebaseAuth.currentUser;
+    if (user == null || user.email == null) {
+      throw Exception("No user currently logged in.");
+    }
+
+    try {
+      // Re-authenticate User First (in case step 2 token expired, though unlikely)
+      await reauthenticate(password);
+
+      // Trigger deletion of user data from Firestore
+      final db = FirebaseFirestore.instance;
+      final userRef = db.collection('users').doc(user.uid);
+
+      // 1. Delete 'swipes' subcollection
+      final swipesQuery = await userRef.collection('swipes').get();
+      WriteBatch batch = db.batch();
+      for (var doc in swipesQuery.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+
+      // 2. Delete main document
+      await userRef.delete();
+
+      // Delete the user from Firebase Auth (this automatically signs them out locally)
+      await user.delete();
+
+      // Do NOT await signOut() here because GoogleSignIn.signOut() can hang indefinitely
+      // if the user had logged in via Email/Password and has no active Google session.
+    } catch (e) {
+      print("Error deleting account: $e");
+      rethrow;
+    }
   }
 }

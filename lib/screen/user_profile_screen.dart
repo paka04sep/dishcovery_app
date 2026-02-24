@@ -10,6 +10,7 @@ import 'foodpreference_screen.dart';
 import 'distance_pricerange.dart';
 import 'package:dishcovery_app/screen/admin/admin_dashboard_screen.dart';
 import 'package:dishcovery_app/services/restaurant_service.dart';
+import 'package:dishcovery_app/screen/user_profile_setting.dart';
 
 class UserProfileScreen extends StatelessWidget {
   const UserProfileScreen({super.key});
@@ -57,222 +58,268 @@ class UserProfileScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const SizedBox(height: 10),
-            // Header Profile
-            Row(
-              children: [
-                Stack(
-                  children: [
-                    const CircleAvatar(
-                      radius: 35,
-                      backgroundColor: Colors.grey,
-                      child: Icon(Icons.person, size: 40, color: Colors.white),
-                    ),
-                    Positioned(
-                      bottom: 0,
-                      right: 0,
-                      child: Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.grey.shade200),
-                        ),
-                        child: const Icon(
-                          Icons.star,
-                          size: 10,
-                          color: Colors.amber,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(width: 15),
-                Expanded(
-                  child: Text(
-                    FirebaseAuth.instance.currentUser?.email?.split('@')[0] ??
-                        "Guest User",
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black,
-                      fontFamily: 'Inter',
-                    ),
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 25),
-
-            // View My Profile Button
-            // SizedBox(
-            //   width: double.infinity,
-            //   height: 45,
-            //   child: ElevatedButton(
-            //     onPressed: () {},
-            //     style: ElevatedButton.styleFrom(
-            //       backgroundColor: const Color(0xFFEEF5FF), // Light blue tint
-            //       foregroundColor: Colors.blueAccent,
-            //       elevation: 0,
-            //       shape: RoundedRectangleBorder(
-            //         borderRadius: BorderRadius.circular(10),
-            //       ),
-            //     ),
-            //     child: Text(
-            //       "โปรไฟล์ของฉัน",
-            //       style: AppTextStyles.profileText.copyWith(
-            //         fontSize: 16,
-            //         color: Colors.blue,
-            //       ),
-            //     ),
-            //   ),
-            // ),
-            // const SizedBox(height: 15),
-
-            // Credit & Challenges
-            Row(
-              children: [
-                Expanded(
-                  child: _buildActionCard(
-                    context,
-                    label: "สไตล์การกินของคุณ",
-                    icon: Icons.insert_chart_outlined,
-                    onTap: () {},
-                  ),
-                ),
-
-                // Expanded(
-                //   child: _buildActionCard(
-                //     context,
-                //     label: "Challenges",
-                //     icon: Icons.emoji_events_outlined,
-                //     onTap: () {},
-                //   ),
-                // ),
-              ],
-            ),
-            const SizedBox(height: 15),
-
-            // Quick Menu Icons
-            // Row(
-            //   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-            //   children: [
-            //     _buildCircleMenu(
-            //       icon: Icons.bookmark,
-            //       label: "Saved",
-            //       color: Colors.blueAccent,
-            //     ),
-            //   ],
-            // ),
-            // const SizedBox(height: 30),
-
-            // List Menu
-            _buildListTile(
-              icon: Icons.restaurant_outlined,
-              title: "ประเภทอาหารที่ชอบ",
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        const FoodPreferenceScreen(isEditMode: true),
-                  ),
-                );
-              },
-            ),
-
-            _buildListTile(
-              icon: Icons.location_on_outlined,
-              title: "ปรับการค้นหาร้านอาหาร",
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) =>
-                        const DistancePriceRangeScreen(isEditMode: true),
-                  ),
-                );
-              },
-            ),
-
-            _buildListTile(
-              icon: Icons.store_outlined,
-              title: "Switch to Restaurant Menu",
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => const RestaurantDetailsScreen(),
-                  ),
-                );
-              },
-            ),
-            _buildListTile(
-              icon: Icons.help_outline,
-              title: "Help Center / Contact Us",
-            ),
-            _buildListTile(icon: Icons.settings_outlined, title: "Settings"),
-            const SizedBox(height: 20),
-            Center(
-              child: TextButton(
-                onPressed: () {
-                  if (context.mounted) {
-                    showDialog(
-                      context: context,
-                      builder: (context) => AlertDialog(
-                        title: const Text("Confirm Logout"),
-                        content: const Text(
-                          "Are you sure you want to log out?",
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(context),
-                            child: const Text("Cancel"),
+      body: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  const SizedBox(height: 10),
+                  // Header Profile
+                  Row(
+                    children: [
+                      Stack(
+                        children: [
+                          const CircleAvatar(
+                            radius: 35,
+                            backgroundColor: Colors.grey,
+                            child: Icon(
+                              Icons.person,
+                              size: 40,
+                              color: Colors.white,
+                            ),
                           ),
-                          TextButton(
-                            onPressed: () async {
-                              Navigator.pop(context); // Close dialog
-                              await AuthService().signOut();
-                              if (context.mounted) {
-                                Navigator.of(context).pushAndRemoveUntil(
-                                  MaterialPageRoute(
-                                    builder: (context) => const LoadingScreen(),
-                                  ),
-                                  (route) => false,
-                                );
-                              }
-                            },
-                            child: const Text(
-                              "Log Out",
-                              style: TextStyle(color: Colors.red),
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                shape: BoxShape.circle,
+                                border: Border.all(color: Colors.grey.shade200),
+                              ),
+                              child: const Icon(
+                                Icons.star,
+                                size: 10,
+                                color: Colors.amber,
+                              ),
                             ),
                           ),
                         ],
                       ),
-                    );
-                  }
-                },
-                child: const Text(
-                  "Log Out",
-                  style: TextStyle(
-                    color: Colors.red,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 16,
+                      const SizedBox(width: 15),
+                      Expanded(
+                        child: Text(
+                          FirebaseAuth.instance.currentUser?.email?.split(
+                                '@',
+                              )[0] ??
+                              "Guest User",
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black,
+                            fontFamily: 'Inter',
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
                   ),
-                ),
+                  const SizedBox(height: 25),
+
+                  // View My Profile Button
+                  // SizedBox(
+                  //   width: double.infinity,
+                  //   height: 45,
+                  //   child: ElevatedButton(
+                  //     onPressed: () {},
+                  //     style: ElevatedButton.styleFrom(
+                  //       backgroundColor: const Color(0xFFEEF5FF), // Light blue tint
+                  //       foregroundColor: Colors.blueAccent,
+                  //       elevation: 0,
+                  //       shape: RoundedRectangleBorder(
+                  //         borderRadius: BorderRadius.circular(10),
+                  //       ),
+                  //     ),
+                  //     child: Text(
+                  //       "โปรไฟล์ของฉัน",
+                  //       style: AppTextStyles.profileText.copyWith(
+                  //         fontSize: 16,
+                  //         color: Colors.blue,
+                  //       ),
+                  //     ),
+                  //   ),
+                  // ),
+                  // const SizedBox(height: 15),
+
+                  // Credit & Challenges
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildActionCard(
+                          context,
+                          label: "สไตล์การกินของคุณ",
+
+                          icon: Icons.insert_chart_outlined,
+                          onTap: () {},
+                        ),
+                      ),
+
+                      // Expanded(
+                      //   child: _buildActionCard(
+                      //     context,
+                      //     label: "Challenges",
+                      //     icon: Icons.emoji_events_outlined,
+                      //     onTap: () {},
+                      //   ),
+                      // ),
+                    ],
+                  ),
+                  const SizedBox(height: 15),
+
+                  // Quick Menu Icons
+                  // Row(
+                  //   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  //   children: [
+                  //     _buildCircleMenu(
+                  //       icon: Icons.bookmark,
+                  //       label: "Saved",
+                  //       color: Colors.blueAccent,
+                  //     ),
+                  //   ],
+                  // ),
+                  // const SizedBox(height: 30),
+
+                  // List Menu
+                  _buildListTile(
+                    icon: Icons.restaurant_outlined,
+                    title: "ประเภทอาหารที่ชอบ",
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const FoodPreferenceScreen(isEditMode: true),
+                        ),
+                      );
+                    },
+                  ),
+
+                  _buildListTile(
+                    icon: Icons.location_on_outlined,
+                    title: "ปรับการค้นหาร้านอาหาร",
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const DistancePriceRangeScreen(isEditMode: true),
+                        ),
+                      );
+                    },
+                  ),
+
+                  _buildListTile(
+                    icon: Icons.store_outlined,
+                    title: "Switch to Restaurant Menu",
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const RestaurantDetailsScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                  _buildListTile(
+                    icon: Icons.help_outline,
+                    title: "ศูนย์ช่วยเหลือ / ติดต่อเรา",
+                  ),
+                  _buildListTile(
+                    icon: Icons.settings_outlined,
+                    title: "ตั้งค่าบัญชี",
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              const UserProfileSettingScreen(),
+                        ),
+                      );
+                    },
+                  ),
+                ],
               ),
             ),
-            const SizedBox(height: 20),
-          ],
-        ),
+          ),
+
+          SafeArea(
+            top: false,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Divider(height: 1),
+
+                ListTile(
+                  leading: const Icon(Icons.exit_to_app, color: Colors.red),
+                  title: Text(
+                    "ออกจากระบบ",
+                    style: AppTextStyles.profileText.copyWith(
+                      color: Colors.red,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  onTap: () => _showLogoutDialog(context),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
       bottomNavigationBar: const AppBottomNav(currentIndex: 2),
+    );
+  }
+
+  void _showLogoutDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          "ยืนยันการออกจากระบบ",
+          style: AppTextStyles.profileText.copyWith(
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        content: Text(
+          "คุณแน่ใจหรือไม่ว่าต้องการออกจากระบบ?",
+          style: AppTextStyles.profileText.copyWith(
+            fontWeight: FontWeight.w400,
+            color: Colors.black.withValues(alpha: 0.8),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: Text("ยกเลิก", style: AppTextStyles.profileText),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              await AuthService().signOut();
+
+              if (context.mounted) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(
+                    builder: (context) => const LoadingScreen(),
+                  ),
+                  (route) => false,
+                );
+              }
+            },
+            child: Text(
+              "ออกจากระบบ",
+              style: AppTextStyles.profileText.copyWith(
+                color: Colors.red,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 

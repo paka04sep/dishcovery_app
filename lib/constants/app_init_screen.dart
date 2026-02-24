@@ -5,7 +5,9 @@ import 'gradient_text.dart';
 import 'app_constants.dart';
 
 class AppInitScreen extends StatefulWidget {
-  const AppInitScreen({super.key});
+  final bool showResetSuccessDialog;
+
+  const AppInitScreen({super.key, this.showResetSuccessDialog = false});
 
   @override
   State<AppInitScreen> createState() => _AppInitScreenState();
@@ -19,8 +21,6 @@ class _AppInitScreenState extends State<AppInitScreen>
 
   late Animation<double> _logoScale;
   late Animation<Offset> _statusSlide;
-  late Animation<Offset> _exitSlide;
-  late Animation<double> _exitFade;
 
   bool _isExiting = false;
 
@@ -58,18 +58,16 @@ class _AppInitScreenState extends State<AppInitScreen>
       duration: const Duration(milliseconds: 500),
     );
 
-    _exitSlide = Tween(begin: Offset.zero, end: const Offset(-0.4, -0.4))
-        .animate(
-          CurvedAnimation(parent: _exitController, curve: Curves.easeInOut),
-        );
-
-    _exitFade = Tween(
-      begin: 1.0,
-      end: 0.0,
-    ).animate(CurvedAnimation(parent: _exitController, curve: Curves.easeOut));
-
     /// ฟังสถานะ service
     RestaurantService.instance.addListener(_onServiceUpdate);
+
+    // Initial check in case it's already ready
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (RestaurantService.instance.isReady && !_isExiting) {
+        _isExiting = true;
+        _playExitAnimation();
+      }
+    });
   }
 
   void _onServiceUpdate() {
@@ -90,7 +88,10 @@ class _AppInitScreenState extends State<AppInitScreen>
 
     Navigator.pushReplacement(
       context,
-      MaterialPageRoute(builder: (_) => const SwipScreen()),
+      MaterialPageRoute(
+        builder: (_) =>
+            SwipScreen(showResetSuccessDialog: widget.showResetSuccessDialog),
+      ),
     );
   }
 
@@ -111,50 +112,44 @@ class _AppInitScreenState extends State<AppInitScreen>
         children: [
           /// Center content
           Center(
-            child: FadeTransition(
-              opacity: _exitFade,
-              child: SlideTransition(
-                position: _exitSlide,
-                child: Column(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Row(
                   mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    Row(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        ScaleTransition(
-                          scale: _logoScale,
-                          child: Image.asset(
-                            'assets/images/logo1.0circle.png',
-                            width: 56,
-                            height: 56,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        GradientText(
-                          text: 'DISHCOVERY!',
-                          style: AppTextStyles.secondaryTitle.copyWith(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
+                    ScaleTransition(
+                      scale: _logoScale,
+                      child: Image.asset(
+                        'assets/images/logo1.0circle.png',
+                        width: 56,
+                        height: 56,
+                      ),
                     ),
-
-                    const SizedBox(height: 24),
-
-                    SlideTransition(
-                      position: _statusSlide,
-                      child: Text(
-                        'กำลังจับคู่ร้านอาหารตามความชอบของคุณ…',
-                        style: AppTextStyles.refreshText.copyWith(
-                          color: Colors.black54,
-                        ),
+                    const SizedBox(width: 12),
+                    GradientText(
+                      text: 'DISHCOVERY!',
+                      style: AppTextStyles.secondaryTitle.copyWith(
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ],
                 ),
-              ),
+
+                const SizedBox(height: 24),
+
+                SlideTransition(
+                  position: _statusSlide,
+                  child: Text(
+                    'กำลังจับคู่ร้านอาหารตามความชอบของคุณ…',
+                    style: AppTextStyles.refreshText.copyWith(
+                      color: Colors.black54,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
 

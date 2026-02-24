@@ -135,19 +135,10 @@ class RestaurantService extends ChangeNotifier {
       User? user,
     ) async {
       if (user == null) {
-        if (kDebugMode) print("Auth Listener: User logged out.");
-
-        // Only reset if we actually had a user session (prevent infinite loop on cold start)
-        if (_userModel != null) {
-          if (kDebugMode)
-            print(
-              "Destorying RestaurantService instance to force fresh start.",
-            );
-          clearUserData();
-          RestaurantService.reset();
-        } else {
-          clearUserData();
-        }
+        if (kDebugMode) print("Auth Listener: User logged out or deleted.");
+        // Always clear data and reset the Singleton on logout to prevent stale stats for the next account
+        clearUserData();
+        RestaurantService.reset();
       } else {
         if (kDebugMode)
           print("Auth Listener: User logged in (${user.uid}). Fetching data.");
@@ -694,6 +685,67 @@ class RestaurantService extends ChangeNotifier {
   void resetData() {
     _initializeData();
     notifyListeners();
+  }
+
+  // Reset User Swipe Data (Keeps preferences, favs)
+  Future<void> resetSwipeData() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || _userModel == null) return;
+
+    try {
+      final db = FirebaseFirestore.instance;
+      final userRef = db.collection('users').doc(user.uid);
+
+      // 1. Get current stats
+      final currentFavs = _userModel!.stats.fav;
+
+      // 2. Clear local model lists
+      _userModel!.history.yum.clear();
+      _userModel!.history.passed.clear();
+
+      // Clear stats (but keep totalSwipes equal to current favs)
+      _userModel!.stats.toMap().updateAll(
+        (key, value) => 0,
+      ); // Not directly possible, create new
+      final updatedStats = UserStats(
+        totalSwipes: currentFavs,
+        fav: currentFavs,
+        yums: 0,
+        passes: 0,
+      );
+
+      // Remove from local logs
+      _swipeLogs.removeWhere(
+        (log) => log['action'] == 'yum' || log['action'] == 'pass',
+      );
+
+      // 3. Update Firestore User Doc
+      await userRef.update({
+        'history.yum': [],
+        'history.passed': [],
+        'stats': updatedStats.toMap(),
+        'lastActiveAt': FieldValue.serverTimestamp(),
+      });
+
+      // 4. Batch delete non-fav swipe logs from subcollection
+      final swipesQuery = await userRef
+          .collection('swipes')
+          .where('action', whereIn: ['yum', 'pass'])
+          .get();
+
+      WriteBatch batch = db.batch();
+      for (var doc in swipesQuery.docs) {
+        batch.delete(doc.reference);
+      }
+      await batch.commit();
+
+      if (kDebugMode) print("Swipe data reset successfully.");
+
+      notifyListeners();
+    } catch (e) {
+      if (kDebugMode) print("Error resetting swipe data: $e");
+      rethrow;
+    }
   }
 
   // Fetch Full Details

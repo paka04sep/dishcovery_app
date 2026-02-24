@@ -447,55 +447,26 @@ class _SignInScreenState extends State<SignInScreen>
                       ),
                       const SizedBox(height: 15),
                       _shakeField(
-                        errorText: _emailError,
+                        errorText: _passwordError,
                         child: _buildUnderlineField(
                           "Password",
                           controller: _passwordController,
                           errorText: _passwordError,
                           isPassword: _obscurePassword,
+                          showVisibilityToggle: true,
                         ),
                       ),
                       if (_isSignUp) ...[
                         const SizedBox(height: 15),
                         _shakeField(
-                          errorText: _emailError,
+                          errorText: _confirmPasswordError,
                           child: _buildUnderlineField(
                             "Confirm Password",
                             controller: _confirmPasswordController,
                             isPassword: _obscurePassword,
                             errorText: _confirmPasswordError,
+                            showVisibilityToggle: true,
                           ),
-                        ),
-
-                        const SizedBox(height: 15),
-
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
-                          children: [
-                            SizedBox(
-                              height: 30,
-                              width: 30,
-                              child: Checkbox(
-                                value: !_obscurePassword,
-                                onChanged: (value) {
-                                  setState(() {
-                                    _obscurePassword = !value!;
-                                  });
-                                },
-                                activeColor: AppColors.primaryBlue,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                              ),
-                            ),
-                            Text(
-                              "แสดงรหัสผ่าน",
-                              style: AppTextStyles.signinText.copyWith(
-                                color: Colors.grey[600],
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
                         ),
                       ],
 
@@ -662,6 +633,7 @@ class _SignInScreenState extends State<SignInScreen>
     String hint, {
     required TextEditingController controller,
     bool isPassword = false,
+    bool showVisibilityToggle = false,
     String? errorText,
   }) {
     return Column(
@@ -673,6 +645,19 @@ class _SignInScreenState extends State<SignInScreen>
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(color: Colors.grey[400]),
+            suffixIcon: showVisibilityToggle
+                ? IconButton(
+                    icon: Icon(
+                      isPassword ? Icons.visibility_off : Icons.visibility,
+                      color: Colors.grey[600],
+                    ),
+                    onPressed: () {
+                      setState(() {
+                        _obscurePassword = !_obscurePassword;
+                      });
+                    },
+                  )
+                : null,
             enabledBorder: UnderlineInputBorder(
               borderSide: BorderSide(
                 color: errorText != null ? Colors.red : Colors.grey[300]!,
