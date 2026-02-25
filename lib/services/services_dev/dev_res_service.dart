@@ -324,17 +324,292 @@ class DevResService {
 
   // --- Admin Functions ---
 
+  /// Helper to comprehensively delete a restaurant, its subcollections, and scrub user references.
+  Future<void> _deleteRestaurantData(String id) async {
+    final menuItems = await _firestore
+        .collection('restaurants')
+        .doc(id)
+        .collection('menuItems')
+        .get();
+    final menuCategories = await _firestore
+        .collection('restaurants')
+        .doc(id)
+        .collection('menuCategories')
+        .get();
+
+    WriteBatch batch = _firestore.batch();
+    int opCount = 0;
+
+    Future<void> checkAndCommitBatch() async {
+      if (opCount >= 450) {
+        await batch.commit();
+        batch = _firestore.batch();
+        opCount = 0;
+      }
+    }
+
+    // 1. Delete subcollection docs
+    for (var doc in menuItems.docs) {
+      batch.delete(doc.reference);
+      opCount++;
+      await checkAndCommitBatch();
+    }
+
+    for (var doc in menuCategories.docs) {
+      batch.delete(doc.reference);
+      opCount++;
+      await checkAndCommitBatch();
+    }
+
+    // 2. Remove from users' history (yum, passed, fav)
+    try {
+      Set<String> affectedUserIds = {};
+      for (String listName in [
+        'history.yum',
+        'history.passed',
+        'history.fav',
+      ]) {
+        final userSnapshot = await _firestore
+            .collection('users')
+            .where(listName, arrayContains: id)
+            .get();
+        for (var doc in userSnapshot.docs) {
+          affectedUserIds.add(doc.id);
+          batch.update(doc.reference, {
+            listName: FieldValue.arrayRemove([id]),
+          });
+          opCount++;
+          await checkAndCommitBatch();
+        }
+      }
+
+      // 3. Remove users' swipes for this restaurant
+      for (String userId in affectedUserIds) {
+        final swipesSnapshot = await _firestore
+            .collection('users')
+            .doc(userId)
+            .collection('swipes')
+            .where('restaurantId', isEqualTo: id)
+            .get();
+
+        for (var doc in swipesSnapshot.docs) {
+          batch.delete(doc.reference);
+          opCount++;
+          await checkAndCommitBatch();
+        }
+      }
+    } catch (e) {
+      if (kDebugMode)
+        print("DevRes: Skipped user-data cleanup due to permission/error: $e");
+    }
+
+    // 4. Delete the restaurant doc itself
+    batch.delete(_firestore.collection('restaurants').doc(id));
+    opCount++;
+
+    if (opCount > 0) {
+      await batch.commit();
+    }
+  }
+
+  Future<int> cleanUpDanglingData() async {
+    int totalCleaned = 0;
+    try {
+      if (kDebugMode) print("DevRes: Starting dangling data cleanup...");
+
+      // 1. Get all valid restaurant IDs
+      final restaurantsSnapshot = await _firestore
+          .collection('restaurants')
+          .get();
+      final validRestaurantIds = restaurantsSnapshot.docs
+          .map((doc) => doc.id)
+          .toSet();
+
+      WriteBatch batch = _firestore.batch();
+      int opCount = 0;
+
+      Future<void> checkAndCommitBatch() async {
+        if (opCount >= 450) {
+          await batch.commit();
+          batch = _firestore.batch();
+          opCount = 0;
+        }
+      }
+
+      // Cleanup function for a specific restaurant ID that is known to be dangling
+      Future<void> cleanupDanglingRestaurant(String danglingId) async {
+        if (kDebugMode)
+          print("DevRes: Cleaning up dangling data for $danglingId");
+
+        // Remove from users' history
+        for (String listName in [
+          'history.yum',
+          'history.passed',
+          'history.fav',
+        ]) {
+          final userSnapshot = await _firestore
+              .collection('users')
+              .where(listName, arrayContains: danglingId)
+              .get();
+          for (var doc in userSnapshot.docs) {
+            batch.update(doc.reference, {
+              listName: FieldValue.arrayRemove([danglingId]),
+            });
+            opCount++;
+            totalCleaned++;
+            await checkAndCommitBatch();
+          }
+        }
+
+        // Remove users' swipes for this restaurant
+        final usersSnapshot = await _firestore.collection('users').get();
+        for (var userDoc in usersSnapshot.docs) {
+          final swipesSnapshot = await _firestore
+              .collection('users')
+              .doc(userDoc.id)
+              .collection('swipes')
+              .where('restaurantId', isEqualTo: danglingId)
+              .get();
+
+          for (var doc in swipesSnapshot.docs) {
+            batch.delete(doc.reference);
+            opCount++;
+            totalCleaned++;
+            await checkAndCommitBatch();
+          }
+        }
+
+        // Delete subcollections (we can't easily query all subcollections across all missing docs without knowing the IDs,
+        // but if we are cleaning up, the _deleteRestaurantData already handles subcollections if called normally.
+        // If a parent was deleted without subcollections, those subcollections are orphaned in Firestore.
+        // It's hard to find orphaned subcollections without a parent doc in client SDKs.
+        // We will focus on cleaning user data for this cleanup.
+      }
+
+      // 2. Scan users for dangling history/swipes
+      Set<String> danglingIdsFound = {};
+      try {
+        final usersSnapshot = await _firestore.collection('users').get();
+
+        for (var userDoc in usersSnapshot.docs) {
+          final userData = userDoc.data();
+          if (userData.containsKey('history')) {
+            final history = userData['history'] as Map<String, dynamic>;
+            for (String listName in ['yum', 'passed', 'fav']) {
+              if (history.containsKey(listName)) {
+                final list = List<String>.from(history[listName] ?? []);
+                for (String id in list) {
+                  if (!validRestaurantIds.contains(id)) {
+                    danglingIdsFound.add(id);
+                  }
+                }
+              }
+            }
+          }
+        }
+      } catch (e) {
+        if (kDebugMode)
+          print(
+            "DevRes: Skipped user history scan due to permission/error: $e",
+          );
+      }
+
+      // 3. Clean up the found dangling IDs
+      for (String danglingId in danglingIdsFound) {
+        await cleanupDanglingRestaurant(danglingId);
+      }
+
+      if (opCount > 0) {
+        await batch.commit();
+      }
+
+      if (kDebugMode)
+        print("DevRes: Cleanup complete. Cleaned $totalCleaned records.");
+      return totalCleaned;
+    } catch (e) {
+      if (kDebugMode) print("Error cleaning up dangling data: $e");
+      rethrow;
+    }
+  }
+
+  Future<List<String>> fetchDanglingRestaurantIds() async {
+    try {
+      if (kDebugMode) print("DevRes: Finding dangling subcollections...");
+
+      Set<String> subcollectionParentIds = {};
+
+      // 1. Get all valid restaurant IDs from parent collection
+      final restaurantsSnapshot = await _firestore
+          .collection('restaurants')
+          .get();
+      final validRestaurantIds = restaurantsSnapshot.docs
+          .map((doc) => doc.id)
+          .toSet();
+
+      // Find the highest ID number to know the upper limit of our scan
+      int maxIdNumber = 0;
+      for (String id in validRestaurantIds) {
+        if (id.startsWith('res_')) {
+          int numberPart = int.tryParse(id.substring(4)) ?? 0;
+          if (numberPart > maxIdNumber) {
+            maxIdNumber = numberPart;
+          }
+        }
+      }
+
+      // If we don't have any, assume we haven't generated too many
+      if (maxIdNumber == 0) maxIdNumber = 1000;
+
+      // Scan beyond max just in case some were deleted at the end
+      int scanLimit = maxIdNumber + 500;
+
+      // 2. Bruteforce scan possible IDs for subcollections
+      // This is necessary because client SDKs often hide missing parent documents in collectionGroup queries
+      for (int i = 1; i <= scanLimit; i++) {
+        String testId = 'res_${i.toString().padLeft(4, '0')}';
+
+        // Only check if it's NOT a valid parent
+        if (!validRestaurantIds.contains(testId)) {
+          final menuCheck = await _firestore
+              .collection('restaurants')
+              .doc(testId)
+              .collection('menuItems')
+              .limit(1)
+              .get();
+          if (menuCheck.docs.isNotEmpty) {
+            subcollectionParentIds.add(testId);
+            continue; // Found one, move to next ID
+          }
+
+          final catCheck = await _firestore
+              .collection('restaurants')
+              .doc(testId)
+              .collection('menuCategories')
+              .limit(1)
+              .get();
+          if (catCheck.docs.isNotEmpty) {
+            subcollectionParentIds.add(testId);
+          }
+        }
+      }
+
+      // 4. Find the difference
+      final danglingIds = subcollectionParentIds
+          .difference(validRestaurantIds)
+          .toList();
+
+      if (kDebugMode) print("DevRes: Found ${danglingIds.length} dangling IDs");
+      return danglingIds;
+    } catch (e) {
+      if (kDebugMode) print("Error finding dangling IDs: $e");
+      return [];
+    }
+  }
+
   Future<void> deleteRestaurant(String id) async {
     try {
-      if (kDebugMode) print("DevRes: Deleting restaurant $id");
-      await _firestore.collection('restaurants').doc(id).delete();
-
-      // Notify main service to refresh if needed (though it listens to stream usually,
-      // but if it uses local list, we might want to trigger refresh)
-      // Since RestaurantService uses a local list fetched once, we should tell it to refresh
-      // or we can just rely on manual refresh.
-      // Ideally, RestaurantService should expose a method to remove widely.
-      // But for now, we just delete cloud data.
+      if (kDebugMode) print("DevRes: Deleting restaurant $id comprehensively");
+      await _deleteRestaurantData(id);
 
       // HACK: Force refresh on main service
       // ignore: invalid_use_of_visible_for_testing_member, invalid_use_of_protected_member
@@ -347,24 +622,12 @@ class DevResService {
 
   Future<void> deleteRestaurants(List<String> ids) async {
     try {
-      if (kDebugMode) print("DevRes: Deleting ${ids.length} restaurants");
-      final batch = _firestore.batch();
+      if (kDebugMode)
+        print("DevRes: Deleting ${ids.length} restaurants comprehensively");
 
       for (final id in ids) {
-        final docRef = _firestore.collection('restaurants').doc(id);
-        batch.delete(docRef);
-        // Note: Subcollections (menuItems) are NOT automatically deleted by batch delete in Firestore
-        // For a proper implementation, we should query and delete subcollections too.
-        // But for this "Dev" tool, maybe skipping subcollection deletion is acceptable or we do it iteratively
-        // if we want to be thorough. For performance with large batches, typically cloud functions are better.
-        // Here, let's keep it simple: just delete the parent doc for now
-        // OR iterate and delete (which is slower but cleaner).
-        // Let's rely on the batch for parent doc.
-        // Ideally we should delete subcollections.
-        // Given this is a dev tool, let's try to do it right if possible, but batch has 500 limit.
+        await _deleteRestaurantData(id);
       }
-
-      await batch.commit();
 
       // Notify main service
       // ignore: invalid_use_of_visible_for_testing_member, invalid_use_of_protected_member

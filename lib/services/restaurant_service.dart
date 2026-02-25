@@ -209,6 +209,7 @@ class RestaurantService extends ChangeNotifier {
     return SwipeStatus.none;
   }
 
+  //Get Restaurant Data from Firestore
   Future<List<RestaurantCardData>> fetchRestaurantsFromFirestore() async {
     try {
       final snapshot = await FirebaseFirestore.instance

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:dishcovery_app/services/restaurant_service.dart';
 import 'package:dishcovery_app/constants/app_constants.dart';
-import 'package:dishcovery_app/services/services_dev/dev_res_service.dart'; // Import DevResService
+import 'package:dishcovery_app/services/services_dev/dev_res_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dishcovery_app/models/restaurant_model.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
   const AdminDashboardScreen({super.key});
@@ -31,6 +33,118 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Error adding data: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _showDanglingSubcollections() async {
+    setState(() => _isLoading = true);
+    try {
+      final danglingIds = await DevResService.instance
+          .fetchDanglingRestaurantIds();
+      if (mounted) {
+        setState(() => _isLoading = false);
+        showDialog(
+          context: context,
+          builder: (context) {
+            return AlertDialog(
+              title: Text('Dangling Subcollections (${danglingIds.length})'),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: danglingIds.isEmpty
+                    ? const Text("No dangling subcollections found.")
+                    : ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: danglingIds.length,
+                        itemBuilder: (context, index) {
+                          return ListTile(
+                            title: Text(danglingIds[index]),
+                            trailing: IconButton(
+                              icon: const Icon(Icons.delete, color: Colors.red),
+                              onPressed: () async {
+                                Navigator.pop(context);
+                                await _deleteDanglingId(danglingIds[index]);
+                              },
+                            ),
+                          );
+                        },
+                      ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Close'),
+                ),
+                if (danglingIds.isNotEmpty)
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.red,
+                    ),
+                    onPressed: () async {
+                      Navigator.pop(context);
+                      await _deleteAllDangling(danglingIds);
+                    },
+                    child: const Text(
+                      'Delete All',
+                      style: TextStyle(color: Colors.white),
+                    ),
+                  ),
+              ],
+            );
+          },
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isLoading = false);
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    }
+  }
+
+  Future<void> _deleteDanglingId(String id) async {
+    setState(() => _isLoading = true);
+    try {
+      await DevResService.instance.deleteRestaurant(
+        id,
+      ); // Handles subcollection deletion
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Cleaned $id!')));
+        _showDanglingSubcollections(); // Re-open dialog to show updated list
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _deleteAllDangling(List<String> ids) async {
+    setState(() => _isLoading = true);
+    try {
+      for (String id in ids) {
+        await DevResService.instance.deleteRestaurant(id);
+      }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Cleaned all dangling IDs!')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error: $e')));
       }
     } finally {
       if (mounted) setState(() => _isLoading = false);
@@ -212,21 +326,42 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 if (!_isSelectionMode) // Hide add button in selection mode for cleaner UI
                   Padding(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: SizedBox(
-                      width: double.infinity,
-                      height: 50,
-                      child: ElevatedButton.icon(
-                        onPressed: _addMockData,
-                        icon: const Icon(Icons.shuffle),
-                        label: const Text("Add Random Restaurant"),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryBlue,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                    child: Column(
+                      children: [
+                        SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: ElevatedButton.icon(
+                            onPressed: _addMockData,
+                            icon: const Icon(Icons.shuffle),
+                            label: const Text("Add Random Restaurant"),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryBlue,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
                           ),
                         ),
-                      ),
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          width: double.infinity,
+                          height: 50,
+                          child: ElevatedButton.icon(
+                            onPressed: _showDanglingSubcollections,
+                            icon: const Icon(Icons.search),
+                            label: const Text("Fetch Dangling Data"),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.orange,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 if (!_isSelectionMode) const SizedBox(height: 20),
@@ -248,16 +383,34 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 if (!_isSelectionMode) const SizedBox(height: 10),
                 // Restaurant List
                 Expanded(
-                  child: ListenableBuilder(
-                    listenable: RestaurantService.instance,
-                    builder: (context, child) {
-                      final restaurants =
-                          RestaurantService.instance.restaurants;
-                      if (restaurants.isEmpty) {
+                  child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+                    stream: FirebaseFirestore.instance
+                        .collection('restaurants')
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return const Center(child: CircularProgressIndicator());
+                      }
+
+                      if (snapshot.hasError) {
+                        return Center(child: Text('Error: ${snapshot.error}'));
+                      }
+
+                      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
                         return const Center(
                           child: Text("No restaurants found."),
                         );
                       }
+
+                      final restaurants = snapshot.data!.docs
+                          .map(
+                            (doc) => RestaurantCardData.fromFirestore(
+                              doc.data(),
+                              doc.id,
+                            ),
+                          )
+                          .toList();
+
                       return ListView.separated(
                         padding: const EdgeInsets.all(20),
                         itemCount: restaurants.length,

@@ -1,11 +1,11 @@
 import 'package:dishcovery_app/constants/app_bottom_nav_user.dart';
 import 'package:dishcovery_app/constants/app_constants.dart';
+import 'package:dishcovery_app/screen/favorite_screen.dart';
 import 'package:dishcovery_app/screen/swipescreen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:dishcovery_app/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import '../starting_screen/loading_screen.dart';
-import 'business_screen.dart';
 import 'foodpreference_screen.dart';
 import 'distance_pricerange.dart';
 import 'package:dishcovery_app/screen/admin/admin_dashboard_screen.dart';
@@ -52,10 +52,11 @@ class UserProfileScreen extends StatelessWidget {
               );
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined, color: Colors.black),
-            onPressed: () {},
-          ),
+          // ฟีเจอร์แจ้งเตือน
+          // IconButton(
+          //   icon: const Icon(Icons.notifications_outlined, color: Colors.black),
+          //   onPressed: () {},
+          // ),
         ],
       ),
       body: Column(
@@ -213,15 +214,27 @@ class UserProfileScreen extends StatelessWidget {
                   ),
 
                   _buildListTile(
-                    icon: Icons.store_outlined,
-                    title: "Switch to Restaurant Menu",
+                    icon: Icons.star_border_outlined,
+                    title: "ร้านที่คุณถูกใจ",
                     onTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => const RestaurantDetailsScreen(),
+                          builder: (context) => const FavoriteScreen(),
                         ),
                       );
+                    },
+                  ),
+                  _buildListTile(
+                    icon: Icons.store_outlined,
+                    title: "เพิ่มร้านอาหารของคุณ",
+                    onTap: () {
+                      // Navigator.push(
+                      //   context,
+                      //   MaterialPageRoute(
+                      //     builder: (context) => const RestaurantDetailsScreen(),
+                      //   ),
+                      // );
                     },
                   ),
                   _buildListTile(
@@ -252,7 +265,6 @@ class UserProfileScreen extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Divider(height: 1),
-
                 ListTile(
                   leading: const Icon(Icons.exit_to_app, color: Colors.red),
                   title: Text(

@@ -283,10 +283,7 @@ class FavoriteScreen extends StatelessWidget {
       elevation: 0,
       leading: IconButton(
         icon: const Icon(Icons.arrow_back_ios, color: AppColors.black),
-        onPressed: () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (context) => const SwipScreen()),
-        ),
+        onPressed: () => Navigator.pop(context),
       ),
 
       // จัด Title ให้อยู่ทางขวา
