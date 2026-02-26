@@ -60,6 +60,12 @@ class TimeUtils {
     return RestaurantStatus.open; // Fallback
   }
 
+  static bool isRestaurantOpen(dynamic openingHours) {
+    final status = getRestaurantStatus(openingHours);
+    return status == RestaurantStatus.open ||
+        status == RestaurantStatus.closingSoon;
+  }
+
   static RestaurantStatus _getStatusFromString(String range) {
     // Re-use logic for simple string "HH:mm - HH:mm"
     final parts = range.split('-');

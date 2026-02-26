@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:dishcovery_app/models/restaurant_details_model.dart';
 import 'package:dishcovery_app/services/restaurant_service.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -68,6 +69,14 @@ class _AddRestaurantScreenState extends State<AddRestaurantScreen> {
     if (_selectedCuisines.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('กรุณาเลือกประเภทอาหารอย่างน้อย 1 อย่าง')),
+      );
+      return;
+    }
+
+    if (_locationName == 'กรุณาเลือกตำแหน่ง' ||
+        _location == const LatLng(13.736717, 100.523186)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('กรุณาปักหมุดแผนที่ตำแหน่งร้านอาหาร')),
       );
       return;
     }
@@ -706,8 +715,10 @@ class _AddRestaurantScreenState extends State<AddRestaurantScreen> {
                       const SizedBox(height: 8),
                       TextFormField(
                         maxLength: 10,
-
                         keyboardType: TextInputType.phone,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                        ],
                         decoration: InputDecoration(
                           hintText: '0xxxxxxxxx',
                           hintStyle: AppTextStyles.hintText.copyWith(),

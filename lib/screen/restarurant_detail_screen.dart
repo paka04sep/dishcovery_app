@@ -378,14 +378,17 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                             end: Alignment.bottomCenter,
                             colors: [
                               Colors.transparent,
-                              Colors.black.withOpacity(0.85),
+                              Colors.transparent,
+                              Colors.black.withOpacity(0.4),
+                              Colors.black.withOpacity(0.6),
                             ],
+                            stops: const [0.0, 0.65, 0.80, 1.0],
                           ),
                         ),
                       ),
                       Positioned(
                         left: 12,
-                        bottom: 12,
+                        bottom: 8,
                         right: 12,
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
@@ -393,15 +396,32 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                             Text(
                               item.name,
                               style: AppTextStyles.restaurantMenuItemName
-                                  .copyWith(fontSize: 16, color: Colors.white),
+                                  .copyWith(
+                                    fontSize: 16,
+                                    color: Colors.white,
+                                    shadows: [
+                                      Shadow(
+                                        color: Colors.black,
+                                        offset: Offset(0, 0),
+                                        blurRadius: 6,
+                                      ),
+                                    ],
+                                  ),
                             ),
-                            const SizedBox(height: 4),
+
                             Text(
                               '${item.price} บาท',
                               style: AppTextStyles.restaurantMenuItemName
                                   .copyWith(
                                     fontSize: 14,
-                                    color: Colors.white.withOpacity(0.8),
+                                    color: Colors.white.withOpacity(0.9),
+                                    shadows: [
+                                      Shadow(
+                                        color: Colors.black,
+                                        offset: Offset(0, 0),
+                                        blurRadius: 6,
+                                      ),
+                                    ],
                                   ),
                             ),
                           ],

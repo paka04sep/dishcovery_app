@@ -16,6 +16,22 @@ class UserProfileSettingScreen extends StatefulWidget {
 
 class _UserProfileSettingScreenState extends State<UserProfileSettingScreen> {
   bool _isLoading = false;
+  String? _ownedRestaurantId;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkOwnedRestaurant();
+  }
+
+  Future<void> _checkOwnedRestaurant() async {
+    final user = await AuthService().getCurrentUser();
+    if (user != null && user.ownedRestaurantIds.isNotEmpty) {
+      setState(() {
+        _ownedRestaurantId = user.ownedRestaurantIds.first;
+      });
+    }
+  }
 
   void _showResetConfirmationDialog() {
     showDialog(
@@ -374,6 +390,155 @@ class _UserProfileSettingScreenState extends State<UserProfileSettingScreen> {
     );
   }
 
+  void _showDeleteRestaurantStep1() {
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: Text(
+            "ลบร้านอาหาร",
+            style: AppTextStyles.profileText.copyWith(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Colors.red,
+            ),
+          ),
+          content: Text(
+            "การลบร้านอาหารจะเป็นการลบข้อมูลร้านของคุณทั้งหมด รวมถึงเมนูอาหาร และประวัติที่เกี่ยวข้องจากผู้ใช้อื่นอย่างถาวร ไม่สามารถกู้คืนได้\n\nคุณแน่ใจหรือไม่ว่าต้องการดำเนินการต่อ?",
+            style: AppTextStyles.profileText.copyWith(
+              fontWeight: FontWeight.w400,
+              color: Colors.black.withValues(alpha: 0.8),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: Text("ยกเลิก", style: AppTextStyles.profileText),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                _showDeleteRestaurantStep2();
+              },
+              child: Text(
+                "ดำเนินการต่อ",
+                style: AppTextStyles.profileText.copyWith(
+                  color: Colors.red,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showDeleteRestaurantStep2() {
+    int countdown = 3;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (statefulContext, setDialogState) {
+            if (countdown > 0) {
+              Future.delayed(const Duration(seconds: 1), () {
+                if (mounted) {
+                  setDialogState(() => countdown--);
+                }
+              });
+            }
+
+            return AlertDialog(
+              title: Text(
+                "การยืนยันครั้งสุดท้าย",
+                style: AppTextStyles.profileText.copyWith(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.red,
+                ),
+              ),
+              content: Text(
+                "นี่คือการยืนยันครั้งสุดท้าย ข้อมูลร้านอาหารทั้งหมดจะถูกลบอย่างถาวร",
+                style: AppTextStyles.profileText.copyWith(
+                  fontWeight: FontWeight.w400,
+                  color: Colors.black.withValues(alpha: 0.8),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogContext),
+                  child: Text("ยกเลิก", style: AppTextStyles.profileText),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: countdown == 0 ? Colors.red : Colors.grey,
+                  ),
+                  onPressed: countdown == 0
+                      ? () async {
+                          Navigator.pop(dialogContext);
+                          if (!mounted) return;
+
+                          setState(() => _isLoading = true);
+
+                          try {
+                            if (_ownedRestaurantId != null) {
+                              // Execute delete
+                              await RestaurantService.instance
+                                  .deleteRestaurantAndCleanUsers(
+                                    _ownedRestaurantId!,
+                                  );
+                            }
+
+                            if (mounted) {
+                              Navigator.of(context).pushAndRemoveUntil(
+                                MaterialPageRoute(
+                                  builder: (context) => const AppInitChangeMode(
+                                    isToBusinessMode: false,
+                                  ),
+                                ),
+                                (route) => false,
+                              );
+                            }
+                          } catch (e) {
+                            if (mounted) {
+                              showDialog(
+                                context: context,
+                                builder: (ctx) => AlertDialog(
+                                  title: Text("เกิดข้อผิดพลาด"),
+                                  content: Text(e.toString()),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.pop(ctx),
+                                      child: Text("ตกลง"),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }
+                          } finally {
+                            if (mounted) setState(() => _isLoading = false);
+                          }
+                        }
+                      : null,
+                  child: Text(
+                    countdown > 0 ? "ยืนยัน ($countdown)" : "ยืนยันการลบ",
+                    style: AppTextStyles.profileText.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -408,6 +573,14 @@ class _UserProfileSettingScreenState extends State<UserProfileSettingScreen> {
                     isDestructive: false,
                     onTap: _showResetConfirmationDialog,
                   ),
+                  if (_ownedRestaurantId != null)
+                    _buildListTile(
+                      icon: Icons.storefront_outlined,
+                      title: "ลบร้านอาหาร",
+                      subtitle: "ลบข้อมูลร้านของคุณทั้งหมดอย่างถาวร",
+                      isDestructive: true,
+                      onTap: _showDeleteRestaurantStep1,
+                    ),
                 ],
               ),
               const SizedBox(height: 30),

@@ -20,6 +20,26 @@ class MenuItem {
     this.isAvailable = true,
   });
 
+  MenuItem copyWith({
+    String? id,
+    String? name,
+    int? price,
+    String? menuImage,
+    String? category,
+    bool? isRecommended,
+    bool? isAvailable,
+  }) {
+    return MenuItem(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      price: price ?? this.price,
+      menuImage: menuImage ?? this.menuImage,
+      category: category ?? this.category,
+      isRecommended: isRecommended ?? this.isRecommended,
+      isAvailable: isAvailable ?? this.isAvailable,
+    );
+  }
+
   factory MenuItem.fromJson(Map<String, dynamic> json) {
     return MenuItem(
       id: json['id'] as String? ?? '',
@@ -64,6 +84,14 @@ class MenuCategory {
     );
   }
 
+  MenuCategory copyWith({String? id, String? name, int? order}) {
+    return MenuCategory(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      order: order ?? this.order,
+    );
+  }
+
   Map<String, dynamic> toJson() {
     return {'id': id, 'name': name, 'order': order};
   }
@@ -86,6 +114,7 @@ class RestaurantCardData {
   final String status; // 'pending', 'approved', 'rejected'
   final String? ownerId;
   final String? rejectionReason;
+  final bool isTemporarilyClosed;
 
   RestaurantCardData({
     required this.id,
@@ -102,6 +131,7 @@ class RestaurantCardData {
     this.status = 'approved', // Default to approved for legacy data
     this.ownerId,
     this.rejectionReason,
+    this.isTemporarilyClosed = false,
   });
 
   RestaurantCardData copyWith({
@@ -119,6 +149,7 @@ class RestaurantCardData {
     String? status,
     String? ownerId,
     String? rejectionReason,
+    bool? isTemporarilyClosed,
   }) {
     return RestaurantCardData(
       id: id ?? this.id,
@@ -135,6 +166,7 @@ class RestaurantCardData {
       status: status ?? this.status,
       ownerId: ownerId ?? this.ownerId,
       rejectionReason: rejectionReason ?? this.rejectionReason,
+      isTemporarilyClosed: isTemporarilyClosed ?? this.isTemporarilyClosed,
     );
   }
 
@@ -173,6 +205,7 @@ class RestaurantCardData {
       status: json['status'] as String? ?? 'approved',
       ownerId: json['ownerId'] as String?,
       rejectionReason: json['rejectionReason'] as String?,
+      isTemporarilyClosed: json['isTemporarilyClosed'] as bool? ?? false,
     );
   }
 
@@ -232,6 +265,7 @@ class RestaurantCardData {
       status: data['status'] as String? ?? 'approved',
       ownerId: data['ownerId'] as String?,
       rejectionReason: data['rejectionReason'] as String?,
+      isTemporarilyClosed: data['isTemporarilyClosed'] as bool? ?? false,
     );
   }
 
@@ -252,6 +286,7 @@ class RestaurantCardData {
       'status': status,
       'ownerId': ownerId,
       'rejectionReason': rejectionReason,
+      'isTemporarilyClosed': isTemporarilyClosed,
     };
   }
 

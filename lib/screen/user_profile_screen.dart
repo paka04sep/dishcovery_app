@@ -12,7 +12,7 @@ import 'package:dishcovery_app/screen/admin/admin_dashboard_screen.dart';
 import 'package:dishcovery_app/services/restaurant_service.dart';
 import 'package:dishcovery_app/screen/user_profile_setting.dart';
 import 'package:dishcovery_app/screen/add_restaurant_screen.dart';
-import '../../constants/app_init_changemode.dart';
+import 'package:dishcovery_app/constants/app_init_screen.dart';
 
 class UserProfileScreen extends StatelessWidget {
   const UserProfileScreen({super.key});

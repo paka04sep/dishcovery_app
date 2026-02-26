@@ -3,9 +3,9 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:dishcovery_app/models/restaurant_model.dart';
 import 'package:dishcovery_app/models/restaurant_details_model.dart';
-import 'package:dishcovery_app/services/restaurant_service.dart';
 import 'package:dishcovery_app/screen/restarurant_detail_screen.dart';
 import 'package:dishcovery_app/constants/app_constants.dart';
+import 'package:dishcovery_app/constants/app_init_screen.dart';
 
 class AddRestaurantDetailScreen extends StatefulWidget {
   final RestaurantDetailsData initialData;
@@ -33,30 +33,18 @@ class _AddRestaurantDetailScreenState extends State<AddRestaurantDetailScreen> {
     _details = widget.initialData;
   }
 
-  Future<void> _submitToAdmin() async {
-    setState(() => _isSubmitting = true);
-    try {
-      await RestaurantService.instance.addRestaurantWithDetails(
-        _details,
-        coverImage: _coverImageFile,
-        galleryImages: _galleryImageFiles,
-        menuImages: _menuImageFiles,
-      );
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('ส่งข้อมูลให้แอดมินพิจารณาแล้ว!')),
-        );
-        Navigator.popUntil(context, (route) => route.isFirst);
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
-    } finally {
-      if (mounted) setState(() => _isSubmitting = false);
-    }
+  void _submitToAdmin() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => AppInitAddRestaurant(
+          details: _details,
+          coverImage: _coverImageFile,
+          galleryImages: _galleryImageFiles,
+          menuImages: _menuImageFiles,
+        ),
+      ),
+    );
   }
 
   void _previewRestaurant() {

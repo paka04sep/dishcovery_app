@@ -5,8 +5,50 @@ import 'package:dishcovery_app/constants/app_bottom_nav_business.dart';
 import 'package:dishcovery_app/services/restaurant_service.dart';
 import 'package:dishcovery_app/screen/restarurant_detail_screen.dart';
 
-class BusinessMainScreen extends StatelessWidget {
-  const BusinessMainScreen({super.key});
+class BusinessMainScreen extends StatefulWidget {
+  final bool showAddSuccessDialog;
+
+  const BusinessMainScreen({super.key, this.showAddSuccessDialog = false});
+
+  @override
+  State<BusinessMainScreen> createState() => _BusinessMainScreenState();
+}
+
+class _BusinessMainScreenState extends State<BusinessMainScreen> {
+  @override
+  void initState() {
+    super.initState();
+    if (widget.showAddSuccessDialog) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        showDialog(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(
+              'เพิ่มร้านอาหารสำเร็จ',
+              style: AppTextStyles.profileText.copyWith(fontSize: 20),
+            ),
+            content: Text(
+              'กำลังส่งร้านให้ระบบตรวจสอบ\nเพื่อเปิดการมองเห็น',
+              style: AppTextStyles.profileText.copyWith(
+                color: Colors.grey[800],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: Text(
+                  'ตกลง',
+                  style: AppTextStyles.profileText.copyWith(
+                    color: AppColors.primaryBlue,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -49,9 +91,10 @@ class BusinessMainScreen extends StatelessWidget {
               .toList();
 
           if (ownedRestaurants.isEmpty) {
-            return const Center(
+            return Center(
               child: Text(
-                'กำลังโหลดข้อมูล... หรือร้านของคุณยังไม่มีในระบบ (อาจจะถูกปฏิเสธ)',
+                'กำลังโหลดข้อมูล... หรือร้านของคุณยังไม่มีในระบบ',
+                style: AppTextStyles.hintText.copyWith(fontSize: 14),
               ),
             );
           }
@@ -64,11 +107,8 @@ class BusinessMainScreen extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(left: 20, top: 10),
                 child: GradientText(
-                  text: myRestaurant.name,
-                  style: AppTextStyles.secondaryTitle.copyWith(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 28,
-                  ),
+                  text: "My Restaurant",
+                  style: AppTextStyles.secondaryTitle.copyWith(fontSize: 28),
                 ),
               ),
               const SizedBox(height: 4),

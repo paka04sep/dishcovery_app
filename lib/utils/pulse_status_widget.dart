@@ -5,11 +5,17 @@ import 'package:dishcovery_app/utils/time_utils.dart'; // Adjust path if needed
 class PulseStatusWidget extends StatefulWidget {
   final RestaurantStatus status;
   final double size;
+  final String? customText;
+  final bool showText;
+  final bool drawBox;
 
   const PulseStatusWidget({
     super.key,
     required this.status,
     this.size = 14, // default
+    this.customText,
+    this.showText = true,
+    this.drawBox = true,
   });
 
   @override
@@ -82,7 +88,7 @@ class _PulseStatusWidgetState extends State<PulseStatusWidget>
         break;
       case RestaurantStatus.closed:
         color = Colors.red;
-        text = 'ปิด';
+        text = widget.customText ?? 'ปิด';
         break;
     }
 
@@ -90,6 +96,52 @@ class _PulseStatusWidgetState extends State<PulseStatusWidget>
     final fontSize = widget.size;
     final hPad = widget.size;
     final vPad = widget.size * 0.5;
+
+    Widget content = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            if (widget.status == RestaurantStatus.open)
+              FadeTransition(
+                opacity: _opacityAnimation,
+                child: ScaleTransition(
+                  scale: _scaleAnimation,
+                  child: Container(
+                    width: dotSize,
+                    height: dotSize,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: color.withOpacity(0.5),
+                    ),
+                  ),
+                ),
+              ),
+            Container(
+              width: dotSize,
+              height: dotSize,
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+            ),
+          ],
+        ),
+        if (widget.showText) ...[
+          SizedBox(width: widget.size * 0.6),
+          Text(
+            text,
+            style: AppTextStyles.restaurantInDetails.copyWith(
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+              fontSize: fontSize,
+            ),
+          ),
+        ],
+      ],
+    );
+
+    if (!widget.drawBox) {
+      return content;
+    }
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: hPad, vertical: vPad),
@@ -104,45 +156,7 @@ class _PulseStatusWidgetState extends State<PulseStatusWidget>
           ),
         ],
       ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              if (widget.status == RestaurantStatus.open)
-                FadeTransition(
-                  opacity: _opacityAnimation,
-                  child: ScaleTransition(
-                    scale: _scaleAnimation,
-                    child: Container(
-                      width: dotSize,
-                      height: dotSize,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: color.withOpacity(0.5),
-                      ),
-                    ),
-                  ),
-                ),
-              Container(
-                width: dotSize,
-                height: dotSize,
-                decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-              ),
-            ],
-          ),
-          SizedBox(width: widget.size * 0.6),
-          Text(
-            text,
-            style: AppTextStyles.restaurantInDetails.copyWith(
-              color: Colors.black,
-              fontWeight: FontWeight.bold,
-              fontSize: fontSize,
-            ),
-          ),
-        ],
-      ),
+      child: content,
     );
   }
 }

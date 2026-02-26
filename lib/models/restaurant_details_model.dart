@@ -23,6 +23,7 @@ class RestaurantDetailsData extends RestaurantCardData {
     super.status,
     super.ownerId,
     super.rejectionReason,
+    super.isTemporarilyClosed,
     required this.address,
     required this.phone,
     this.menuItems = const [],
@@ -51,6 +52,7 @@ class RestaurantDetailsData extends RestaurantCardData {
     String? status,
     String? ownerId,
     String? rejectionReason,
+    bool? isTemporarilyClosed,
   }) {
     return RestaurantDetailsData(
       id: id ?? this.id,
@@ -66,6 +68,7 @@ class RestaurantDetailsData extends RestaurantCardData {
       status: status ?? this.status,
       ownerId: ownerId ?? this.ownerId,
       rejectionReason: rejectionReason ?? this.rejectionReason,
+      isTemporarilyClosed: isTemporarilyClosed ?? this.isTemporarilyClosed,
       address: address ?? this.address,
       phone: phone ?? this.phone,
       openingHours: openingHours ?? this.openingHours,
@@ -105,6 +108,7 @@ class RestaurantDetailsData extends RestaurantCardData {
         openingHours: {},
         description: '',
         status: 'approved',
+        isTemporarilyClosed: false,
       );
     }
 
@@ -168,6 +172,7 @@ class RestaurantDetailsData extends RestaurantCardData {
       status: data['status'] as String? ?? 'approved',
       ownerId: data['ownerId'] as String?,
       rejectionReason: data['rejectionReason'] as String?,
+      isTemporarilyClosed: data['isTemporarilyClosed'] as bool? ?? false,
       galleryImages: data['galleryImages'] != null
           ? List<String>.from(data['galleryImages'])
           : [],

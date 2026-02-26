@@ -1,15 +1,50 @@
-import 'package:dishcovery_app/screen/business/business_main_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:dishcovery_app/constants/app_bottom_nav_business.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:dishcovery_app/constants/app_constants.dart';
 import 'package:dishcovery_app/services/auth_service.dart';
 import 'package:dishcovery_app/starting_screen/loading_screen.dart';
 import 'package:dishcovery_app/screen/user_profile_setting.dart';
-import '../../constants/app_init_changemode.dart';
+import 'package:dishcovery_app/constants/app_init_screen.dart';
+import 'package:dishcovery_app/services/restaurant_service.dart';
+import 'package:dishcovery_app/screen/business/business_main_screen.dart';
+import 'package:dishcovery_app/utils/time_utils.dart';
+import 'package:dishcovery_app/models/restaurant_details_model.dart';
+import 'package:dishcovery_app/models/restaurant_model.dart';
+import 'package:dishcovery_app/utils/pulse_status_widget.dart';
+import 'package:dishcovery_app/constants/app_bottom_nav_business.dart';
+import 'package:dishcovery_app/screen/business/manage_restaurant_screen.dart';
+import 'package:dishcovery_app/screen/business/manage_menu_screen.dart';
+import 'package:dishcovery_app/screen/business/manage_hours_screen.dart';
 
-class BusinessProfileScreen extends StatelessWidget {
+class BusinessProfileScreen extends StatefulWidget {
   const BusinessProfileScreen({super.key});
+
+  @override
+  State<BusinessProfileScreen> createState() => _BusinessProfileScreenState();
+}
+
+class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
+  RestaurantDetailsData? _restaurant;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadRestaurantData();
+  }
+
+  Future<void> _loadRestaurantData() async {
+    final user = RestaurantService.instance.userModel;
+    if (user != null && user.ownedRestaurantIds.isNotEmpty) {
+      final restaurantId = user.ownedRestaurantIds.first;
+      final details = await RestaurantService.instance.getRestaurantDetails(
+        restaurantId,
+      );
+      if (mounted) {
+        setState(() {
+          _restaurant = details;
+        });
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -73,23 +108,42 @@ class BusinessProfileScreen extends StatelessWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(
-                              FirebaseAuth.instance.currentUser?.email?.split(
-                                    '@',
-                                  )[0] ??
-                                  "Business User",
-                              style: const TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black,
-                                fontFamily: 'Inter',
-                              ),
-                              overflow: TextOverflow.ellipsis,
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    _restaurant?.name ?? "",
+                                    style: AppTextStyles.profileText.copyWith(
+                                      fontSize: 18,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                if (_restaurant != null)
+                                  Padding(
+                                    padding: const EdgeInsets.only(left: 6.0),
+                                    child: PulseStatusWidget(
+                                      status: _restaurant!.isTemporarilyClosed
+                                          ? RestaurantStatus.closed
+                                          : (TimeUtils.isRestaurantOpen(
+                                                  _restaurant!.openingHours,
+                                                )
+                                                ? RestaurantStatus.open
+                                                : RestaurantStatus.closed),
+                                      showText: false,
+                                      drawBox: false,
+                                      size: 12,
+                                    ),
+                                  ),
+                              ],
                             ),
+                            const SizedBox(height: 4),
                             Text(
-                              "บัญชีธุรกิจ (Business Mode)",
+                              RestaurantService.instance.userModel?.email
+                                      ?.split('@')[0] ??
+                                  'No User Email',
                               style: AppTextStyles.profileText.copyWith(
-                                color: AppColors.primaryBlue,
+                                color: Colors.grey.shade600,
                                 fontSize: 14,
                               ),
                             ),
@@ -98,9 +152,63 @@ class BusinessProfileScreen extends StatelessWidget {
                       ),
                     ],
                   ),
+                  const SizedBox(height: 20),
+
                   const SizedBox(height: 30),
 
                   // Action Menus
+                  _buildListTile(
+                    icon: Icons.store_outlined,
+                    title: "ร้านอาหารของฉัน",
+                    onTap: () async {
+                      if (_restaurant != null) {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => ManageRestaurantScreen(
+                              restaurant: _restaurant!,
+                            ),
+                          ),
+                        );
+                        _loadRestaurantData();
+                      }
+                    },
+                  ),
+
+                  _buildListTile(
+                    icon: Icons.menu_book_outlined,
+                    title: "เมนูอาหารของฉัน",
+                    onTap: () async {
+                      if (_restaurant != null) {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                ManageMenuScreen(restaurant: _restaurant!),
+                          ),
+                        );
+                        _loadRestaurantData();
+                      }
+                    },
+                  ),
+
+                  _buildListTile(
+                    icon: Icons.access_time_outlined,
+                    title: "เวลาเปิด - ปิดร้าน",
+                    onTap: () async {
+                      if (_restaurant != null) {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                ManageHoursScreen(restaurant: _restaurant!),
+                          ),
+                        );
+                        _loadRestaurantData();
+                      }
+                    },
+                  ),
+
                   _buildListTile(
                     icon: Icons.person_outline,
                     title: "กลับสู่โหมดผู้ใช้ปกติ",

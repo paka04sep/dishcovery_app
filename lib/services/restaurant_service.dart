@@ -434,6 +434,156 @@ class RestaurantService extends ChangeNotifier {
     }
   }
 
+  Future<void> updateRestaurantInfo(RestaurantDetailsData data) async {
+    try {
+      if (kDebugMode) print("DEBUG: Updating restaurant info for ${data.id}");
+
+      await FirebaseFirestore.instance
+          .collection('restaurants')
+          .doc(data.id)
+          .update(data.toJson());
+
+      // Update the local cache optimistically
+      final index = _restaurants.indexWhere((r) => r.id == data.id);
+      if (index != -1) {
+        // Details inherits Card, so it works. Just merging needed.
+        _restaurants[index] = data;
+        notifyListeners();
+      }
+    } catch (e) {
+      if (kDebugMode) print("Error updating restaurant info: $e");
+      rethrow;
+    }
+  }
+
+  Future<void> updateRestaurantWithDetails(
+    RestaurantDetailsData data, {
+    File? newCoverImage,
+    List<File>? newGalleryImages,
+  }) async {
+    try {
+      if (kDebugMode)
+        print("DEBUG: Updating restaurant info with images for ${data.id}");
+
+      final db = FirebaseFirestore.instance;
+      final docRef = db.collection('restaurants').doc(data.id);
+
+      // Upload Cover Image if new
+      String coverUrl = data.imageUrl;
+      if (newCoverImage != null) {
+        coverUrl = await _uploadImage(
+          newCoverImage,
+          'restaurants/${docRef.id}/cover.jpg',
+        );
+      }
+
+      // Upload New Gallery Images
+      List<String> combinedGalleryUrls = List<String>.from(data.galleryImages);
+      if (newGalleryImages != null && newGalleryImages.isNotEmpty) {
+        for (int i = 0; i < newGalleryImages.length; i++) {
+          final url = await _uploadImage(
+            newGalleryImages[i],
+            'restaurants/${docRef.id}/gallery_update_${DateTime.now().millisecondsSinceEpoch}_$i.jpg',
+          );
+          if (url.isNotEmpty) combinedGalleryUrls.add(url);
+        }
+      }
+
+      final updatedData = data.copyWith(
+        imageUrl: coverUrl.isNotEmpty ? coverUrl : data.imageUrl,
+        galleryImages: combinedGalleryUrls,
+      );
+
+      final jsonToSave = updatedData.toJson();
+      // Remove subcollections data before updating main doc
+      jsonToSave.remove('menuItems');
+      jsonToSave.remove('menuCategories');
+
+      await docRef.update(jsonToSave);
+
+      // Update the local cache
+      final index = _restaurants.indexWhere((r) => r.id == updatedData.id);
+      if (index != -1) {
+        _restaurants[index] = updatedData;
+        notifyListeners();
+      }
+    } catch (e) {
+      if (kDebugMode) print("Error updating restaurant info with images: $e");
+      rethrow;
+    }
+  }
+
+  Future<void> updateRestaurantMenus(
+    String restaurantId, {
+    required List<MenuCategory> categories,
+    required List<MenuItem> items,
+    Map<String, File>? newMenuImages,
+    List<String>? deletedCategoryIds,
+    List<String>? deletedItemIds,
+  }) async {
+    try {
+      if (kDebugMode) print("DEBUG: Updating menus for $restaurantId");
+
+      final db = FirebaseFirestore.instance;
+      final docRef = db.collection('restaurants').doc(restaurantId);
+      final batch = db.batch();
+
+      // Handle deletions
+      if (deletedCategoryIds != null) {
+        for (var id in deletedCategoryIds) {
+          batch.delete(docRef.collection('menuCategories').doc(id));
+        }
+      }
+      if (deletedItemIds != null) {
+        for (var id in deletedItemIds) {
+          batch.delete(docRef.collection('menuItems').doc(id));
+        }
+      }
+
+      // Handle categories updates/adds
+      for (var cat in categories) {
+        final catRef = docRef.collection('menuCategories').doc(cat.id);
+        batch.set(catRef, cat.toJson(), SetOptions(merge: true));
+      }
+
+      // Handle items updates/adds and image uploads
+      List<MenuItem> finalItems = [];
+      for (var item in items) {
+        String itemImageUrl = item.menuImage;
+        if (newMenuImages != null && newMenuImages.containsKey(item.id)) {
+          itemImageUrl = await _uploadImage(
+            newMenuImages[item.id]!,
+            'restaurants/$restaurantId/menus/${item.id}_${DateTime.now().millisecondsSinceEpoch}.jpg',
+          );
+        }
+
+        final updatedItem = item.copyWith(menuImage: itemImageUrl);
+        finalItems.add(updatedItem);
+
+        final menuRef = docRef.collection('menuItems').doc(item.id);
+        batch.set(menuRef, updatedItem.toJson(), SetOptions(merge: true));
+      }
+
+      await batch.commit();
+
+      // Update local cache
+      final index = _restaurants.indexWhere((r) => r.id == restaurantId);
+      if (index != -1) {
+        final currentData = _restaurants[index];
+        if (currentData is RestaurantDetailsData) {
+          _restaurants[index] = currentData.copyWith(
+            menuCategories: categories,
+            menuItems: finalItems,
+          );
+        }
+        notifyListeners();
+      }
+    } catch (e) {
+      if (kDebugMode) print("Error updating restaurant menus: $e");
+      rethrow;
+    }
+  }
+
   Future<void> addRestaurantWithDetails(
     RestaurantDetailsData data, {
     File? coverImage,
@@ -1043,6 +1193,117 @@ class RestaurantService extends ChangeNotifier {
       if (kDebugMode) print("Error fetching details: $e");
     }
     return null;
+  }
+
+  // Update temporarily closed status
+  Future<void> updateRestaurantTemporarilyClosed(
+    String id,
+    bool isClosed,
+  ) async {
+    try {
+      if (kDebugMode)
+        print("DEBUG: Updating temporarily closed status for $id to $isClosed");
+      await FirebaseFirestore.instance.collection('restaurants').doc(id).update(
+        {'isTemporarilyClosed': isClosed},
+      );
+
+      // Optimistic update of list cache
+      final index = _restaurants.indexWhere((r) => r.id == id);
+      if (index != -1) {
+        _restaurants[index] = _restaurants[index].copyWith(
+          isTemporarilyClosed: isClosed,
+        );
+        notifyListeners();
+      }
+    } catch (e) {
+      if (kDebugMode) print("Error updating store closed status: $e");
+      rethrow;
+    }
+  }
+
+  // Delete a restaurant and clean up all dangling data inside users collection
+  Future<void> deleteRestaurantAndCleanUsers(String restaurantId) async {
+    try {
+      if (kDebugMode)
+        print("DEBUG: Initiating cascade delete for restaurant $restaurantId");
+
+      final db = FirebaseFirestore.instance;
+      final batch = db.batch();
+
+      // 1. Delete Subcollections logic
+      final menuItemsSnap = await db
+          .collection('restaurants')
+          .doc(restaurantId)
+          .collection('menuItems')
+          .get();
+      for (var doc in menuItemsSnap.docs) {
+        batch.delete(doc.reference);
+      }
+
+      final catSnap = await db
+          .collection('restaurants')
+          .doc(restaurantId)
+          .collection('menuCategories')
+          .get();
+      for (var doc in catSnap.docs) {
+        batch.delete(doc.reference);
+      }
+
+      // 2. Delete the main restaurant document
+      batch.delete(db.collection('restaurants').doc(restaurantId));
+
+      // 3. Remove 'restaurantId' from EVERY user document (favoriteIds, history.yum, history.passed)
+      final usersSnap = await db.collection('users').get();
+      for (var userDoc in usersSnap.docs) {
+        final Map<String, dynamic> updateData = {};
+
+        final userData = userDoc.data();
+        final favs = List<String>.from(userData['favoriteIds'] ?? []);
+        final history = userData['history'] as Map<String, dynamic>? ?? {};
+        final yums = List<String>.from(history['yum'] ?? []);
+        final passes = List<String>.from(history['passed'] ?? []);
+
+        bool needsUpdate = false;
+
+        if (favs.contains(restaurantId)) {
+          updateData['favoriteIds'] = FieldValue.arrayRemove([restaurantId]);
+          needsUpdate = true;
+        }
+
+        if (yums.contains(restaurantId) || passes.contains(restaurantId)) {
+          // If history yum or passed has it, array remove
+          updateData['history.yum'] = FieldValue.arrayRemove([restaurantId]);
+          updateData['history.passed'] = FieldValue.arrayRemove([restaurantId]);
+          needsUpdate = true;
+        }
+
+        if (needsUpdate) {
+          batch.update(userDoc.reference, updateData);
+        }
+      }
+
+      // 4. Update the current owner document to remove from ownedRestaurantIds
+      final currentUser = FirebaseAuth.instance.currentUser;
+      if (currentUser != null) {
+        batch.update(db.collection('users').doc(currentUser.uid), {
+          'ownedRestaurantIds': FieldValue.arrayRemove([restaurantId]),
+        });
+      }
+
+      // 5. Commit batch
+      await batch.commit();
+
+      // Update local cache
+      _restaurants.removeWhere((r) => r.id == restaurantId);
+      notifyListeners();
+
+      if (kDebugMode)
+        print("DEBUG: Success. Cascade delete is complete for $restaurantId");
+    } catch (e) {
+      if (kDebugMode)
+        print("Error cascade deleting restaurant $restaurantId: $e");
+      rethrow;
+    }
   }
 
   // Fetch Swipe Logs from Firestore

@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:dishcovery_app/models/user_model.dart';
 
 class AuthService {
   final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
@@ -10,7 +11,24 @@ class AuthService {
   Stream<User?> get authStateChanges => _firebaseAuth.authStateChanges();
 
   // Get current user
-  User? get currentUser => _firebaseAuth.currentUser;
+  Future<UserModel?> getCurrentUser() async {
+    User? firebaseUser = _firebaseAuth.currentUser;
+    if (firebaseUser == null) return null;
+
+    try {
+      DocumentSnapshot doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(firebaseUser.uid)
+          .get();
+
+      if (doc.exists) {
+        return UserModel.fromFirestore(doc);
+      }
+    } catch (e) {
+      print("Error fetching user data: $e");
+    }
+    return null;
+  }
 
   // Sign in with Google
   Future<UserCredential?> signInWithGoogle() async {
