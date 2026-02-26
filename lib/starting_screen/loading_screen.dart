@@ -130,7 +130,7 @@ class _LoadingScreenState extends State<LoadingScreen>
 
             return Opacity(
               opacity: opacity,
-              // 💡 ใช้ ShaderMask ครอบตัวอักษรแต่ละตัว
+              //  ใช้ ShaderMask ครอบตัวอักษรแต่ละตัว
               child: ShaderMask(
                 // กำหนด Shader เป็น LinearGradient ที่เราสร้างไว้
                 shaderCallback: (bounds) {
@@ -140,14 +140,13 @@ class _LoadingScreenState extends State<LoadingScreen>
                 },
                 child: Text(
                   char,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.w900,
-                    // 💡 ต้องใช้สีขาว (หรือสีใดๆ ที่มี opacity เต็ม 1.0)
-                    // เพื่อให้ Gradient ฉายลงไปได้อย่างสมบูรณ์
+
                     color: Colors.white,
                     letterSpacing: 1.5,
-                    fontFamily: 'inter',
+                    fontFamily: 'balooda',
                   ),
                 ),
               ),
@@ -184,7 +183,7 @@ class _LoadingScreenState extends State<LoadingScreen>
             Image.asset('assets/images/logo1.0.png', width: 156, height: 156),
             const SizedBox(height: 15),
 
-            // 💡 เรียกใช้ Widget ที่สร้างใหม่แทน FadeTransition
+            //   เรียกใช้ Widget ที่สร้างใหม่แทน FadeTransition
             _buildAnimatedText('DISHCOVERY!'),
           ],
         ),

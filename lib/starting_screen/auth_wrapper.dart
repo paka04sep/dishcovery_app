@@ -6,7 +6,8 @@ import '../screen/swipescreen.dart';
 import '../services/auth_service.dart';
 import '../screen/foodpreference_screen.dart';
 import '../starting_screen/signin_screen.dart';
-import '../starting_screen/loading_screen.dart'; // Import LoadingScreen if you want to show it while checking auth
+import '../starting_screen/loading_screen.dart';
+import '../screen/business/business_main_screen.dart';
 
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
@@ -67,6 +68,7 @@ class AuthWrapper extends StatelessWidget {
               }
 
               bool isFirstLogin = true;
+              bool isBusinessMode = false;
               if (userSnapshot.hasData &&
                   userSnapshot.data != null &&
                   userSnapshot.data!.exists) {
@@ -74,11 +76,18 @@ class AuthWrapper extends StatelessWidget {
                 if (data != null && data.containsKey('isFirstLogin')) {
                   isFirstLogin = data['isFirstLogin'];
                 }
+                if (data != null && data.containsKey('isBusinessMode')) {
+                  isBusinessMode = data['isBusinessMode'];
+                }
               }
 
               // If it's first login (or doc doesn't exist yet), go to preferences
               if (isFirstLogin) {
                 return const OnboardingScreen();
+              }
+
+              if (isBusinessMode) {
+                return const BusinessMainScreen();
               }
 
               // Otherwise go to main app

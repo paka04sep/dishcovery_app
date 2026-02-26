@@ -71,6 +71,8 @@ class UserModel {
   final UserHistory history;
   final DateTime? createdAt;
   final DateTime? lastActiveAt;
+  final List<String> ownedRestaurantIds;
+  final bool isBusinessMode;
 
   UserModel({
     required this.uid,
@@ -83,6 +85,8 @@ class UserModel {
     required this.history,
     this.createdAt,
     this.lastActiveAt,
+    this.ownedRestaurantIds = const [],
+    this.isBusinessMode = false,
   });
 
   factory UserModel.fromFirestore(DocumentSnapshot doc) {
@@ -112,6 +116,8 @@ class UserModel {
           : UserHistory(),
       createdAt: parseTimestamp(data['createdAt']),
       lastActiveAt: parseTimestamp(data['lastActiveAt']),
+      ownedRestaurantIds: List<String>.from(data['ownedRestaurantIds'] ?? []),
+      isBusinessMode: data['isBusinessMode'] as bool? ?? false,
     );
   }
 
@@ -127,6 +133,8 @@ class UserModel {
       'createdAt':
           createdAt, // Firestore handles DateTime -> Timestamp automatically usually, but careful with updates
       'lastActiveAt': lastActiveAt,
+      'ownedRestaurantIds': ownedRestaurantIds,
+      'isBusinessMode': isBusinessMode,
     };
   }
 }

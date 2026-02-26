@@ -11,6 +11,8 @@ import 'distance_pricerange.dart';
 import 'package:dishcovery_app/screen/admin/admin_dashboard_screen.dart';
 import 'package:dishcovery_app/services/restaurant_service.dart';
 import 'package:dishcovery_app/screen/user_profile_setting.dart';
+import 'package:dishcovery_app/screen/add_restaurant_screen.dart';
+import '../../constants/app_init_changemode.dart';
 
 class UserProfileScreen extends StatelessWidget {
   const UserProfileScreen({super.key});
@@ -225,16 +227,45 @@ class UserProfileScreen extends StatelessWidget {
                       );
                     },
                   ),
-                  _buildListTile(
-                    icon: Icons.store_outlined,
-                    title: "เพิ่มร้านอาหารของคุณ",
-                    onTap: () {
-                      // Navigator.push(
-                      //   context,
-                      //   MaterialPageRoute(
-                      //     builder: (context) => const RestaurantDetailsScreen(),
-                      //   ),
-                      // );
+                  ListenableBuilder(
+                    listenable: RestaurantService.instance,
+                    builder: (context, child) {
+                      final userModel = RestaurantService.instance.userModel;
+                      if (userModel == null) return const SizedBox.shrink();
+
+                      final hasRestaurant =
+                          userModel.ownedRestaurantIds.isNotEmpty;
+
+                      if (hasRestaurant) {
+                        return _buildListTile(
+                          icon: Icons.storefront,
+                          title: "จัดการร้านอาหารของคุณ",
+                          onTap: () {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => const AppInitChangeMode(
+                                  isToBusinessMode: true,
+                                ),
+                              ),
+                            );
+                          },
+                        );
+                      } else {
+                        return _buildListTile(
+                          icon: Icons.store_outlined,
+                          title: "เพิ่มร้านอาหารของคุณ",
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const AddRestaurantScreen(),
+                              ),
+                            );
+                          },
+                        );
+                      }
                     },
                   ),
                   _buildListTile(

@@ -83,6 +83,9 @@ class RestaurantCardData {
   final String description;
   final Map<String, dynamic> openingHours; // Changed to Map
   final DateTime? createdAt;
+  final String status; // 'pending', 'approved', 'rejected'
+  final String? ownerId;
+  final String? rejectionReason;
 
   RestaurantCardData({
     required this.id,
@@ -96,6 +99,9 @@ class RestaurantCardData {
     required this.description,
     this.openingHours = const {}, // Default empty map
     this.createdAt,
+    this.status = 'approved', // Default to approved for legacy data
+    this.ownerId,
+    this.rejectionReason,
   });
 
   RestaurantCardData copyWith({
@@ -110,6 +116,9 @@ class RestaurantCardData {
     String? description,
     Map<String, dynamic>? openingHours,
     DateTime? createdAt,
+    String? status,
+    String? ownerId,
+    String? rejectionReason,
   }) {
     return RestaurantCardData(
       id: id ?? this.id,
@@ -123,6 +132,9 @@ class RestaurantCardData {
       description: description ?? this.description,
       openingHours: openingHours ?? this.openingHours,
       createdAt: createdAt ?? this.createdAt,
+      status: status ?? this.status,
+      ownerId: ownerId ?? this.ownerId,
+      rejectionReason: rejectionReason ?? this.rejectionReason,
     );
   }
 
@@ -158,6 +170,9 @@ class RestaurantCardData {
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])
           : null,
+      status: json['status'] as String? ?? 'approved',
+      ownerId: json['ownerId'] as String?,
+      rejectionReason: json['rejectionReason'] as String?,
     );
   }
 
@@ -214,6 +229,9 @@ class RestaurantCardData {
                 ? (data['created_at'] as Timestamp).toDate()
                 : DateTime.tryParse(data['created_at'].toString()))
           : null,
+      status: data['status'] as String? ?? 'approved',
+      ownerId: data['ownerId'] as String?,
+      rejectionReason: data['rejectionReason'] as String?,
     );
   }
 
@@ -231,6 +249,9 @@ class RestaurantCardData {
       'description': description,
       'openingHours': openingHours,
       'created_at': createdAt?.toIso8601String(),
+      'status': status,
+      'ownerId': ownerId,
+      'rejectionReason': rejectionReason,
     };
   }
 

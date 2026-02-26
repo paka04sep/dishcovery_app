@@ -311,7 +311,7 @@ class _SwipScreenState extends State<SwipScreen>
     return Scaffold(
       extendBodyBehindAppBar: true,
       appBar: AppBar(
-        automaticallyImplyLeading: false, // ซ่อนปุ่มย้อนกลับ
+        automaticallyImplyLeading: false,
         title: Row(
           children: [
             Image.asset(

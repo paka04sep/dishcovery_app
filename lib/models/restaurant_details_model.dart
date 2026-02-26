@@ -20,6 +20,9 @@ class RestaurantDetailsData extends RestaurantCardData {
     required super.description,
     super.createdAt,
     super.openingHours,
+    super.status,
+    super.ownerId,
+    super.rejectionReason,
     required this.address,
     required this.phone,
     this.menuItems = const [],
@@ -45,6 +48,9 @@ class RestaurantDetailsData extends RestaurantCardData {
     List<MenuItem>? menuItems,
     List<String>? galleryImages,
     List<MenuCategory>? menuCategories,
+    String? status,
+    String? ownerId,
+    String? rejectionReason,
   }) {
     return RestaurantDetailsData(
       id: id ?? this.id,
@@ -57,6 +63,9 @@ class RestaurantDetailsData extends RestaurantCardData {
       imageUrl: imageUrl ?? this.imageUrl,
       description: description ?? this.description,
       createdAt: createdAt ?? this.createdAt,
+      status: status ?? this.status,
+      ownerId: ownerId ?? this.ownerId,
+      rejectionReason: rejectionReason ?? this.rejectionReason,
       address: address ?? this.address,
       phone: phone ?? this.phone,
       openingHours: openingHours ?? this.openingHours,
@@ -64,6 +73,17 @@ class RestaurantDetailsData extends RestaurantCardData {
       galleryImages: galleryImages ?? this.galleryImages,
       menuCategories: menuCategories ?? this.menuCategories,
     );
+  }
+
+  @override
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = super.toJson();
+    data['address'] = address;
+    data['phone'] = phone;
+    data['menuItems'] = menuItems.map((v) => v.toJson()).toList();
+    data['galleryImages'] = galleryImages;
+    data['menuCategories'] = menuCategories.map((v) => v.toJson()).toList();
+    return data;
   }
 
   factory RestaurantDetailsData.fromFirestore(
@@ -84,6 +104,7 @@ class RestaurantDetailsData extends RestaurantCardData {
         phone: '',
         openingHours: {},
         description: '',
+        status: 'approved',
       );
     }
 
@@ -144,6 +165,9 @@ class RestaurantDetailsData extends RestaurantCardData {
       phone: data['phone'] ?? '',
       openingHours: parseOpeningHours(data['openingHours']),
       description: data['description'] ?? '',
+      status: data['status'] as String? ?? 'approved',
+      ownerId: data['ownerId'] as String?,
+      rejectionReason: data['rejectionReason'] as String?,
       galleryImages: data['galleryImages'] != null
           ? List<String>.from(data['galleryImages'])
           : [],

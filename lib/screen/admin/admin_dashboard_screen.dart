@@ -16,6 +16,80 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   bool _isLoading = false;
   final Set<String> _selectedIds = {};
   bool _isSelectionMode = false;
+  String _selectedStatus = 'pending';
+
+  Future<void> _updateStatus(
+    String id,
+    String status, [
+    String rejectionReason = '',
+  ]) async {
+    setState(() => _isLoading = true);
+    try {
+      await FirebaseFirestore.instance
+          .collection('restaurants')
+          .doc(id)
+          .update({
+            'status': status,
+            if (rejectionReason.isNotEmpty) 'rejectionReason': rejectionReason,
+          });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Restaurant status updated to $status')),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error updating status: $e')));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _showRejectDialog(String id) async {
+    String reason = '';
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Reject Restaurant'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Text('Please provide a reason for rejection:'),
+            TextField(
+              onChanged: (val) => reason = val,
+              decoration: const InputDecoration(hintText: 'Reason'),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            onPressed: () {
+              if (reason.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Reason is required')),
+                );
+                return;
+              }
+              Navigator.pop(context, true);
+            },
+            child: const Text('Reject', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+
+    if (confirm == true) {
+      await _updateStatus(id, 'rejected', reason);
+    }
+  }
 
   Future<void> _addMockData() async {
     setState(() => _isLoading = true);
@@ -366,18 +440,43 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   ),
                 if (!_isSelectionMode) const SizedBox(height: 20),
                 if (!_isSelectionMode)
-                  const Padding(
-                    padding: EdgeInsets.symmetric(horizontal: 20),
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        "Manage Restaurants",
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          "Manage Restaurants",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
                         ),
-                      ),
+                        DropdownButton<String>(
+                          value: _selectedStatus,
+                          items: const [
+                            DropdownMenuItem(value: 'all', child: Text('All')),
+                            DropdownMenuItem(
+                              value: 'pending',
+                              child: Text('Pending'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'approved',
+                              child: Text('Approved'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'rejected',
+                              child: Text('Rejected'),
+                            ),
+                          ],
+                          onChanged: (val) {
+                            if (val != null) {
+                              setState(() => _selectedStatus = val);
+                            }
+                          },
+                        ),
+                      ],
                     ),
                   ),
                 if (!_isSelectionMode) const SizedBox(height: 10),
@@ -408,6 +507,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                               doc.data(),
                               doc.id,
                             ),
+                          )
+                          .where(
+                            (r) =>
+                                _selectedStatus == 'all' ||
+                                r.status == _selectedStatus,
                           )
                           .toList();
 
@@ -492,18 +596,46 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                                   ),
                                 ),
                                 subtitle: Text(
-                                  "ID: ${r.id}",
+                                  "Status: ${r.status} | ID: ${r.id}",
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                                 trailing: !_isSelectionMode
-                                    ? IconButton(
-                                        icon: const Icon(
-                                          Icons.delete_outline,
-                                          color: Colors.red,
-                                        ),
-                                        onPressed: () =>
-                                            _deleteRestaurant(r.id),
+                                    ? Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          if (r.status == 'pending') ...[
+                                            IconButton(
+                                              icon: const Icon(
+                                                Icons.check,
+                                                color: Colors.green,
+                                              ),
+                                              tooltip: 'Approve',
+                                              onPressed: () => _updateStatus(
+                                                r.id,
+                                                'approved',
+                                              ),
+                                            ),
+                                            IconButton(
+                                              icon: const Icon(
+                                                Icons.close,
+                                                color: Colors.orange,
+                                              ),
+                                              tooltip: 'Reject',
+                                              onPressed: () =>
+                                                  _showRejectDialog(r.id),
+                                            ),
+                                          ],
+                                          IconButton(
+                                            icon: const Icon(
+                                              Icons.delete_outline,
+                                              color: Colors.red,
+                                            ),
+                                            tooltip: 'Delete',
+                                            onPressed: () =>
+                                                _deleteRestaurant(r.id),
+                                          ),
+                                        ],
                                       )
                                     : null,
                               ),

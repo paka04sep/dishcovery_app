@@ -145,4 +145,12 @@ class AppTextStyles {
     fontWeight: FontWeight.w600,
     color: AppColors.black,
   );
+
+  // ข้อความ hint
+  static const TextStyle hintText = TextStyle(
+    fontFamily: 'Sukumvit',
+    fontSize: 14,
+    fontWeight: FontWeight.w600,
+    color: Colors.grey,
+  );
 }

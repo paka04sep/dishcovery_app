@@ -12,6 +12,8 @@ import 'package:dishcovery_app/models/user_model.dart';
 import 'package:dishcovery_app/services/recommendation_engine.dart';
 import 'package:dishcovery_app/utils/cuisine_keywords.dart';
 import 'package:dishcovery_app/utils/time_utils.dart';
+import 'dart:io';
+import 'package:firebase_storage/firebase_storage.dart';
 
 class RestaurantService extends ChangeNotifier {
   // Singleton pattern (Nullable to allow reset)
@@ -124,6 +126,12 @@ class RestaurantService extends ChangeNotifier {
           print("Location not available, cannot fetch nearby places.");
       }
     }
+
+    // Filter restaurants to only include 'approved' ones OR ones owned by the current user
+    String currentUid = _userModel?.uid ?? '';
+    fetchedRestaurants = fetchedRestaurants.where((r) {
+      return r.status == 'approved' || r.ownerId == currentUid;
+    }).toList();
 
     _restaurants = fetchedRestaurants;
     _isReady = true;
@@ -375,6 +383,171 @@ class RestaurantService extends ChangeNotifier {
 
   // Getters for different states
   List<RestaurantCardData> get restaurants => _restaurants;
+
+  Future<void> addRestaurant(RestaurantCardData data) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || _userModel == null) return;
+
+    try {
+      final db = FirebaseFirestore.instance;
+
+      // Create a new document ref (or if ID is provided, use it, but usually add is new)
+      final docRef = data.id.isEmpty
+          ? db.collection('restaurants').doc()
+          : db.collection('restaurants').doc(data.id);
+
+      // Update data with the new ID, pending status, and ownerId
+      final restaurantData = data.copyWith(
+        id: docRef.id,
+        ownerId: user.uid,
+        status: 'pending',
+        createdAt: DateTime.now(),
+      );
+
+      // Save to restaurants
+      await docRef.set(restaurantData.toJson());
+
+      // Update user's ownedRestaurantIds and potentially skip fetching if we manually mutate, but fetch is safer.
+      await db.collection('users').doc(user.uid).update({
+        'ownedRestaurantIds': FieldValue.arrayUnion([docRef.id]),
+      });
+
+      await fetchUserModel(); // Refresh user model
+
+      // Optimistically add to local list
+      _restaurants.add(restaurantData);
+      notifyListeners();
+    } catch (e) {
+      if (kDebugMode) print("Error adding restaurant: $e");
+      rethrow;
+    }
+  }
+
+  Future<String> _uploadImage(File file, String pathString) async {
+    try {
+      final ref = FirebaseStorage.instance.ref().child(pathString);
+      final uploadTask = await ref.putFile(file);
+      return await uploadTask.ref.getDownloadURL();
+    } catch (e) {
+      if (kDebugMode) print("Error uploading image: $e");
+      return '';
+    }
+  }
+
+  Future<void> addRestaurantWithDetails(
+    RestaurantDetailsData data, {
+    File? coverImage,
+    List<File>? galleryImages,
+    Map<String, File>? menuImages,
+  }) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || _userModel == null) return;
+
+    try {
+      final db = FirebaseFirestore.instance;
+      final docRef = data.id.isEmpty
+          ? db.collection('restaurants').doc()
+          : db.collection('restaurants').doc(data.id);
+
+      // Upload Cover Image
+      String coverUrl = data.imageUrl;
+      if (coverImage != null) {
+        coverUrl = await _uploadImage(
+          coverImage,
+          'restaurants/${docRef.id}/cover.jpg',
+        );
+      }
+
+      // Upload Gallery Images
+      List<String> galleryUrls = [];
+      if (galleryImages != null && galleryImages.isNotEmpty) {
+        for (int i = 0; i < galleryImages.length; i++) {
+          final url = await _uploadImage(
+            galleryImages[i],
+            'restaurants/${docRef.id}/gallery_$i.jpg',
+          );
+          if (url.isNotEmpty) galleryUrls.add(url);
+        }
+      }
+
+      // Prepare main restaurant data
+      final restaurantData = data.copyWith(
+        id: docRef.id,
+        ownerId: user.uid,
+        status: 'pending',
+        createdAt: DateTime.now(),
+        imageUrl: coverUrl.isNotEmpty ? coverUrl : data.imageUrl,
+        galleryImages: galleryUrls,
+      );
+
+      // We should not save menuItems and menuCategories in the main document since we use subcollections
+      final jsonToSave = restaurantData.toJson();
+      jsonToSave.remove('menuItems');
+      jsonToSave.remove('menuCategories');
+
+      await docRef.set(jsonToSave);
+
+      // Save categories to subcollection
+      final batch = db.batch();
+      for (var cat in data.menuCategories) {
+        final catRef = docRef.collection('menuCategories').doc(cat.id);
+        batch.set(catRef, cat.toJson());
+      }
+
+      // Upload menu images and save menus to subcollection
+      for (var item in data.menuItems) {
+        String itemImageUrl = item.menuImage;
+        if (menuImages != null && menuImages.containsKey(item.id)) {
+          itemImageUrl = await _uploadImage(
+            menuImages[item.id]!,
+            'restaurants/${docRef.id}/menus/${item.id}.jpg',
+          );
+        }
+
+        final updatedItem = MenuItem(
+          id: item.id,
+          name: item.name,
+          price: item.price,
+          category: item.category,
+          menuImage: itemImageUrl,
+          isRecommended: item.isRecommended,
+          isAvailable: item.isAvailable,
+        );
+        final menuRef = docRef.collection('menuItems').doc(item.id);
+        batch.set(menuRef, updatedItem.toJson());
+      }
+
+      await batch.commit();
+
+      // Update user's ownedRestaurantIds
+      await db.collection('users').doc(user.uid).update({
+        'ownedRestaurantIds': FieldValue.arrayUnion([docRef.id]),
+      });
+
+      await fetchUserModel(); // Refresh user model
+
+      _restaurants.add(restaurantData);
+      notifyListeners();
+    } catch (e) {
+      if (kDebugMode) print("Error adding restaurant with details: $e");
+      rethrow;
+    }
+  }
+
+  Future<void> toggleBusinessMode(bool isActive) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null || _userModel == null) return;
+
+    try {
+      await FirebaseFirestore.instance.collection('users').doc(user.uid).update(
+        {'isBusinessMode': isActive},
+      );
+
+      await fetchUserModel(); // Refresh user model
+    } catch (e) {
+      if (kDebugMode) print("Error toggling business mode: $e");
+    }
+  }
 
   List<RestaurantCardData> get swipableRestaurants {
     List<RestaurantCardData> filtered = _restaurants
