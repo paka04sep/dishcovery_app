@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:dishcovery_app/constants/app_constants.dart';
 import 'package:dishcovery_app/models/restaurant_details_model.dart';
 import 'package:dishcovery_app/services/restaurant_service.dart';
+import 'package:dishcovery_app/constants/app_init_screen.dart';
 
 class ManageRestaurantScreen extends StatefulWidget {
   final RestaurantDetailsData restaurant;
@@ -210,42 +211,40 @@ class _ManageRestaurantScreenState extends State<ManageRestaurantScreen> {
       return;
     }
 
-    setState(() {
-      _isLoading = true;
-    });
+    final updatedData = widget.restaurant.copyWith(
+      name: _name,
+      description: _description,
+      priceRange: _priceRange,
+      cuisine: _selectedCuisines,
+      galleryImages: _existingGalleryUrls,
+    );
 
-    try {
-      final updatedData = widget.restaurant.copyWith(
-        name: _name,
-        description: _description,
-        priceRange: _priceRange,
-        cuisine: _selectedCuisines,
-        galleryImages: _existingGalleryUrls,
-      );
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AppInitUpdateData(
+          onUpdate: () =>
+              RestaurantService.instance.updateRestaurantWithDetails(
+                updatedData,
+                newCoverImage: _newCoverImage,
+                newGalleryImages: _newGalleryImages,
+              ),
+        ),
+      ),
+    );
 
-      await RestaurantService.instance.updateRestaurantWithDetails(
-        updatedData,
-        newCoverImage: _newCoverImage,
-        newGalleryImages: _newGalleryImages,
-      );
-
+    if (result == true) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('บันทึกข้อมูลเรียบร้อยแล้ว')),
         );
         Navigator.pop(context);
       }
-    } catch (e) {
+    } else if (result != null) {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('เกิดข้อผิดพลาด: $e')));
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        ).showSnackBar(SnackBar(content: Text('เกิดข้อผิดพลาด: $result')));
       }
     }
   }

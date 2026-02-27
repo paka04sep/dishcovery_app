@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/services.dart';
 import 'package:dishcovery_app/models/restaurant_details_model.dart';
 import 'package:dishcovery_app/services/restaurant_service.dart';
@@ -157,9 +158,10 @@ class _AddRestaurantScreenState extends State<AddRestaurantScreen> {
     }
   }
 
-  void _openHoursPicker() {
-    final List<String> days = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'];
-    final List<String> thDays = [
+  void _showTimePicker3Wheels() {
+    final List<String> dayOptions = [
+      'ทุกวัน',
+      'เสาร์ - อาทิตย์',
       'จันทร์',
       'อังคาร',
       'พุธ',
@@ -169,194 +171,177 @@ class _AddRestaurantScreenState extends State<AddRestaurantScreen> {
       'อาทิตย์',
     ];
 
-    // Initialize defaults if empty
-    if (_openingHours.isEmpty) {
-      for (var day in days) {
-        _openingHours[day] = {
-          'open': '09:00',
-          'close': '20:00',
-          'isClosed': false,
-        };
-      }
+    List<String> times = [];
+    for (int h = 0; h < 24; h++) {
+      times.add('${h.toString().padLeft(2, '0')}:00');
+      times.add('${h.toString().padLeft(2, '0')}:30');
     }
 
-    // copy to local state for modal
-    Map<String, dynamic> tempHours = Map<String, dynamic>.from(
-      _openingHours.map((k, v) {
-        if (v is List) {
-          // Backwards compatibility from formatted structure
-          if (v.isEmpty)
-            return MapEntry(k, {
-              'open': '09:00',
-              'close': '20:00',
-              'isClosed': true,
-            });
-          return MapEntry(k, {
-            'open': v.first['open'],
-            'close': v.first['close'],
-            'isClosed': false,
-          });
-        }
-        return MapEntry(k, Map<String, dynamic>.from(v));
-      }),
-    );
-
-    Future<TimeOfDay?> _selectTime(
-      BuildContext context,
-      String currentStr,
-    ) async {
-      final timeParts = currentStr.split(':');
-      final current = TimeOfDay(
-        hour: int.parse(timeParts[0]),
-        minute: int.parse(timeParts[1]),
-      );
-      return await showTimePicker(context: context, initialTime: current);
-    }
+    int selectedDayIdx = 0;
+    int selectedOpenIdx = 18; // 09:00
+    int selectedCloseIdx = 40; // 20:00
 
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setModalState) {
-            return Container(
-              height: MediaQuery.of(context).size.height * 0.8,
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+        return Container(
+          height: 350,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'ตั้งเวลาเปิด-ปิดร้าน',
-                    style: AppTextStyles.signinText.copyWith(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(
+                      'ยกเลิก',
+                      style: AppTextStyles.signinText.copyWith(
+                        color: Colors.grey,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 32),
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: days.length,
-                      itemBuilder: (context, index) {
-                        String day = days[index];
-                        String thDay = thDays[index];
-                        bool isClosed = tempHours[day]['isClosed'];
-                        return Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                SizedBox(
-                                  width: 70,
-                                  child: Text(
-                                    thDay,
-                                    style: AppTextStyles.hintText.copyWith(
-                                      color: Colors.black87,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                Switch(
-                                  value: !isClosed,
-                                  onChanged: (val) => setModalState(
-                                    () => tempHours[day]['isClosed'] = !val,
-                                  ),
-                                ),
-                                if (!isClosed)
-                                  Row(
-                                    children: [
-                                      TextButton(
-                                        onPressed: () async {
-                                          final picked = await _selectTime(
-                                            context,
-                                            tempHours[day]['open'],
-                                          );
-                                          if (picked != null) {
-                                            setModalState(
-                                              () => tempHours[day]['open'] =
-                                                  '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}',
-                                            );
-                                          }
-                                        },
-                                        child: Text(tempHours[day]['open']),
-                                      ),
-                                      const Text('-'),
-                                      TextButton(
-                                        onPressed: () async {
-                                          final picked = await _selectTime(
-                                            context,
-                                            tempHours[day]['close'],
-                                          );
-                                          if (picked != null) {
-                                            setModalState(
-                                              () => tempHours[day]['close'] =
-                                                  '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}',
-                                            );
-                                          }
-                                        },
-                                        child: Text(tempHours[day]['close']),
-                                      ),
-                                    ],
-                                  )
-                                else
-                                  Text(
-                                    ' ปิดทำการ',
-                                    style: AppTextStyles.hintText.copyWith(
-                                      color: Colors.red,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            const Divider(),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                  ElevatedButton(
+                  TextButton(
                     onPressed: () {
+                      final selDay = dayOptions[selectedDayIdx];
+                      final selOpen = times[selectedOpenIdx];
+                      final selClose = times[selectedCloseIdx];
+
+                      List<String> daysToUpdate = [];
+                      if (selDay == 'ทุกวัน') {
+                        daysToUpdate = [
+                          'mon',
+                          'tue',
+                          'wed',
+                          'thu',
+                          'fri',
+                          'sat',
+                          'sun',
+                        ];
+                      } else if (selDay == 'เสาร์ - อาทิตย์') {
+                        daysToUpdate = ['sat', 'sun'];
+                      } else if (selDay == 'จันทร์') {
+                        daysToUpdate = ['mon'];
+                      } else if (selDay == 'อังคาร') {
+                        daysToUpdate = ['tue'];
+                      } else if (selDay == 'พุธ') {
+                        daysToUpdate = ['wed'];
+                      } else if (selDay == 'พฤหัสบดี') {
+                        daysToUpdate = ['thu'];
+                      } else if (selDay == 'ศุกร์') {
+                        daysToUpdate = ['fri'];
+                      } else if (selDay == 'เสาร์') {
+                        daysToUpdate = ['sat'];
+                      } else if (selDay == 'อาทิตย์') {
+                        daysToUpdate = ['sun'];
+                      }
+
                       setState(() {
-                        // Convert tempHours to the exact format needed by TimeUtils
-                        Map<String, dynamic> formattedHours = {};
-                        for (var day in days) {
-                          if (tempHours[day]['isClosed']) {
-                            formattedHours[day] = []; // Empty list means closed
-                          } else {
-                            formattedHours[day] = [
-                              {
-                                'open': tempHours[day]['open'],
-                                'close': tempHours[day]['close'],
-                              },
-                            ];
-                          }
+                        for (var d in daysToUpdate) {
+                          _openingHours[d] = [
+                            {'open': selOpen, 'close': selClose},
+                          ];
                         }
-                        _openingHours =
-                            formattedHours; // Update _openingHours with the formatted data
                       });
                       Navigator.pop(context);
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.black,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(25),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
                     child: Text(
-                      'บันทึกเวลา',
+                      'เพิ่ม',
                       style: AppTextStyles.signinText.copyWith(
-                        color: Colors.white,
-                        fontSize: 18,
+                        color: AppColors.primaryBlue,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
                 ],
               ),
-            );
-          },
+              Expanded(
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: CupertinoPicker(
+                        scrollController: FixedExtentScrollController(
+                          initialItem: selectedDayIdx,
+                        ),
+                        itemExtent: 40,
+                        onSelectedItemChanged: (idx) => selectedDayIdx = idx,
+                        children: dayOptions
+                            .map(
+                              (d) => Center(
+                                child: Text(
+                                  d,
+                                  style: AppTextStyles.signinText.copyWith(
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 1,
+                      child: CupertinoPicker(
+                        scrollController: FixedExtentScrollController(
+                          initialItem: selectedOpenIdx,
+                        ),
+                        itemExtent: 40,
+                        onSelectedItemChanged: (idx) => selectedOpenIdx = idx,
+                        children: times
+                            .map(
+                              (t) => Center(
+                                child: Text(
+                                  t,
+                                  style: AppTextStyles.signinText.copyWith(
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ),
+                    const Center(
+                      child: Text(
+                        ' - ',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 1,
+                      child: CupertinoPicker(
+                        scrollController: FixedExtentScrollController(
+                          initialItem: selectedCloseIdx,
+                        ),
+                        itemExtent: 40,
+                        onSelectedItemChanged: (idx) => selectedCloseIdx = idx,
+                        children: times
+                            .map(
+                              (t) => Center(
+                                child: Text(
+                                  t,
+                                  style: AppTextStyles.signinText.copyWith(
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
@@ -373,95 +358,122 @@ class _AddRestaurantScreenState extends State<AddRestaurantScreen> {
       builder: (context) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setModalState) {
-            return Container(
-              height: MediaQuery.of(context).size.height * 0.8,
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'เลือกประเภทอาหาร',
-                    style: AppTextStyles.signinText.copyWith(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+            return Padding(
+              padding: EdgeInsets.only(
+                bottom: MediaQuery.of(context).viewInsets.bottom,
+              ),
+              child: Container(
+                height: MediaQuery.of(context).size.height * 0.9,
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      'เลือกประเภทอาหาร',
+                      style: AppTextStyles.signinText.copyWith(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      child: Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        children: _foodOptions.map((option) {
-                          final String name = option['name'];
-                          final IconData icon = option['icon'];
-                          final bool isSelected = _selectedCuisines.contains(
-                            name,
-                          );
+                    const SizedBox(height: 16),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        child: Wrap(
+                          spacing: 10,
+                          runSpacing: 10,
+                          children: _foodOptions.map((option) {
+                            final String name = option['name'];
+                            final IconData icon = option['icon'];
+                            final bool isSelected = _selectedCuisines.contains(
+                              name,
+                            );
 
-                          return ChoiceChip(
-                            showCheckmark: false,
-                            label: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(icon, size: 18),
-                                const SizedBox(width: 4),
-                                Text(
-                                  name,
-                                  style: AppTextStyles.signinText.copyWith(
-                                    color: AppColors.black,
-                                    fontSize: 16,
+                            return ChoiceChip(
+                              showCheckmark: false,
+                              label: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(icon, size: 18),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    name,
+                                    style: AppTextStyles.signinText.copyWith(
+                                      color: AppColors.black,
+                                      fontSize: 16,
+                                    ),
                                   ),
+                                ],
+                              ),
+                              selected: isSelected,
+                              selectedColor: AppColors.lightBlue,
+                              backgroundColor: AppColors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(24),
+                                side: BorderSide(
+                                  color: isSelected
+                                      ? AppColors.primaryBlue
+                                      : AppColors.black,
                                 ),
-                              ],
+                              ),
+                              onSelected: (_) {
+                                setModalState(() {
+                                  if (isSelected) {
+                                    _selectedCuisines.remove(name);
+                                  } else {
+                                    _selectedCuisines.add(name);
+                                  }
+                                });
+                                setState(() {});
+                              },
+                            );
+                          }).toList(),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: TextButton.styleFrom(
+                              padding: const EdgeInsets.symmetric(vertical: 14),
                             ),
-                            selected: isSelected,
-                            selectedColor: AppColors.lightBlue,
-                            backgroundColor: AppColors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(24),
-                              side: BorderSide(
-                                color: isSelected
-                                    ? AppColors.primaryBlue
-                                    : AppColors.black,
+                            child: Text(
+                              'ยกเลิก',
+                              style: AppTextStyles.profileText.copyWith(
+                                color: Colors.grey,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
                               ),
                             ),
-                            onSelected: (_) {
-                              setModalState(() {
-                                if (isSelected) {
-                                  _selectedCuisines.remove(name);
-                                } else {
-                                  _selectedCuisines.add(name);
-                                }
-                              });
-                              setState(() {});
-                            },
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                  ),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 50,
-                    child: ElevatedButton(
-                      onPressed: () => Navigator.pop(context),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.black,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(25),
+                          ),
                         ),
-                      ),
-                      child: Text(
-                        'ตกลง',
-                        style: AppTextStyles.signinText.copyWith(
-                          color: Colors.white,
-                          fontSize: 18,
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: () => Navigator.pop(context),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryBlue,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                            ),
+                            child: Text(
+                              'ตกลง',
+                              style: AppTextStyles.profileText.copyWith(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
+                      ],
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             );
           },
@@ -680,16 +692,106 @@ class _AddRestaurantScreenState extends State<AddRestaurantScreen> {
                         ),
                       ),
                       const SizedBox(height: 8),
-                      ElevatedButton.icon(
-                        onPressed: _openHoursPicker,
-                        icon: const Icon(
-                          Icons.access_time,
-                          color: Colors.white,
+                      // List of current configured hours
+                      if (() {
+                        bool hasOpen = false;
+                        for (var v in _openingHours.values) {
+                          if (v is List && v.isNotEmpty) hasOpen = true;
+                        }
+                        return hasOpen;
+                      }())
+                        Container(
+                          margin: const EdgeInsets.only(bottom: 12),
+                          decoration: BoxDecoration(
+                            border: Border.all(color: Colors.grey.shade300),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Column(
+                            children: () {
+                              final List<String> daysKeys = [
+                                'mon',
+                                'tue',
+                                'wed',
+                                'thu',
+                                'fri',
+                                'sat',
+                                'sun',
+                              ];
+                              final List<String> thDays = [
+                                'จันทร์',
+                                'อังคาร',
+                                'พุธ',
+                                'พฤหัสบดี',
+                                'ศุกร์',
+                                'เสาร์',
+                                'อาทิตย์',
+                              ];
+
+                              List<Widget> rows = [];
+                              for (int i = 0; i < daysKeys.length; i++) {
+                                final d = daysKeys[i];
+                                final val = _openingHours[d];
+                                if (val != null &&
+                                    val is List &&
+                                    val.isNotEmpty) {
+                                  rows.add(
+                                    ListTile(
+                                      title: Text(
+                                        thDays[i],
+                                        style: AppTextStyles.profileText
+                                            .copyWith(
+                                              fontSize: 14,
+                                              color: Colors.grey[800],
+                                            ),
+                                      ),
+                                      trailing: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            '${val.first['open']} - ${val.first['close']}',
+                                            style: AppTextStyles.profileText
+                                                .copyWith(
+                                                  fontSize: 14,
+                                                  color: Colors.grey[800],
+                                                ),
+                                          ),
+                                          IconButton(
+                                            alignment: Alignment.centerRight,
+                                            icon: const Icon(
+                                              Icons.close,
+                                              color: Colors.red,
+                                              size: 16,
+                                            ),
+                                            onPressed: () {
+                                              setState(() {
+                                                _openingHours.remove(d);
+                                              });
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  );
+                                  rows.add(
+                                    const Divider(
+                                      height: 1,
+                                      indent: 16,
+                                      endIndent: 16,
+                                    ),
+                                  );
+                                }
+                              }
+                              if (rows.isNotEmpty)
+                                rows.removeLast(); // remove trailng divider
+                              return rows;
+                            }(),
+                          ),
                         ),
+                      ElevatedButton.icon(
+                        onPressed: _showTimePicker3Wheels,
+                        icon: const Icon(Icons.add, color: Colors.white),
                         label: Text(
-                          _openingHours.isEmpty
-                              ? 'ตั้งค่าเวลาเปิด-ปิด'
-                              : 'ตั้งค่าแล้ว (แก้ไข)',
+                          'เพิ่ม',
                           style: AppTextStyles.hintText.copyWith(
                             color: Colors.white,
                           ),

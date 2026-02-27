@@ -1253,32 +1253,37 @@ class RestaurantService extends ChangeNotifier {
       batch.delete(db.collection('restaurants').doc(restaurantId));
 
       // 3. Remove 'restaurantId' from EVERY user document (favoriteIds, history.yum, history.passed)
-      final usersSnap = await db.collection('users').get();
-      for (var userDoc in usersSnap.docs) {
-        final Map<String, dynamic> updateData = {};
+      // ONLY RUN IF ADMIN (Skip for regular restaurant owner to prevent permission-denied error)
+      if (_userModel != null && _userModel!.role == 'admin') {
+        final usersSnap = await db.collection('users').get();
+        for (var userDoc in usersSnap.docs) {
+          final Map<String, dynamic> updateData = {};
 
-        final userData = userDoc.data();
-        final favs = List<String>.from(userData['favoriteIds'] ?? []);
-        final history = userData['history'] as Map<String, dynamic>? ?? {};
-        final yums = List<String>.from(history['yum'] ?? []);
-        final passes = List<String>.from(history['passed'] ?? []);
+          final userData = userDoc.data();
+          final favs = List<String>.from(userData['favoriteIds'] ?? []);
+          final history = userData['history'] as Map<String, dynamic>? ?? {};
+          final yums = List<String>.from(history['yum'] ?? []);
+          final passes = List<String>.from(history['passed'] ?? []);
 
-        bool needsUpdate = false;
+          bool needsUpdate = false;
 
-        if (favs.contains(restaurantId)) {
-          updateData['favoriteIds'] = FieldValue.arrayRemove([restaurantId]);
-          needsUpdate = true;
-        }
+          if (favs.contains(restaurantId)) {
+            updateData['favoriteIds'] = FieldValue.arrayRemove([restaurantId]);
+            needsUpdate = true;
+          }
 
-        if (yums.contains(restaurantId) || passes.contains(restaurantId)) {
-          // If history yum or passed has it, array remove
-          updateData['history.yum'] = FieldValue.arrayRemove([restaurantId]);
-          updateData['history.passed'] = FieldValue.arrayRemove([restaurantId]);
-          needsUpdate = true;
-        }
+          if (yums.contains(restaurantId) || passes.contains(restaurantId)) {
+            // If history yum or passed has it, array remove
+            updateData['history.yum'] = FieldValue.arrayRemove([restaurantId]);
+            updateData['history.passed'] = FieldValue.arrayRemove([
+              restaurantId,
+            ]);
+            needsUpdate = true;
+          }
 
-        if (needsUpdate) {
-          batch.update(userDoc.reference, updateData);
+          if (needsUpdate) {
+            batch.update(userDoc.reference, updateData);
+          }
         }
       }
 

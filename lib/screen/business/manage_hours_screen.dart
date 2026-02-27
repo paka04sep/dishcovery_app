@@ -1,8 +1,10 @@
-import 'package:dishcovery_app/constants/gradient_text.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/cupertino.dart';
+import 'package:dishcovery_app/constants/gradient_text.dart';
 import 'package:dishcovery_app/constants/app_constants.dart';
 import 'package:dishcovery_app/models/restaurant_details_model.dart';
 import 'package:dishcovery_app/services/restaurant_service.dart';
+import 'package:dishcovery_app/constants/app_init_screen.dart';
 
 class ManageHoursScreen extends StatefulWidget {
   final RestaurantDetailsData restaurant;
@@ -110,236 +112,223 @@ class _ManageHoursScreenState extends State<ManageHoursScreen> {
     'อาทิตย์',
   ];
 
-  Future<TimeOfDay?> _selectTime(
-    BuildContext context,
-    String currentStr,
-  ) async {
-    final timeParts = currentStr.split(':');
-    final current = TimeOfDay(
-      hour: int.parse(timeParts[0]),
-      minute: int.parse(timeParts[1]),
-    );
-    return await showTimePicker(context: context, initialTime: current);
-  }
+  void _showTimePicker3Wheels() {
+    final List<String> dayOptions = [
+      'ทุกวัน',
+      'เสาร์ - อาทิตย์',
+      'จันทร์',
+      'อังคาร',
+      'พุธ',
+      'พฤหัสบดี',
+      'ศุกร์',
+      'เสาร์',
+      'อาทิตย์',
+    ];
 
-  void _openHoursPicker() {
-    // copy to local state for modal
-    Map<String, dynamic> tempHours = Map<String, dynamic>.from(
-      _openingHours.map((k, v) {
-        if (v is List) {
-          if (v.isEmpty) {
-            return MapEntry(k, {
-              'open': '09:00',
-              'close': '20:00',
-              'isClosed': true,
-            });
-          }
-          return MapEntry(k, {
-            'open': v.first['open'],
-            'close': v.first['close'],
-            'isClosed': false,
-          });
-        }
-        return MapEntry(k, Map<String, dynamic>.from(v));
-      }),
-    );
-
-    // Initialize defaults if any day is missing
-    for (var day in _days) {
-      if (!tempHours.containsKey(day)) {
-        tempHours[day] = {'open': '09:00', 'close': '20:00', 'isClosed': true};
-      }
+    List<String> times = [];
+    for (int h = 0; h < 24; h++) {
+      times.add('${h.toString().padLeft(2, '0')}:00');
+      times.add('${h.toString().padLeft(2, '0')}:30');
     }
+
+    int selectedDayIdx = 0;
+    int selectedOpenIdx = 18; // 09:00
+    int selectedCloseIdx = 40; // 20:00
 
     showModalBottomSheet(
       context: context,
-      isScrollControlled: true,
       backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (context) {
-        return StatefulBuilder(
-          builder: (BuildContext context, StateSetter setModalState) {
-            return Container(
-              height: MediaQuery.of(context).size.height * 0.8,
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
+        return Container(
+          height: 350,
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    'ตั้งเวลาเปิด-ปิดร้าน',
-                    style: AppTextStyles.profileText.copyWith(
-                      fontSize: 20,
-                      fontWeight: FontWeight.bold,
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text(
+                      'ยกเลิก',
+                      style: AppTextStyles.profileText.copyWith(
+                        color: Colors.grey,
+                      ),
                     ),
                   ),
-                  const SizedBox(height: 32),
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: _days.length,
-                      itemBuilder: (context, index) {
-                        String day = _days[index];
-                        String thDay = _thDays[index];
-                        bool isClosed = tempHours[day]['isClosed'];
-                        return Column(
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                SizedBox(
-                                  width: 70,
-                                  child: Text(
-                                    thDay,
-                                    style: AppTextStyles.profileText.copyWith(
-                                      color: Colors.grey[800],
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                ),
-                                Switch(
-                                  value: !isClosed,
-                                  activeColor: AppColors.primaryBlue,
-                                  onChanged: (val) => setModalState(
-                                    () => tempHours[day]['isClosed'] = !val,
-                                  ),
-                                ),
-                                if (!isClosed)
-                                  Row(
-                                    children: [
-                                      TextButton(
-                                        onPressed: () async {
-                                          final picked = await _selectTime(
-                                            context,
-                                            tempHours[day]['open'],
-                                          );
-                                          if (picked != null) {
-                                            setModalState(
-                                              () => tempHours[day]['open'] =
-                                                  '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}',
-                                            );
-                                          }
-                                        },
-                                        child: Text(
-                                          tempHours[day]['open'],
-                                          style: AppTextStyles.profileText
-                                              .copyWith(
-                                                color: Colors.grey[800],
-                                              ),
-                                        ),
-                                      ),
-                                      const Text('-'),
-                                      TextButton(
-                                        onPressed: () async {
-                                          final picked = await _selectTime(
-                                            context,
-                                            tempHours[day]['close'],
-                                          );
-                                          if (picked != null) {
-                                            setModalState(
-                                              () => tempHours[day]['close'] =
-                                                  '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}',
-                                            );
-                                          }
-                                        },
-                                        child: Text(
-                                          tempHours[day]['close'],
-                                          style: AppTextStyles.profileText
-                                              .copyWith(
-                                                color: Colors.grey[800],
-                                              ),
-                                        ),
-                                      ),
-                                    ],
-                                  )
-                                else
-                                  Text(
-                                    ' ปิดทำการ',
-                                    style: AppTextStyles.profileText.copyWith(
-                                      color: Colors.red,
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            const Divider(),
-                          ],
-                        );
-                      },
-                    ),
-                  ),
-                  ElevatedButton(
+                  TextButton(
                     onPressed: () {
+                      final selDay = dayOptions[selectedDayIdx];
+                      final selOpen = times[selectedOpenIdx];
+                      final selClose = times[selectedCloseIdx];
+
+                      List<String> daysToUpdate = [];
+                      if (selDay == 'ทุกวัน') {
+                        daysToUpdate = [
+                          'mon',
+                          'tue',
+                          'wed',
+                          'thu',
+                          'fri',
+                          'sat',
+                          'sun',
+                        ];
+                      } else if (selDay == 'เสาร์ - อาทิตย์') {
+                        daysToUpdate = ['sat', 'sun'];
+                      } else if (selDay == 'จันทร์') {
+                        daysToUpdate = ['mon'];
+                      } else if (selDay == 'อังคาร') {
+                        daysToUpdate = ['tue'];
+                      } else if (selDay == 'พุธ') {
+                        daysToUpdate = ['wed'];
+                      } else if (selDay == 'พฤหัสบดี') {
+                        daysToUpdate = ['thu'];
+                      } else if (selDay == 'ศุกร์') {
+                        daysToUpdate = ['fri'];
+                      } else if (selDay == 'เสาร์') {
+                        daysToUpdate = ['sat'];
+                      } else if (selDay == 'อาทิตย์') {
+                        daysToUpdate = ['sun'];
+                      }
+
                       setState(() {
-                        Map<String, dynamic> formattedHours = {};
-                        for (var day in _days) {
-                          if (tempHours[day]['isClosed']) {
-                            formattedHours[day] = []; // Empty list means closed
-                          } else {
-                            formattedHours[day] = [
-                              {
-                                'open': tempHours[day]['open'],
-                                'close': tempHours[day]['close'],
-                              },
-                            ];
-                          }
+                        for (var d in daysToUpdate) {
+                          _openingHours[d] = [
+                            {'open': selOpen, 'close': selClose},
+                          ];
                         }
-                        _openingHours = formattedHours;
                       });
                       Navigator.pop(context);
                     },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.black,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(25),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                    ),
                     child: Text(
-                      'ตกลง',
-                      style: AppTextStyles.signinText.copyWith(
-                        color: Colors.white,
-                        fontSize: 18,
+                      'แก้ไข',
+                      style: AppTextStyles.profileText.copyWith(
+                        color: AppColors.primaryBlue,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
                   ),
                 ],
               ),
-            );
-          },
+              Expanded(
+                child: Row(
+                  children: [
+                    Expanded(
+                      flex: 2,
+                      child: CupertinoPicker(
+                        scrollController: FixedExtentScrollController(
+                          initialItem: selectedDayIdx,
+                        ),
+                        itemExtent: 40,
+                        onSelectedItemChanged: (idx) => selectedDayIdx = idx,
+                        children: dayOptions
+                            .map(
+                              (d) => Center(
+                                child: Text(
+                                  d,
+                                  style: AppTextStyles.profileText.copyWith(
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 1,
+                      child: CupertinoPicker(
+                        scrollController: FixedExtentScrollController(
+                          initialItem: selectedOpenIdx,
+                        ),
+                        itemExtent: 40,
+                        onSelectedItemChanged: (idx) => selectedOpenIdx = idx,
+                        children: times
+                            .map(
+                              (t) => Center(
+                                child: Text(
+                                  t,
+                                  style: AppTextStyles.profileText.copyWith(
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ),
+                    const Center(
+                      child: Text(
+                        ' - ',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      flex: 1,
+                      child: CupertinoPicker(
+                        scrollController: FixedExtentScrollController(
+                          initialItem: selectedCloseIdx,
+                        ),
+                        itemExtent: 40,
+                        onSelectedItemChanged: (idx) => selectedCloseIdx = idx,
+                        children: times
+                            .map(
+                              (t) => Center(
+                                child: Text(
+                                  t,
+                                  style: AppTextStyles.profileText.copyWith(
+                                    fontSize: 16,
+                                  ),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
   }
 
   Future<void> _saveHours() async {
-    setState(() {
-      _isLoading = true;
-    });
+    final updatedRestaurant = widget.restaurant.copyWith(
+      openingHours: _openingHours,
+    );
 
-    try {
-      final updatedRestaurant = widget.restaurant.copyWith(
-        openingHours: _openingHours,
-      );
+    final result = await Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AppInitUpdateData(
+          onUpdate: () => RestaurantService.instance.updateRestaurantInfo(
+            updatedRestaurant,
+          ),
+        ),
+      ),
+    );
 
-      await RestaurantService.instance.updateRestaurantInfo(updatedRestaurant);
-
+    if (result == true) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('บันทึกเวลาเปิด-ปิดสำเร็จ')),
         );
         Navigator.pop(context);
       }
-    } catch (e) {
+    } else if (result != null) {
       if (mounted) {
         ScaffoldMessenger.of(
           context,
-        ).showSnackBar(SnackBar(content: Text('เกิดข้อผิดพลาด: $e')));
-      }
-    } finally {
-      if (mounted) {
-        setState(() {
-          _isLoading = false;
-        });
+        ).showSnackBar(SnackBar(content: Text('เกิดข้อผิดพลาด: $result')));
       }
     }
   }
@@ -396,59 +385,123 @@ class _ManageHoursScreenState extends State<ManageHoursScreen> {
                     ),
                   ),
 
-                  Container(
-                    width: 36,
-                    height: 36,
-                    decoration: BoxDecoration(
-                      color: AppColors.primaryBlue.withOpacity(0.1),
-                      shape: BoxShape.circle,
+                  TextButton.icon(
+                    icon: const Icon(Icons.add, size: 18),
+                    label: Text(
+                      'แก้ไข',
+                      style: AppTextStyles.profileText.copyWith(
+                        color: AppColors.primaryBlue,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                    child: IconButton(
-                      padding: EdgeInsets.zero,
-                      icon: const Icon(Icons.edit, size: 18),
-                      color: AppColors.primaryBlue,
-                      onPressed: _openHoursPicker,
-                      tooltip: "แก้ไขเวลาทำการ",
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.primaryBlue,
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
                     ),
+                    onPressed: _showTimePicker3Wheels,
                   ),
                 ],
               ),
               const SizedBox(height: 12),
-              Container(
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Column(
-                  children: List.generate(_days.length, (index) {
-                    final day = _days[index];
-                    final thDay = _thDays[index];
-                    final hours = _openingHours[day] as List?;
-                    final isOpen = hours != null && hours.isNotEmpty;
+              if (() {
+                bool hasOpen = false;
+                for (var v in _openingHours.values) {
+                  if (v is List && v.isNotEmpty) {
+                    hasOpen = true;
+                  } else if (v is Map && v['isClosed'] == false) {
+                    hasOpen = true;
+                  }
+                }
+                return hasOpen;
+              }())
+                Container(
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey.shade300),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Column(
+                    children: () {
+                      List<Widget> rows = [];
+                      for (int i = 0; i < _days.length; i++) {
+                        final d = _days[i];
+                        final val = _openingHours[d];
+                        bool isOpen = false;
+                        String openTime = '';
+                        String closeTime = '';
 
-                    return Column(
-                      children: [
-                        ListTile(
-                          title: Text(thDay, style: AppTextStyles.profileText),
-                          trailing: Text(
-                            isOpen
-                                ? '${hours.first['open']} - ${hours.first['close']}'
-                                : 'ปิดทำการ',
-                            style: AppTextStyles.profileText.copyWith(
-                              color: isOpen ? Colors.black : Colors.red,
-                              fontWeight: isOpen
-                                  ? FontWeight.normal
-                                  : FontWeight.bold,
+                        if (val != null) {
+                          if (val is List && val.isNotEmpty) {
+                            isOpen = true;
+                            openTime = val.first['open'];
+                            closeTime = val.first['close'];
+                          } else if (val is Map && val['isClosed'] == false) {
+                            isOpen = true;
+                            openTime = val['open'];
+                            closeTime = val['close'];
+                          }
+                        }
+
+                        if (isOpen) {
+                          rows.add(
+                            ListTile(
+                              title: Text(
+                                _thDays[i],
+                                style: AppTextStyles.profileText.copyWith(
+                                  fontSize: 14,
+                                  color: Colors.grey[800],
+                                ),
+                              ),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    '$openTime - $closeTime',
+                                    style: AppTextStyles.profileText.copyWith(
+                                      fontSize: 14,
+                                      color: Colors.grey[800],
+                                    ),
+                                  ),
+                                  IconButton(
+                                    alignment: Alignment.centerRight,
+                                    icon: const Icon(
+                                      Icons.close,
+                                      color: Colors.red,
+                                      size: 14,
+                                    ),
+                                    onPressed: () {
+                                      setState(() {
+                                        _openingHours[d] =
+                                            []; // list empty means closed
+                                      });
+                                    },
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                        ),
-                        if (index < _days.length - 1)
-                          const Divider(height: 1, indent: 16, endIndent: 16),
-                      ],
-                    );
-                  }),
+                          );
+                          rows.add(
+                            const Divider(height: 1, indent: 16, endIndent: 16),
+                          );
+                        }
+                      }
+                      if (rows.isNotEmpty)
+                        rows.removeLast(); // remove trailing divider
+                      return rows;
+                    }(),
+                  ),
+                )
+              else
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  child: Center(
+                    child: Text(
+                      'ยังไม่ได้กำหนดเวลาเปิด-ปิด',
+                      style: AppTextStyles.profileText.copyWith(
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ),
                 ),
-              ),
 
               const SizedBox(height: 30),
               ElevatedButton(

@@ -113,68 +113,124 @@ class _AddRestaurantDetailScreenState extends State<AddRestaurantDetailScreen> {
 
   void _addMenuCategory() {
     String categoryName = '';
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          'เพิ่มหมวดหมู่เมนู',
-          style: AppTextStyles.profileText.copyWith(
-            fontSize: 18,
-            color: Colors.black,
-          ),
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
-        content: TextField(
-          decoration: InputDecoration(
-            hintText: 'ชื่อหมวดหมู่',
-            hintStyle: AppTextStyles.hintText.copyWith(),
-          ),
-          onChanged: (v) => categoryName = v.trim(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'ยกเลิก',
-              style: AppTextStyles.profileText.copyWith(
-                fontSize: 14,
-                color: Colors.black.withValues(alpha: 0.8),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'เพิ่มหมวดหมู่เมนู',
+                style: AppTextStyles.profileText.copyWith(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (categoryName.isNotEmpty) {
-                // Check duplicate
-                if (_details.menuCategories.any(
-                  (c) => c.name == categoryName,
-                )) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('มีหมวดหมู่นี้อยู่แล้ว')),
-                  );
-                  return;
-                }
-                setState(() {
-                  final newCats = List<MenuCategory>.from(
-                    _details.menuCategories,
-                  );
-                  newCats.add(
-                    MenuCategory(
-                      id: DateTime.now().millisecondsSinceEpoch.toString(),
-                      name: categoryName,
-                      order: newCats.length,
+              const SizedBox(height: 20),
+              TextField(
+                decoration: InputDecoration(
+                  hintText: 'ชื่อหมวดหมู่',
+                  hintStyle: AppTextStyles.hintText.copyWith(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey.shade50,
+                ),
+                onChanged: (v) => categoryName = v.trim(),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: Text(
+                        'ยกเลิก',
+                        style: AppTextStyles.profileText.copyWith(
+                          color: Colors.grey,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
                     ),
-                  );
-                  _details = _details.copyWith(menuCategories: newCats);
-                });
-                Navigator.pop(context);
-              }
-            },
-            child: Text(
-              'เพิ่ม',
-              style: AppTextStyles.profileText.copyWith(color: Colors.blue),
-            ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        if (categoryName.isNotEmpty) {
+                          // Check duplicate
+                          if (_details.menuCategories.any(
+                            (c) => c.name == categoryName,
+                          )) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('มีหมวดหมู่นี้อยู่แล้ว'),
+                              ),
+                            );
+                            return;
+                          }
+                          setState(() {
+                            final newCats = List<MenuCategory>.from(
+                              _details.menuCategories,
+                            );
+                            newCats.add(
+                              MenuCategory(
+                                id: DateTime.now().millisecondsSinceEpoch
+                                    .toString(),
+                                name: categoryName,
+                                order: newCats.length,
+                              ),
+                            );
+                            _details = _details.copyWith(
+                              menuCategories: newCats,
+                            );
+                          });
+                          Navigator.pop(context);
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryBlue,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'เพิ่ม',
+                        style: AppTextStyles.profileText.copyWith(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -200,159 +256,246 @@ class _AddRestaurantDetailScreenState extends State<AddRestaurantDetailScreen> {
     String selectedCat = _details.menuCategories.first.name;
     File? pickedMenuImage;
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
-          return AlertDialog(
-            title: Text(
-              'เพิ่มเมนูอาหาร',
-              style: AppTextStyles.profileText.copyWith(
-                fontSize: 18,
-                color: Colors.black,
-              ),
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
             ),
-            content: SingleChildScrollView(
+            child: Container(
+              padding: const EdgeInsets.all(20),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  GestureDetector(
-                    onTap: () async {
-                      final img = await _picker.pickImage(
-                        source: ImageSource.gallery,
-                      );
-                      if (img != null) {
-                        setDialogState(() {
-                          pickedMenuImage = File(img.path);
-                        });
-                      }
-                    },
-                    child: Container(
-                      height: 250,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade200,
-                        borderRadius: BorderRadius.circular(12),
-                        image: pickedMenuImage != null
-                            ? DecorationImage(
-                                image: FileImage(pickedMenuImage!),
-                                fit: BoxFit.cover,
-                              )
-                            : null,
-                      ),
-                      child: pickedMenuImage == null
-                          ? const Center(
-                              child: Icon(
-                                Icons.add_a_photo,
-                                color: Colors.grey,
+                  Text(
+                    'เพิ่มเมนูอาหาร',
+                    style: AppTextStyles.profileText.copyWith(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Flexible(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          GestureDetector(
+                            onTap: () async {
+                              final img = await _picker.pickImage(
+                                source: ImageSource.gallery,
+                              );
+                              if (img != null) {
+                                setDialogState(() {
+                                  pickedMenuImage = File(img.path);
+                                });
+                              }
+                            },
+                            child: Container(
+                              height: 150,
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade200,
+                                borderRadius: BorderRadius.circular(12),
+                                image: pickedMenuImage != null
+                                    ? DecorationImage(
+                                        image: FileImage(pickedMenuImage!),
+                                        fit: BoxFit.cover,
+                                      )
+                                    : null,
                               ),
-                            )
-                          : null,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    decoration: InputDecoration(
-                      hintText: 'ชื่อเมนู',
-                      hintStyle: AppTextStyles.hintText.copyWith(),
-                    ),
-                    onChanged: (v) => itemName = v,
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      hintText: 'ราคา (บาท)',
-                      hintStyle: AppTextStyles.hintText.copyWith(),
-                    ),
-                    onChanged: (v) => itemPrice = v,
-                  ),
-                  const SizedBox(height: 10),
-                  DropdownButtonFormField<String>(
-                    value: selectedCat,
-                    items: _details.menuCategories
-                        .map(
-                          (c) => DropdownMenuItem(
-                            value: c.name,
-                            child: Text(c.name),
+                              child: pickedMenuImage == null
+                                  ? const Center(
+                                      child: Icon(
+                                        Icons.add_a_photo,
+                                        color: Colors.grey,
+                                      ),
+                                    )
+                                  : null,
+                            ),
                           ),
-                        )
-                        .toList(),
-                    onChanged: (v) {
-                      if (v != null) {
-                        setDialogState(() => selectedCat = v);
-                      }
-                    },
-                    decoration: InputDecoration(
-                      hintText: 'หมวดหมู่',
-                      hintStyle: AppTextStyles.hintText.copyWith(),
+                          const SizedBox(height: 16),
+                          TextField(
+                            decoration: InputDecoration(
+                              hintText: 'ชื่อเมนู',
+                              hintStyle: AppTextStyles.hintText.copyWith(),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: Colors.grey.shade300,
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: Colors.grey.shade300,
+                                ),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey.shade50,
+                            ),
+                            onChanged: (v) => itemName = v,
+                          ),
+                          const SizedBox(height: 16),
+                          TextField(
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              hintText: 'ราคา (บาท)',
+                              hintStyle: AppTextStyles.hintText.copyWith(),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: Colors.grey.shade300,
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: Colors.grey.shade300,
+                                ),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey.shade50,
+                            ),
+                            onChanged: (v) => itemPrice = v,
+                          ),
+                          const SizedBox(height: 16),
+                          DropdownButtonFormField<String>(
+                            value: selectedCat,
+                            items: _details.menuCategories
+                                .map(
+                                  (c) => DropdownMenuItem(
+                                    value: c.name,
+                                    child: Text(c.name),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (v) {
+                              if (v != null) {
+                                setDialogState(() => selectedCat = v);
+                              }
+                            },
+                            decoration: InputDecoration(
+                              labelText: 'หมวดหมู่',
+                              labelStyle: AppTextStyles.hintText.copyWith(),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: Colors.grey.shade300,
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: Colors.grey.shade300,
+                                ),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey.shade50,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          child: Text(
+                            'ยกเลิก',
+                            style: AppTextStyles.profileText.copyWith(
+                              color: Colors.grey,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            if (itemName.isNotEmpty && itemPrice.isNotEmpty) {
+                              final price = int.tryParse(itemPrice);
+                              if (price == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'กรุณาใส่ราคาเป็นตัวเลขเท่านั้น',
+                                      style: AppTextStyles.profileText.copyWith(
+                                        fontSize: 14,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                                return;
+                              }
+
+                              setState(() {
+                                final newItems = List<MenuItem>.from(
+                                  _details.menuItems,
+                                );
+                                final itemId = DateTime.now()
+                                    .millisecondsSinceEpoch
+                                    .toString();
+
+                                newItems.add(
+                                  MenuItem(
+                                    id: itemId,
+                                    name: itemName,
+                                    price: price,
+                                    category: selectedCat,
+                                  ),
+                                );
+
+                                if (pickedMenuImage != null) {
+                                  _menuImageFiles[itemId] = pickedMenuImage!;
+                                }
+
+                                _details = _details.copyWith(
+                                  menuItems: newItems,
+                                );
+                              });
+                              Navigator.pop(context);
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primaryBlue,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            'เพิ่ม',
+                            style: AppTextStyles.profileText.copyWith(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(
-                  'ยกเลิก',
-                  style: AppTextStyles.profileText.copyWith(
-                    fontSize: 14,
-                    color: Colors.black.withValues(alpha: 0.8),
-                  ),
-                ),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  if (itemName.isNotEmpty && itemPrice.isNotEmpty) {
-                    final price = int.tryParse(itemPrice);
-                    if (price == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'กรุณาใส่ราคาเป็นตัวเลขเท่านั้น',
-                            style: AppTextStyles.profileText.copyWith(
-                              fontSize: 14,
-                              color: Colors.white.withValues(alpha: 0.8),
-                            ),
-                          ),
-                        ),
-                      );
-                      return;
-                    }
-
-                    setState(() {
-                      final newItems = List<MenuItem>.from(_details.menuItems);
-                      final itemId = DateTime.now().millisecondsSinceEpoch
-                          .toString();
-
-                      newItems.add(
-                        MenuItem(
-                          id: itemId,
-                          name: itemName,
-                          price: price,
-                          category: selectedCat,
-                        ),
-                      );
-
-                      if (pickedMenuImage != null) {
-                        _menuImageFiles[itemId] = pickedMenuImage!;
-                      }
-
-                      _details = _details.copyWith(menuItems: newItems);
-                    });
-                    Navigator.pop(context);
-                  }
-                },
-                child: Text(
-                  'เพิ่ม',
-                  style: AppTextStyles.profileText.copyWith(
-                    fontSize: 14,
-                    color: Colors.blue,
-                  ),
-                ),
-              ),
-            ],
           );
         },
       ),
@@ -395,100 +538,150 @@ class _AddRestaurantDetailScreenState extends State<AddRestaurantDetailScreen> {
     final TextEditingController controller = TextEditingController(
       text: categoryName,
     );
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Text(
-          'แก้ไขหมวดหมู่เมนู',
-          style: AppTextStyles.profileText.copyWith(
-            fontSize: 18,
-            color: Colors.black,
-          ),
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(context).viewInsets.bottom,
         ),
-        content: TextField(
-          controller: controller,
-          decoration: InputDecoration(
-            hintText: 'ชื่อหมวดหมู่',
-            hintStyle: AppTextStyles.hintText.copyWith(),
-          ),
-          onChanged: (v) => categoryName = v.trim(),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text(
-              'ยกเลิก',
-              style: AppTextStyles.profileText.copyWith(
-                fontSize: 14,
-                color: Colors.black.withValues(alpha: 0.8),
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'แก้ไขหมวดหมู่เมนู',
+                style: AppTextStyles.profileText.copyWith(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (categoryName.isNotEmpty) {
-                if (categoryName != oldCat.name &&
-                    _details.menuCategories.any(
-                      (c) => c.name == categoryName,
-                    )) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        'มีหมวดหมู่นี้อยู่แล้ว',
+              const SizedBox(height: 20),
+              TextField(
+                controller: controller,
+                decoration: InputDecoration(
+                  hintText: 'ชื่อหมวดหมู่',
+                  hintStyle: AppTextStyles.hintText.copyWith(),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  filled: true,
+                  fillColor: Colors.grey.shade50,
+                ),
+                onChanged: (v) => categoryName = v.trim(),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: TextButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                      ),
+                      child: Text(
+                        'ยกเลิก',
                         style: AppTextStyles.profileText.copyWith(
-                          fontSize: 14,
-                          color: Colors.white.withValues(alpha: 0.8),
+                          color: Colors.grey,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
                     ),
-                  );
-                  return;
-                }
-                setState(() {
-                  final newCats = List<MenuCategory>.from(
-                    _details.menuCategories,
-                  );
-                  final idx = newCats.indexWhere((c) => c.id == oldCat.id);
-                  if (idx != -1) {
-                    newCats[idx] = MenuCategory(
-                      id: oldCat.id,
-                      name: categoryName,
-                      order: oldCat.order,
-                    );
-                  }
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        if (categoryName.isNotEmpty) {
+                          if (categoryName != oldCat.name &&
+                              _details.menuCategories.any(
+                                (c) => c.name == categoryName,
+                              )) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  'มีหมวดหมู่นี้อยู่แล้ว',
+                                  style: AppTextStyles.profileText.copyWith(
+                                    fontSize: 14,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ),
+                            );
+                            return;
+                          }
+                          setState(() {
+                            final newCats = List<MenuCategory>.from(
+                              _details.menuCategories,
+                            );
+                            final idx = newCats.indexWhere(
+                              (c) => c.id == oldCat.id,
+                            );
+                            if (idx != -1) {
+                              newCats[idx] = MenuCategory(
+                                id: oldCat.id,
+                                name: categoryName,
+                                order: oldCat.order,
+                              );
+                            }
 
-                  final newItems = _details.menuItems.map((m) {
-                    if (m.category == oldCat.name) {
-                      return MenuItem(
-                        id: m.id,
-                        name: m.name,
-                        price: m.price,
-                        menuImage: m.menuImage,
-                        category: categoryName,
-                        isRecommended: m.isRecommended,
-                        isAvailable: m.isAvailable,
-                      );
-                    }
-                    return m;
-                  }).toList();
+                            final newItems = _details.menuItems.map((m) {
+                              if (m.category == oldCat.name) {
+                                return MenuItem(
+                                  id: m.id,
+                                  name: m.name,
+                                  price: m.price,
+                                  menuImage: m.menuImage,
+                                  category: categoryName,
+                                  isRecommended: m.isRecommended,
+                                  isAvailable: m.isAvailable,
+                                );
+                              }
+                              return m;
+                            }).toList();
 
-                  _details = _details.copyWith(
-                    menuCategories: newCats,
-                    menuItems: newItems,
-                  );
-                });
-                Navigator.pop(context);
-              }
-            },
-            child: Text(
-              'บันทึก',
-              style: AppTextStyles.profileText.copyWith(
-                fontSize: 14,
-                color: Colors.blue,
+                            _details = _details.copyWith(
+                              menuCategories: newCats,
+                              menuItems: newItems,
+                            );
+                          });
+                          Navigator.pop(context);
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primaryBlue,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: Text(
+                        'บันทึก',
+                        style: AppTextStyles.profileText.copyWith(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
               ),
-            ),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
@@ -512,164 +705,270 @@ class _AddRestaurantDetailScreenState extends State<AddRestaurantDetailScreen> {
       }
     }
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (context) => StatefulBuilder(
         builder: (context, setDialogState) {
-          return AlertDialog(
-            title: Text(
-              'แก้ไขเมนูอาหาร',
-              style: AppTextStyles.profileText.copyWith(
-                fontSize: 18,
-                color: Colors.black,
-              ),
+          return Padding(
+            padding: EdgeInsets.only(
+              bottom: MediaQuery.of(context).viewInsets.bottom,
             ),
-            content: SingleChildScrollView(
+            child: Container(
+              padding: const EdgeInsets.all(20),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  GestureDetector(
-                    onTap: () async {
-                      final img = await _picker.pickImage(
-                        source: ImageSource.gallery,
-                      );
-                      if (img != null) {
-                        setDialogState(() {
-                          pickedMenuImage = File(img.path);
-                        });
-                      }
-                    },
-                    child: Container(
-                      height: 250,
-                      width: double.infinity,
-                      decoration: BoxDecoration(
-                        color: Colors.grey.shade200,
-                        borderRadius: BorderRadius.circular(12),
-                        image: pickedMenuImage != null
-                            ? DecorationImage(
-                                image: FileImage(pickedMenuImage!),
-                                fit: BoxFit.cover,
-                              )
-                            : null,
-                      ),
-                      child: pickedMenuImage == null
-                          ? const Center(
-                              child: Icon(
-                                Icons.add_a_photo,
-                                color: Colors.grey,
+                  Text(
+                    'แก้ไขเมนูอาหาร',
+                    style: AppTextStyles.profileText.copyWith(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Flexible(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          GestureDetector(
+                            onTap: () async {
+                              final img = await _picker.pickImage(
+                                source: ImageSource.gallery,
+                              );
+                              if (img != null) {
+                                setDialogState(() {
+                                  pickedMenuImage = File(img.path);
+                                });
+                              }
+                            },
+                            child: Container(
+                              height: 150,
+                              width: double.infinity,
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade200,
+                                borderRadius: BorderRadius.circular(12),
+                                image: pickedMenuImage != null
+                                    ? DecorationImage(
+                                        image: FileImage(pickedMenuImage!),
+                                        fit: BoxFit.cover,
+                                      )
+                                    : (oldItem.menuImage.isNotEmpty &&
+                                              !oldItem.menuImage.startsWith(
+                                                'http',
+                                              )
+                                          ? DecorationImage(
+                                              image: FileImage(
+                                                File(oldItem.menuImage),
+                                              ),
+                                              fit: BoxFit.cover,
+                                            )
+                                          : (oldItem.menuImage.isNotEmpty
+                                                ? DecorationImage(
+                                                    image: NetworkImage(
+                                                      oldItem.menuImage,
+                                                    ),
+                                                    fit: BoxFit.cover,
+                                                  )
+                                                : null)),
                               ),
-                            )
-                          : null,
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: nameController,
-                    decoration: InputDecoration(
-                      hintText: 'ชื่อเมนู',
-                      hintStyle: AppTextStyles.hintText.copyWith(),
-                    ),
-                    onChanged: (v) => itemName = v,
-                  ),
-                  const SizedBox(height: 10),
-                  TextField(
-                    controller: priceController,
-                    keyboardType: TextInputType.number,
-                    decoration: InputDecoration(
-                      hintText: 'ราคา (บาท)',
-                      hintStyle: AppTextStyles.hintText.copyWith(),
-                    ),
-                    onChanged: (v) => itemPrice = v,
-                  ),
-                  const SizedBox(height: 10),
-                  DropdownButtonFormField<String>(
-                    value: selectedCat,
-                    items: _details.menuCategories
-                        .map(
-                          (c) => DropdownMenuItem(
-                            value: c.name,
-                            child: Text(c.name),
+                              child:
+                                  pickedMenuImage == null &&
+                                      oldItem.menuImage.isEmpty
+                                  ? const Center(
+                                      child: Icon(
+                                        Icons.add_a_photo,
+                                        color: Colors.grey,
+                                      ),
+                                    )
+                                  : null,
+                            ),
                           ),
-                        )
-                        .toList(),
-                    onChanged: (v) {
-                      if (v != null) {
-                        setDialogState(() => selectedCat = v);
-                      }
-                    },
-                    decoration: InputDecoration(
-                      labelText: 'หมวดหมู่',
-                      labelStyle: AppTextStyles.hintText.copyWith(),
+                          const SizedBox(height: 16),
+                          TextField(
+                            controller: nameController,
+                            decoration: InputDecoration(
+                              hintText: 'ชื่อเมนู',
+                              hintStyle: AppTextStyles.hintText.copyWith(),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: Colors.grey.shade300,
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: Colors.grey.shade300,
+                                ),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey.shade50,
+                            ),
+                            onChanged: (v) => itemName = v,
+                          ),
+                          const SizedBox(height: 16),
+                          TextField(
+                            controller: priceController,
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              hintText: 'ราคา (บาท)',
+                              hintStyle: AppTextStyles.hintText.copyWith(),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: Colors.grey.shade300,
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: Colors.grey.shade300,
+                                ),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey.shade50,
+                            ),
+                            onChanged: (v) => itemPrice = v,
+                          ),
+                          const SizedBox(height: 16),
+                          DropdownButtonFormField<String>(
+                            value: selectedCat,
+                            items: _details.menuCategories
+                                .map(
+                                  (c) => DropdownMenuItem(
+                                    value: c.name,
+                                    child: Text(c.name),
+                                  ),
+                                )
+                                .toList(),
+                            onChanged: (v) {
+                              if (v != null) {
+                                setDialogState(() => selectedCat = v);
+                              }
+                            },
+                            decoration: InputDecoration(
+                              labelText: 'หมวดหมู่',
+                              labelStyle: AppTextStyles.hintText.copyWith(),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: Colors.grey.shade300,
+                                ),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(
+                                  color: Colors.grey.shade300,
+                                ),
+                              ),
+                              filled: true,
+                              fillColor: Colors.grey.shade50,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(context),
+                          style: TextButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                          child: Text(
+                            'ยกเลิก',
+                            style: AppTextStyles.profileText.copyWith(
+                              color: Colors.grey,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: () {
+                            if (itemName.isNotEmpty && itemPrice.isNotEmpty) {
+                              final price = int.tryParse(itemPrice);
+                              if (price == null) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'กรุณาใส่ราคาเป็นตัวเลขเท่านั้น',
+                                      style: AppTextStyles.profileText.copyWith(
+                                        fontSize: 14,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                                return;
+                              }
+
+                              setState(() {
+                                final newItems = List<MenuItem>.from(
+                                  _details.menuItems,
+                                );
+                                final idx = newItems.indexWhere(
+                                  (m) => m.id == oldItem.id,
+                                );
+                                if (idx != -1) {
+                                  newItems[idx] = MenuItem(
+                                    id: oldItem.id,
+                                    name: itemName,
+                                    price: price,
+                                    category: selectedCat,
+                                    menuImage: oldItem.menuImage,
+                                    isRecommended: oldItem.isRecommended,
+                                    isAvailable: oldItem.isAvailable,
+                                  );
+                                }
+
+                                if (pickedMenuImage != null) {
+                                  _menuImageFiles[oldItem.id] =
+                                      pickedMenuImage!;
+                                }
+
+                                _details = _details.copyWith(
+                                  menuItems: newItems,
+                                );
+                              });
+                              Navigator.pop(context);
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primaryBlue,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          child: Text(
+                            'บันทึก',
+                            style: AppTextStyles.profileText.copyWith(
+                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
             ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: Text(
-                  'ยกเลิก',
-                  style: AppTextStyles.profileText.copyWith(
-                    fontSize: 14,
-                    color: Colors.black.withValues(alpha: 0.8),
-                  ),
-                ),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  if (itemName.isNotEmpty && itemPrice.isNotEmpty) {
-                    final price = int.tryParse(itemPrice);
-                    if (price == null) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text(
-                            'กรุณาใส่ราคาเป็นตัวเลขเท่านั้น',
-                            style: AppTextStyles.profileText.copyWith(
-                              fontSize: 14,
-                              color: Colors.white.withValues(alpha: 0.8),
-                            ),
-                          ),
-                        ),
-                      );
-                      return;
-                    }
-
-                    setState(() {
-                      final newItems = List<MenuItem>.from(_details.menuItems);
-                      final idx = newItems.indexWhere(
-                        (m) => m.id == oldItem.id,
-                      );
-                      if (idx != -1) {
-                        newItems[idx] = MenuItem(
-                          id: oldItem.id,
-                          name: itemName,
-                          price: price,
-                          category: selectedCat,
-                          menuImage: oldItem.menuImage,
-                          isRecommended: oldItem.isRecommended,
-                          isAvailable: oldItem.isAvailable,
-                        );
-                      }
-
-                      if (pickedMenuImage != null) {
-                        _menuImageFiles[oldItem.id] = pickedMenuImage!;
-                      }
-
-                      _details = _details.copyWith(menuItems: newItems);
-                    });
-                    Navigator.pop(context);
-                  }
-                },
-                child: Text(
-                  'บันทึก',
-                  style: AppTextStyles.profileText.copyWith(
-                    fontSize: 14,
-                    color: Colors.blue,
-                  ),
-                ),
-              ),
-            ],
           );
         },
       ),
