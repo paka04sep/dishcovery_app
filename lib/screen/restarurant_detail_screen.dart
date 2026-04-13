@@ -471,10 +471,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
               padding: const EdgeInsets.only(left: 10),
               child: Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                ),
+                style: AppTextStyles.restaurantHeaderDetails.copyWith(),
               ),
             ),
           ),
