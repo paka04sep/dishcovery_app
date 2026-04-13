@@ -1,6 +1,7 @@
 import 'package:dishcovery_app/constants/app_bottom_nav_user.dart';
 import 'package:dishcovery_app/constants/app_constants.dart';
 import 'package:dishcovery_app/screen/favorite_screen.dart';
+import 'package:dishcovery_app/screen/helpcenter_screen.dart';
 import 'package:dishcovery_app/screen/swipescreen.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:dishcovery_app/services/auth_service.dart';
@@ -270,7 +271,15 @@ class UserProfileScreen extends StatelessWidget {
                   ),
                   _buildListTile(
                     icon: Icons.help_outline,
-                    title: "ศูนย์ช่วยเหลือ / ติดต่อเรา",
+                    title: "ความช่วยเหลือและข้อกำหนด",
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const HelpcenterScreen(),
+                        ),
+                      );
+                    },
                   ),
                   _buildListTile(
                     icon: Icons.settings_outlined,

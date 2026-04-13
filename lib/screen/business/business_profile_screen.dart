@@ -1,3 +1,4 @@
+import 'package:dishcovery_app/screen/helpcenter_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:dishcovery_app/constants/app_constants.dart';
 import 'package:dishcovery_app/services/auth_service.dart';
@@ -224,7 +225,15 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
                   ),
                   _buildListTile(
                     icon: Icons.help_outline,
-                    title: "ศูนย์ช่วยเหลือ / ติดต่อเรา",
+                    title: "ความช่วยเหลือและข้อกำหนด",
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const HelpcenterScreen(),
+                        ),
+                      );
+                    },
                   ),
                   _buildListTile(
                     icon: Icons.settings_outlined,
