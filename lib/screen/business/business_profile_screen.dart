@@ -225,7 +225,7 @@ class _BusinessProfileScreenState extends State<BusinessProfileScreen> {
                   ),
                   _buildListTile(
                     icon: Icons.help_outline,
-                    title: "ความช่วยเหลือและข้อกำหนด",
+                    title: "ศูนย์ช่วยเหลือและข้อกำหนด",
                     onTap: () {
                       Navigator.push(
                         context,

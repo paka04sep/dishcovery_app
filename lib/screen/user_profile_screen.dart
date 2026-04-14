@@ -313,7 +313,7 @@ class UserProfileScreen extends StatelessWidget {
                   ),
                   _buildListTile(
                     icon: Icons.help_outline,
-                    title: "ความช่วยเหลือและข้อกำหนด",
+                    title: "ศูนย์ช่วยเหลือและข้อกำหนด",
                     onTap: () {
                       Navigator.push(
                         context,

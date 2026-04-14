@@ -1,351 +1,21 @@
 import 'package:flutter/material.dart';
-import 'package:dishcovery_app/services/restaurant_service.dart';
-import 'package:dishcovery_app/constants/app_constants.dart';
-import 'package:dishcovery_app/services/services_dev/dev_res_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:dishcovery_app/models/restaurant_model.dart';
+import 'package:dishcovery_app/constants/app_constants.dart';
+import 'admin_manage_restaurants_screen.dart';
+import 'admin_restaurant_requests_screen.dart';
+import 'admin_reports_screen.dart';
 
-class AdminDashboardScreen extends StatefulWidget {
+class AdminDashboardScreen extends StatelessWidget {
   const AdminDashboardScreen({super.key});
 
-  @override
-  State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
-}
-
-class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
-  bool _isLoading = false;
-  final Set<String> _selectedIds = {};
-  bool _isSelectionMode = false;
-  String _selectedStatus = 'pending';
-
-  Future<void> _updateStatus(
-    String id,
-    String status, [
-    String rejectionReason = '',
-  ]) async {
-    setState(() => _isLoading = true);
-    try {
-      await FirebaseFirestore.instance
-          .collection('restaurants')
-          .doc(id)
-          .update({
-            'status': status,
-            if (rejectionReason.isNotEmpty) 'rejectionReason': rejectionReason,
-          });
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Restaurant status updated to $status')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error updating status: $e')));
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _showRejectDialog(String id) async {
-    String reason = '';
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Reject Restaurant'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text('Please provide a reason for rejection:'),
-            TextField(
-              onChanged: (val) => reason = val,
-              decoration: const InputDecoration(hintText: 'Reason'),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-            onPressed: () {
-              if (reason.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Reason is required')),
-                );
-                return;
-              }
-              Navigator.pop(context, true);
-            },
-            child: const Text('Reject', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      await _updateStatus(id, 'rejected', reason);
-    }
-  }
-
-  Future<void> _addMockData() async {
-    setState(() => _isLoading = true);
-    try {
-      await DevResService.instance.generateRandomRestaurant();
-      if (mounted) {
-        // ScaffoldMessenger.of(context).showSnackBar(
-        //   const SnackBar(
-        //     content: Text('Random Restaurant generated successfully!'),
-        //   ),
-        // );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error adding data: $e')));
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _showDanglingSubcollections() async {
-    setState(() => _isLoading = true);
-    try {
-      final danglingIds = await DevResService.instance
-          .fetchDanglingRestaurantIds();
-      if (mounted) {
-        setState(() => _isLoading = false);
-        showDialog(
-          context: context,
-          builder: (context) {
-            return AlertDialog(
-              title: Text('Dangling Subcollections (${danglingIds.length})'),
-              content: SizedBox(
-                width: double.maxFinite,
-                child: danglingIds.isEmpty
-                    ? const Text("No dangling subcollections found.")
-                    : ListView.builder(
-                        shrinkWrap: true,
-                        itemCount: danglingIds.length,
-                        itemBuilder: (context, index) {
-                          return ListTile(
-                            title: Text(danglingIds[index]),
-                            trailing: IconButton(
-                              icon: const Icon(Icons.delete, color: Colors.red),
-                              onPressed: () async {
-                                Navigator.pop(context);
-                                await _deleteDanglingId(danglingIds[index]);
-                              },
-                            ),
-                          );
-                        },
-                      ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text('Close'),
-                ),
-                if (danglingIds.isNotEmpty)
-                  ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.red,
-                    ),
-                    onPressed: () async {
-                      Navigator.pop(context);
-                      await _deleteAllDangling(danglingIds);
-                    },
-                    child: const Text(
-                      'Delete All',
-                      style: TextStyle(color: Colors.white),
-                    ),
-                  ),
-              ],
-            );
-          },
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        setState(() => _isLoading = false);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
-    }
-  }
-
-  Future<void> _deleteDanglingId(String id) async {
-    setState(() => _isLoading = true);
-    try {
-      await DevResService.instance.deleteRestaurant(
-        id,
-      ); // Handles subcollection deletion
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Cleaned $id!')));
-        _showDanglingSubcollections(); // Re-open dialog to show updated list
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _deleteAllDangling(List<String> ids) async {
-    setState(() => _isLoading = true);
-    try {
-      for (String id in ids) {
-        await DevResService.instance.deleteRestaurant(id);
-      }
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Cleaned all dangling IDs!')),
-        );
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Error: $e')));
-      }
-    } finally {
-      if (mounted) setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> _deleteRestaurant(String id) async {
-    // Show confirmation dialog
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Restaurant'),
-        content: const Text(
-          'Are you sure you want to delete this restaurant? This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      setState(() => _isLoading = true);
-      try {
-        await DevResService.instance.deleteRestaurant(id);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Restaurant deleted successfully!')),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Error deleting: $e')));
-        }
-      } finally {
-        if (mounted) setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  Future<void> _deleteSelectedRestaurants() async {
-    final count = _selectedIds.length;
-    if (count == 0) return;
-
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text('Delete $count Restaurants?'),
-        content: const Text(
-          'Are you sure you want to delete the selected restaurants? This action cannot be undone.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context, false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            onPressed: () => Navigator.pop(context, true),
-            child: const Text('Delete', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
-
-    if (confirm == true) {
-      setState(() => _isLoading = true);
-      try {
-        await DevResService.instance.deleteRestaurants(_selectedIds.toList());
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('$count restaurants deleted successfully!')),
-          );
-          setState(() {
-            _selectedIds.clear();
-            _isSelectionMode = false;
-          });
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(
-            context,
-          ).showSnackBar(SnackBar(content: Text('Error deleting: $e')));
-        }
-      } finally {
-        if (mounted) setState(() => _isLoading = false);
-      }
-    }
-  }
-
-  void _toggleSelection(String id) {
-    setState(() {
-      if (_selectedIds.contains(id)) {
-        _selectedIds.remove(id);
-        if (_selectedIds.isEmpty) {
-          _isSelectionMode = false;
-        }
-      } else {
-        _selectedIds.add(id);
-      }
-    });
-  }
-
-  void _selectAll() {
-    final allIds = RestaurantService.instance.restaurants
-        .map((r) => r.id)
-        .toList();
-    setState(() {
-      if (_selectedIds.length == allIds.length) {
-        // Deselect all
-        _selectedIds.clear();
-        _isSelectionMode = false;
-      } else {
-        // Select all
-        _selectedIds.addAll(allIds);
-      }
-    });
+  Future<Map<String, int>> _fetchDashboardData() async {
+    final restaurantsCountQuery = await FirebaseFirestore.instance.collection('restaurants').count().get();
+    final usersCountQuery = await FirebaseFirestore.instance.collection('users').count().get();
+    
+    return {
+      'restaurants': restaurantsCountQuery.count ?? 0,
+      'users': usersCountQuery.count ?? 0,
+    };
   }
 
   @override
@@ -353,301 +23,248 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9F9),
       appBar: AppBar(
-        title: _isSelectionMode
-            ? Text("${_selectedIds.length} selected")
-            : const Text(
-                "Admin Dashboard",
-                style: TextStyle(
-                  color: Colors.black,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
+        title: const Text(
+          "Admin Dashboard",
+          style: TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         backgroundColor: Colors.white,
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
         centerTitle: true,
-        leading: _isSelectionMode
-            ? IconButton(
-                onPressed: () {
-                  setState(() {
-                    _selectedIds.clear();
-                    _isSelectionMode = false;
-                  });
+      ),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Section 1: Dashboard Data
+              const Text(
+                "ภาพรวมระบบ",
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 16),
+              FutureBuilder<Map<String, int>>(
+                future: _fetchDashboardData(),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
+
+                  if (snapshot.hasError) {
+                    return Center(child: Text("Error: ${snapshot.error}"));
+                  }
+
+                  final data = snapshot.data ?? {'restaurants': 0, 'users': 0};
+
+                  return Row(
+                    children: [
+                      Expanded(
+                        child: _buildDataCard(
+                          title: "ร้านอาหารทั้งหมด",
+                          count: data['restaurants']!,
+                          icon: Icons.restaurant,
+                          color: Colors.orange,
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildDataCard(
+                          title: "ผู้ใช้งานทั้งหมด",
+                          count: data['users']!,
+                          icon: Icons.people,
+                          color: Colors.blue,
+                        ),
+                      ),
+                    ],
+                  );
                 },
-                icon: const Icon(Icons.close),
-              )
-            : const BackButton(),
-        actions: [
-          if (_isSelectionMode)
-            IconButton(
-              onPressed: _selectAll,
-              icon: const Icon(Icons.select_all),
-              tooltip: 'Select All',
-            ),
-          if (_isSelectionMode)
-            IconButton(
-              onPressed: _deleteSelectedRestaurants,
-              icon: const Icon(Icons.delete, color: Colors.red),
-            ),
+              ),
+
+              const SizedBox(height: 32),
+
+              // Section 2: Settings / Management
+              const Text(
+                "การจัดการและการตั้งค่า",
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black87,
+                ),
+              ),
+              const SizedBox(height: 16),
+              _buildSettingItem(
+                context,
+                title: "จัดการร้านอาหาร",
+                subtitle: "ดูและจัดการร้านอาหารทั้งหมดในระบบ",
+                icon: Icons.storefront,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AdminManageRestaurantsScreen(),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              _buildSettingItem(
+                context,
+                title: "คำขอของร้านอาหาร",
+                subtitle: "อนุมัติหรือปฏิเสธร้านอาหารที่รอการตรวจสอบ",
+                icon: Icons.assignment_turned_in,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AdminRestaurantRequestsScreen(),
+                    ),
+                  );
+                },
+              ),
+              const SizedBox(height: 12),
+              _buildSettingItem(
+                context,
+                title: "รายงานรีพอท",
+                subtitle: "ตรวจสอบการรายงานจากผู้ใช้และร้านอาหาร",
+                icon: Icons.report_problem,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AdminReportsScreen(),
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDataCard({
+    required String title,
+    required int count,
+    required IconData icon,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
         ],
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                const SizedBox(height: 20),
-                // Action Buttons
-                if (!_isSelectionMode) // Hide add button in selection mode for cleaner UI
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Column(
-                      children: [
-                        SizedBox(
-                          width: double.infinity,
-                          height: 50,
-                          child: ElevatedButton.icon(
-                            onPressed: _addMockData,
-                            icon: const Icon(Icons.shuffle),
-                            label: const Text("Add Random Restaurant"),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primaryBlue,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 50,
-                          child: ElevatedButton.icon(
-                            onPressed: _showDanglingSubcollections,
-                            icon: const Icon(Icons.search),
-                            label: const Text("Fetch Dangling Data"),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.orange,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                if (!_isSelectionMode) const SizedBox(height: 20),
-                if (!_isSelectionMode)
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          "Manage Restaurants",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        DropdownButton<String>(
-                          value: _selectedStatus,
-                          items: const [
-                            DropdownMenuItem(value: 'all', child: Text('All')),
-                            DropdownMenuItem(
-                              value: 'pending',
-                              child: Text('Pending'),
-                            ),
-                            DropdownMenuItem(
-                              value: 'approved',
-                              child: Text('Approved'),
-                            ),
-                            DropdownMenuItem(
-                              value: 'rejected',
-                              child: Text('Rejected'),
-                            ),
-                          ],
-                          onChanged: (val) {
-                            if (val != null) {
-                              setState(() => _selectedStatus = val);
-                            }
-                          },
-                        ),
-                      ],
-                    ),
-                  ),
-                if (!_isSelectionMode) const SizedBox(height: 10),
-                // Restaurant List
-                Expanded(
-                  child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-                    stream: FirebaseFirestore.instance
-                        .collection('restaurants')
-                        .snapshots(),
-                    builder: (context, snapshot) {
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-
-                      if (snapshot.hasError) {
-                        return Center(child: Text('Error: ${snapshot.error}'));
-                      }
-
-                      if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                        return const Center(
-                          child: Text("No restaurants found."),
-                        );
-                      }
-
-                      final restaurants = snapshot.data!.docs
-                          .map(
-                            (doc) => RestaurantCardData.fromFirestore(
-                              doc.data(),
-                              doc.id,
-                            ),
-                          )
-                          .where(
-                            (r) =>
-                                _selectedStatus == 'all' ||
-                                r.status == _selectedStatus,
-                          )
-                          .toList();
-
-                      return ListView.separated(
-                        padding: const EdgeInsets.all(20),
-                        itemCount: restaurants.length,
-                        separatorBuilder: (context, index) =>
-                            const SizedBox(height: 10),
-                        itemBuilder: (context, index) {
-                          final r = restaurants[index];
-                          final isSelected = _selectedIds.contains(r.id);
-
-                          return InkWell(
-                            onLongPress: () {
-                              if (!_isSelectionMode) {
-                                setState(() {
-                                  _isSelectionMode = true;
-                                  _toggleSelection(r.id);
-                                });
-                              }
-                            },
-                            onTap: _isSelectionMode
-                                ? () => _toggleSelection(r.id)
-                                : null,
-                            child: Card(
-                              color: isSelected
-                                  ? Colors.blue.shade50
-                                  : Colors.white,
-                              elevation: 2,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                side: isSelected
-                                    ? const BorderSide(
-                                        color: Colors.blue,
-                                        width: 2,
-                                      )
-                                    : BorderSide.none,
-                              ),
-                              child: ListTile(
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 8,
-                                ),
-                                leading: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    if (_isSelectionMode)
-                                      Padding(
-                                        padding: const EdgeInsets.only(
-                                          right: 10,
-                                        ),
-                                        child: Icon(
-                                          isSelected
-                                              ? Icons.check_box
-                                              : Icons.check_box_outline_blank,
-                                          color: isSelected
-                                              ? Colors.blue
-                                              : Colors.grey,
-                                        ),
-                                      ),
-                                    ClipRRect(
-                                      borderRadius: BorderRadius.circular(8),
-                                      child: Image.network(
-                                        r.imageUrl,
-                                        width: 60,
-                                        height: 60,
-                                        fit: BoxFit.cover,
-                                        errorBuilder: (_, __, ___) => Container(
-                                          width: 60,
-                                          height: 60,
-                                          color: Colors.grey[300],
-                                          child: const Icon(Icons.restaurant),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                title: Text(
-                                  r.name,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                subtitle: Text(
-                                  "Status: ${r.status} | ID: ${r.id}",
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                trailing: !_isSelectionMode
-                                    ? Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          if (r.status == 'pending') ...[
-                                            IconButton(
-                                              icon: const Icon(
-                                                Icons.check,
-                                                color: Colors.green,
-                                              ),
-                                              tooltip: 'Approve',
-                                              onPressed: () => _updateStatus(
-                                                r.id,
-                                                'approved',
-                                              ),
-                                            ),
-                                            IconButton(
-                                              icon: const Icon(
-                                                Icons.close,
-                                                color: Colors.orange,
-                                              ),
-                                              tooltip: 'Reject',
-                                              onPressed: () =>
-                                                  _showRejectDialog(r.id),
-                                            ),
-                                          ],
-                                          IconButton(
-                                            icon: const Icon(
-                                              Icons.delete_outline,
-                                              color: Colors.red,
-                                            ),
-                                            tooltip: 'Delete',
-                                            onPressed: () =>
-                                                _deleteRestaurant(r.id),
-                                          ),
-                                        ],
-                                      )
-                                    : null,
-                              ),
-                            ),
-                          );
-                        },
-                      );
-                    },
-                  ),
-                ),
-              ],
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              shape: BoxShape.circle,
             ),
+            child: Icon(icon, color: color, size: 28),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            count.toString(),
+            style: const TextStyle(
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 14,
+              color: Colors.grey,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSettingItem(
+    BuildContext context, {
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade200),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.02),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.primaryBlue.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(icon, color: AppColors.primaryBlue),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    subtitle,
+                    style: TextStyle(
+                      fontSize: 13,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right, color: Colors.grey),
+          ],
+        ),
+      ),
     );
   }
 }

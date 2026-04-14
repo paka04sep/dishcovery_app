@@ -350,3 +350,55 @@ class ReviewModel {
     };
   }
 }
+
+class ReportModel {
+  final String id;
+  final String reporterId;
+  final String reporterRole; // 'user' or 'restaurant'
+  final String targetReviewId;
+  final String restaurantId;
+  final String reason;
+  final DateTime createdAt;
+  final String status; // 'pending', 'resolved', 'dismissed'
+
+  ReportModel({
+    required this.id,
+    required this.reporterId,
+    required this.reporterRole,
+    required this.targetReviewId,
+    required this.restaurantId,
+    required this.reason,
+    required this.createdAt,
+    this.status = 'pending',
+  });
+
+  factory ReportModel.fromFirestore(Map<String, dynamic> data, String id) {
+    return ReportModel(
+      id: id,
+      reporterId: data['reporterId'] as String? ?? '',
+      reporterRole: data['reporterRole'] as String? ?? 'user',
+      targetReviewId: data['targetReviewId'] as String? ?? '',
+      restaurantId: data['restaurantId'] as String? ?? '',
+      reason: data['reason'] as String? ?? '',
+      createdAt: data['createdAt'] != null
+          ? (data['createdAt'] is Timestamp
+              ? (data['createdAt'] as Timestamp).toDate()
+              : DateTime.tryParse(data['createdAt'].toString()) ?? DateTime.now())
+          : DateTime.now(),
+      status: data['status'] as String? ?? 'pending',
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'reporterId': reporterId,
+      'reporterRole': reporterRole,
+      'targetReviewId': targetReviewId,
+      'restaurantId': restaurantId,
+      'reason': reason,
+      'createdAt': FieldValue.serverTimestamp(),
+      'status': status,
+    };
+  }
+}

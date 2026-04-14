@@ -2,20 +2,27 @@ import 'package:flutter/material.dart';
 import 'package:dishcovery_app/models/restaurant_model.dart';
 import 'package:dishcovery_app/constants/app_constants.dart';
 import 'package:dishcovery_app/services/restaurant_service.dart';
+import 'package:dishcovery_app/utils/review_helpers.dart';
 import 'package:intl/intl.dart';
 
-class RestaurantReviewsScreen extends StatelessWidget {
+class RestaurantReviewsScreen extends StatefulWidget {
   final RestaurantCardData restaurant;
 
   const RestaurantReviewsScreen({super.key, required this.restaurant});
 
+  @override
+  State<RestaurantReviewsScreen> createState() =>
+      _RestaurantReviewsScreenState();
+}
+
+class _RestaurantReviewsScreenState extends State<RestaurantReviewsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text(
-          'รีวิวทั้งหมด - ${restaurant.name}',
+          'รีวิวทั้งหมด - ${widget.restaurant.name}',
           style: AppTextStyles.restaurantInDetails.copyWith(
             fontSize: 18,
             color: Colors.black,
@@ -28,7 +35,7 @@ class RestaurantReviewsScreen extends StatelessWidget {
         iconTheme: const IconThemeData(color: Colors.black),
       ),
       body: FutureBuilder<List<ReviewModel>>(
-        future: RestaurantService.instance.getReviews(restaurant.id),
+        future: RestaurantService.instance.getReviews(widget.restaurant.id),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
@@ -78,6 +85,19 @@ class RestaurantReviewsScreen extends StatelessWidget {
                           ),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      GestureDetector(
+                        onTap: () => ReviewHelpers.showReviewOptionsBottomSheet(
+                          context,
+                          review,
+                          widget.restaurant.id,
+                          () => setState(() {}),
+                        ),
+                        child: const Icon(
+                          Icons.more_vert,
+                          size: 20,
+                          color: Colors.black54,
                         ),
                       ),
                     ],

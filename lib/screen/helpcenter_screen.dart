@@ -34,7 +34,7 @@ class _HelpcenterScreenState extends State<HelpcenterScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: GradientText(
-          text: 'ความช่วยเหลือและข้อกำหนด',
+          text: 'ศูนย์ช่วยเหลือและข้อกำหนด',
           style: AppTextStyles.signinText.copyWith(
             fontSize: 24,
             fontWeight: FontWeight.bold,

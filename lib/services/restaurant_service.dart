@@ -284,6 +284,20 @@ class RestaurantService extends ChangeNotifier {
             needsRepair = true;
           }
 
+          // Repair missing profile picture from Google
+          if ((!data.containsKey('profilePictureUrl') || data['profilePictureUrl'] == null || (data['profilePictureUrl'] as String).isEmpty) && 
+              user.photoURL != null && user.photoURL!.isNotEmpty) {
+             repairData['profilePictureUrl'] = user.photoURL!;
+             needsRepair = true;
+          }
+
+          // Repair missing username from Google
+          if ((!data.containsKey('username') || data['username'] == null || (data['username'] as String).isEmpty) && 
+              user.displayName != null && user.displayName!.isNotEmpty) {
+             repairData['username'] = user.displayName!;
+             needsRepair = true;
+          }
+
           if (needsRepair) {
             // Repair the document
             if (kDebugMode) print("DEBUG: Performing user doc repair...");
@@ -315,6 +329,8 @@ class RestaurantService extends ChangeNotifier {
           final newUser = UserModel(
             uid: user.uid,
             email: user.email,
+            username: user.displayName,
+            profilePictureUrl: user.photoURL,
             createdAt: DateTime.now(),
             lastActiveAt: DateTime.now(),
             stats: UserStats(),
@@ -1394,6 +1410,134 @@ class RestaurantService extends ChangeNotifier {
       }
     } catch (e) {
       if (kDebugMode) print("Error adding review: $e");
+      rethrow;
+    }
+  }
+
+  Future<void> updateReview(String restaurantId, ReviewModel review, double oldRating) async {
+    try {
+      final db = FirebaseFirestore.instance;
+      final restaurantRef = db.collection('restaurants').doc(restaurantId);
+      final reviewRef = restaurantRef.collection('reviews').doc(review.id);
+
+      await db.runTransaction((transaction) async {
+        final restaurantSnap = await transaction.get(restaurantRef);
+        if (!restaurantSnap.exists) {
+          throw Exception("Restaurant does not exist");
+        }
+
+        final data = restaurantSnap.data() as Map<String, dynamic>;
+        int currentCount = (data['reviewCount'] as num?)?.toInt() ?? 0;
+        double currentRating = (data['rating'] as num?)?.toDouble() ?? 0.0;
+
+        double newRating = currentRating;
+        if (currentCount > 0) {
+          newRating = ((currentRating * currentCount) - oldRating + review.rating) / currentCount;
+          if (newRating < 0) newRating = 0.0;
+        }
+
+        transaction.update(reviewRef, {
+          'rating': review.rating,
+          'comment': review.comment,
+          'userName': review.userName,
+          'userPhotoUrl': review.userPhotoUrl,
+        });
+        
+        transaction.update(restaurantRef, {
+          'rating': double.parse(newRating.toStringAsFixed(1)),
+        });
+      });
+
+      // Optimistically update local data
+      final index = _restaurants.indexWhere((r) => r.id == restaurantId);
+      if (index != -1) {
+        final current = _restaurants[index];
+        final currentCount = current.reviewCount;
+        double newRating = current.rating;
+        
+        if (currentCount > 0) {
+          newRating = ((current.rating * currentCount) - oldRating + review.rating) / currentCount;
+          if (newRating < 0) newRating = 0.0;
+        }
+
+        if (current is RestaurantDetailsData) {
+          _restaurants[index] = current.copyWith(
+            rating: double.parse(newRating.toStringAsFixed(1)),
+          );
+        } else {
+          _restaurants[index] = current.copyWith(
+            rating: double.parse(newRating.toStringAsFixed(1)),
+          );
+        }
+        notifyListeners();
+      }
+    } catch (e) {
+      if (kDebugMode) print("Error updating review: $e");
+      rethrow;
+    }
+  }
+
+  Future<void> deleteReview(String restaurantId, ReviewModel review) async {
+    try {
+      final db = FirebaseFirestore.instance;
+      final restaurantRef = db.collection('restaurants').doc(restaurantId);
+      final reviewRef = restaurantRef.collection('reviews').doc(review.id);
+
+      await db.runTransaction((transaction) async {
+        final restaurantSnap = await transaction.get(restaurantRef);
+        if (!restaurantSnap.exists) {
+          throw Exception("Restaurant does not exist");
+        }
+
+        final data = restaurantSnap.data() as Map<String, dynamic>;
+        int currentCount = (data['reviewCount'] as num?)?.toInt() ?? 1;
+        double currentRating = (data['rating'] as num?)?.toDouble() ?? 0.0;
+
+        int newCount = currentCount - 1;
+        if (newCount < 0) newCount = 0;
+        
+        double newRating = 0.0;
+        if (newCount > 0) {
+          newRating = ((currentRating * currentCount) - review.rating) / newCount;
+          if (newRating < 0) newRating = 0.0;
+        }
+
+        transaction.delete(reviewRef);
+        transaction.update(restaurantRef, {
+          'rating': double.parse(newRating.toStringAsFixed(1)),
+          'reviewCount': newCount,
+        });
+      });
+
+      // Optimistically update local data
+      final index = _restaurants.indexWhere((r) => r.id == restaurantId);
+      if (index != -1) {
+        final current = _restaurants[index];
+        int currentCount = current.reviewCount;
+        int newCount = currentCount - 1;
+        if (newCount < 0) newCount = 0;
+        
+        double newRating = 0.0;
+        if (newCount > 0) {
+          newRating = ((current.rating * currentCount) - review.rating) / newCount;
+          if (newRating < 0) newRating = 0.0;
+        }
+
+        if (current is RestaurantDetailsData) {
+          _restaurants[index] = current.copyWith(
+            rating: double.parse(newRating.toStringAsFixed(1)),
+            reviewCount: newCount,
+          );
+        } else {
+          _restaurants[index] = current.copyWith(
+            rating: double.parse(newRating.toStringAsFixed(1)),
+            reviewCount: newCount,
+          );
+        }
+        notifyListeners();
+      }
+    } catch (e) {
+      if (kDebugMode) print("Error deleting review: $e");
       rethrow;
     }
   }

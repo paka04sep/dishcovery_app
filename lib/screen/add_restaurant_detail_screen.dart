@@ -1,9 +1,10 @@
 import 'dart:io';
+import 'package:dishcovery_app/screen/restarurant_detail_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:dishcovery_app/models/restaurant_model.dart';
 import 'package:dishcovery_app/models/restaurant_details_model.dart';
-import 'package:dishcovery_app/screen/restarurant_detail_screen.dart';
+
 import 'package:dishcovery_app/constants/app_constants.dart';
 import 'package:dishcovery_app/constants/app_init_screen.dart';
 
