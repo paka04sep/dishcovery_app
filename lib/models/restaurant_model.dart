@@ -115,6 +115,7 @@ class RestaurantCardData {
   final String? ownerId;
   final String? rejectionReason;
   final bool isTemporarilyClosed;
+  final int reviewCount; // Added reviewCount
 
   RestaurantCardData({
     required this.id,
@@ -132,6 +133,7 @@ class RestaurantCardData {
     this.ownerId,
     this.rejectionReason,
     this.isTemporarilyClosed = false,
+    this.reviewCount = 0,
   });
 
   RestaurantCardData copyWith({
@@ -150,6 +152,7 @@ class RestaurantCardData {
     String? ownerId,
     String? rejectionReason,
     bool? isTemporarilyClosed,
+    int? reviewCount,
   }) {
     return RestaurantCardData(
       id: id ?? this.id,
@@ -167,6 +170,7 @@ class RestaurantCardData {
       ownerId: ownerId ?? this.ownerId,
       rejectionReason: rejectionReason ?? this.rejectionReason,
       isTemporarilyClosed: isTemporarilyClosed ?? this.isTemporarilyClosed,
+      reviewCount: reviewCount ?? this.reviewCount,
     );
   }
 
@@ -206,6 +210,7 @@ class RestaurantCardData {
       ownerId: json['ownerId'] as String?,
       rejectionReason: json['rejectionReason'] as String?,
       isTemporarilyClosed: json['isTemporarilyClosed'] as bool? ?? false,
+      reviewCount: (json['reviewCount'] as num?)?.toInt() ?? 0,
     );
   }
 
@@ -266,6 +271,7 @@ class RestaurantCardData {
       ownerId: data['ownerId'] as String?,
       rejectionReason: data['rejectionReason'] as String?,
       isTemporarilyClosed: data['isTemporarilyClosed'] as bool? ?? false,
+      reviewCount: parseInt(data['reviewCount'], 0),
     );
   }
 
@@ -287,11 +293,60 @@ class RestaurantCardData {
       'ownerId': ownerId,
       'rejectionReason': rejectionReason,
       'isTemporarilyClosed': isTemporarilyClosed,
+      'reviewCount': reviewCount,
     };
   }
 
   // ฟังก์ชันสำหรับแสดงสัญลักษณ์ราคา
   String getPriceSymbol() {
     return '฿' * priceRange;
+  }
+}
+
+class ReviewModel {
+  final String id;
+  final String userId;
+  final String userName;
+  final String? userPhotoUrl;
+  final double rating;
+  final String comment;
+  final DateTime createdAt;
+
+  ReviewModel({
+    required this.id,
+    required this.userId,
+    required this.userName,
+    this.userPhotoUrl,
+    required this.rating,
+    required this.comment,
+    required this.createdAt,
+  });
+
+  factory ReviewModel.fromFirestore(Map<String, dynamic> data, String id) {
+    return ReviewModel(
+      id: id,
+      userId: data['userId'] as String? ?? '',
+      userName: data['userName'] as String? ?? 'Anonymous',
+      userPhotoUrl: data['userPhotoUrl'] as String?,
+      rating: (data['rating'] as num?)?.toDouble() ?? 0.0,
+      comment: data['comment'] as String? ?? '',
+      createdAt: data['createdAt'] != null
+          ? (data['createdAt'] is Timestamp
+              ? (data['createdAt'] as Timestamp).toDate()
+              : DateTime.tryParse(data['createdAt'].toString()) ?? DateTime.now())
+          : DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'userId': userId,
+      'userName': userName,
+      'userPhotoUrl': userPhotoUrl,
+      'rating': rating,
+      'comment': comment,
+      'createdAt': FieldValue.serverTimestamp(),
+    };
   }
 }

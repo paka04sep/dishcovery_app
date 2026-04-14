@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:dishcovery_app/constants/app_bottom_nav_user.dart';
 import 'package:dishcovery_app/services/restaurant_service.dart';
 import 'package:dishcovery_app/screen/history_screen.dart';
@@ -120,22 +121,26 @@ class FavoriteScreen extends StatelessWidget {
                       data.name,
                       style: AppTextStyles.restaurantName.copyWith(
                         fontSize: 28,
+                        height: 1.2,
                         color: Colors.white.withOpacity(isClosed ? 0.5 : 1),
                       ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
                     ),
+                    const SizedBox(height: 5),
                     Row(
                       children: [
                         Text(
                           '${data.cuisine.join(' | ')} · ',
                           style: AppTextStyles.restaurantDetails.copyWith(
-                            fontSize: 16,
+                            fontSize: 14,
                             color: Colors.white.withOpacity(isClosed ? 0.5 : 1),
                           ),
                         ),
                         Text(
                           '${data.getPriceSymbol()} ',
                           style: AppTextStyles.restaurantDetails.copyWith(
-                            fontSize: 16,
+                            fontSize: 14,
                             fontWeight: FontWeight.bold,
                             color: Colors.white.withOpacity(isClosed ? 0.5 : 1),
                           ),
@@ -143,19 +148,21 @@ class FavoriteScreen extends StatelessWidget {
                         Text(
                           ' · ${RestaurantService.instance.getDistance(data)} กม.',
                           style: AppTextStyles.restaurantDetails.copyWith(
-                            fontSize: 16,
+                            fontSize: 14,
                             color: Colors.white.withOpacity(isClosed ? 0.5 : 1),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 2),
+                    const SizedBox(height: 4),
                     Text(
                       data.description,
                       style: AppTextStyles.restaurantDetails.copyWith(
-                        fontSize: 14,
+                        fontSize: 12,
                         color: Colors.white.withOpacity(isClosed ? 0.5 : 1),
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                     ),
                   ],
                 ),

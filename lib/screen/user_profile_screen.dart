@@ -14,6 +14,7 @@ import 'package:dishcovery_app/services/restaurant_service.dart';
 import 'package:dishcovery_app/screen/user_profile_setting.dart';
 import 'package:dishcovery_app/screen/add_restaurant_screen.dart';
 import 'package:dishcovery_app/constants/app_init_screen.dart';
+import 'package:dishcovery_app/screen/edit_profile_screen.dart';
 
 class UserProfileScreen extends StatelessWidget {
   const UserProfileScreen({super.key});
@@ -72,55 +73,96 @@ class UserProfileScreen extends StatelessWidget {
                 children: [
                   const SizedBox(height: 10),
                   // Header Profile
-                  Row(
-                    children: [
-                      Stack(
+                  ListenableBuilder(
+                    listenable: RestaurantService.instance,
+                    builder: (context, child) {
+                      final userModel = RestaurantService.instance.userModel;
+                      final firebaseUser = FirebaseAuth.instance.currentUser;
+
+                      String displayName = "Guest User";
+                      if (userModel != null &&
+                          userModel.username != null &&
+                          userModel.username!.isNotEmpty) {
+                        displayName = userModel.username!;
+                      } else if (firebaseUser != null &&
+                          firebaseUser.displayName != null &&
+                          firebaseUser.displayName!.isNotEmpty) {
+                        displayName = firebaseUser.displayName!;
+                      } else if (firebaseUser != null &&
+                          firebaseUser.email != null) {
+                        displayName = firebaseUser.email!.split('@')[0];
+                      }
+
+                      final String? profilePhoto =
+                          userModel?.profilePictureUrl ??
+                          firebaseUser?.photoURL;
+
+                      return Row(
                         children: [
-                          const CircleAvatar(
-                            radius: 35,
-                            backgroundColor: Colors.grey,
-                            child: Icon(
-                              Icons.person,
-                              size: 40,
-                              color: Colors.white,
+                          GestureDetector(
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      const EditProfileScreen(),
+                                ),
+                              );
+                            },
+                            child: Stack(
+                              children: [
+                                CircleAvatar(
+                                  radius: 35,
+                                  backgroundColor: Colors.grey.shade300,
+                                  backgroundImage: profilePhoto != null
+                                      ? NetworkImage(profilePhoto)
+                                      : null,
+                                  child: profilePhoto == null
+                                      ? const Icon(
+                                          Icons.person,
+                                          size: 40,
+                                          color: Colors.grey,
+                                        )
+                                      : null,
+                                ),
+                                Positioned(
+                                  bottom: 0,
+                                  right: 0,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white,
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: Colors.grey.shade200,
+                                      ),
+                                    ),
+                                    child: const Icon(
+                                      Icons.edit,
+                                      size: 10,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                shape: BoxShape.circle,
-                                border: Border.all(color: Colors.grey.shade200),
+                          const SizedBox(width: 15),
+                          Expanded(
+                            child: Text(
+                              displayName,
+                              style: const TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.black,
+                                fontFamily: 'Inter',
                               ),
-                              child: const Icon(
-                                Icons.star,
-                                size: 10,
-                                color: Colors.amber,
-                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
-                      ),
-                      const SizedBox(width: 15),
-                      Expanded(
-                        child: Text(
-                          FirebaseAuth.instance.currentUser?.email?.split(
-                                '@',
-                              )[0] ??
-                              "Guest User",
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black,
-                            fontFamily: 'Inter',
-                          ),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
+                      );
+                    },
                   ),
                   const SizedBox(height: 25),
 

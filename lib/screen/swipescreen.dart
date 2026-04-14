@@ -1,3 +1,4 @@
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:dishcovery_app/constants/app_constants.dart';
 import 'package:dishcovery_app/constants/gradient_text.dart';
 
@@ -609,47 +610,100 @@ class _SwipScreenState extends State<SwipScreen>
               Positioned(
                 left: 20,
                 right: 20,
-                bottom: 115,
+                bottom: 115, // ถ้าด้านล่างมีปุ่มกดเว้นระยะนี้ไว้ถือว่าโอเคครับ
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // ชื่อร้าน
-                    Text(
-                      data.name,
-                      style: AppTextStyles.restaurantName.copyWith(),
-                    ),
-                    const SizedBox(height: 6),
-
-                    // ประเภท · ราคา · ระยะทาง
+                    // --- แถวที่ 1: ชื่อร้าน และ Badge เรตติ้ง ---
                     Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          '${data.cuisine.join(' | ')} · ',
-                          style: AppTextStyles.restaurantDetails.copyWith(),
-                        ),
-                        Text(
-                          data.getPriceSymbol(), // เช่น ฿฿฿
-                          style: AppTextStyles.restaurantDetails.copyWith(
-                            fontWeight: FontWeight.bold,
+                        // ใช้ Expanded ครอบชื่อร้าน เพื่อให้ตัดคำเมื่อยาวเกิน 2 บรรทัด
+                        Expanded(
+                          child: AutoSizeText(
+                            data.name,
+                            style: AppTextStyles.restaurantName.copyWith(
+                              height: 1.2, // ปรับระยะบรรทัดให้พอดี
+                            ),
+                            maxLines: 2,
+                            minFontSize: 14,
+                            overflow: TextOverflow.ellipsis,
                           ),
                         ),
-                        Text(
-                          ' · ${RestaurantService.instance.getDistance(data)} km',
-                          style: AppTextStyles.restaurantDetails.copyWith(),
+                        const SizedBox(width: 12),
+
+                        // Rating Badge (กล่องเรตติ้งดูพรีเมียมและเป็นระเบียบ)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.black.withOpacity(0.5),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.amber.shade400,
+                              width: 1,
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.star_rounded,
+                                color: Colors.amber.shade400,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                (data.reviewCount == 0 || data.rating == 0.0)
+                                    ? "N/A ยังไม่มีรีวิว"
+                                    : data.rating.toString(),
+                                style: AppTextStyles.restaurantDetails.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 6),
+                    const SizedBox(height: 8),
+
+                    // --- แถวที่ 2: ประเภท · ราคา · ระยะทาง ---
+                    // จับรวบเป็น Text เดียวแล้วใช้ Expanded กันล้น เผื่อของกินหลายประเภท
                     Row(
                       children: [
                         Expanded(
                           child: Text(
-                            ' " ${data.description} " ',
+                            '${data.cuisine.join(', ')} • ${data.getPriceSymbol()} • ${RestaurantService.instance.getDistance(data)} km',
+                            style: AppTextStyles.restaurantDetails.copyWith(
+                              color: Colors.grey.shade300,
+                              fontWeight: FontWeight.w500,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+
+                    // --- แถวที่ 3: คำอธิบายร้าน ---
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            '"${data.description}"',
                             style: AppTextStyles.restaurantDetails.copyWith(
                               fontSize: 14,
+                              fontStyle: FontStyle.italic,
+                              color: Colors.white70,
                             ),
+                            maxLines:
+                                2, // ให้โควตา 2 บรรทัดจะอ่านง่ายกว่าบรรทัดเดียวครับ
                             overflow: TextOverflow.ellipsis,
-                            maxLines: 1,
                           ),
                         ),
                       ],

@@ -1,3 +1,4 @@
+import 'package:auto_size_text/auto_size_text.dart';
 import 'package:dishcovery_app/constants/app_bottom_nav_user.dart';
 import 'package:dishcovery_app/constants/app_constants.dart';
 import 'package:dishcovery_app/services/restaurant_service.dart';
@@ -128,6 +129,7 @@ class HistoryScreen extends StatelessWidget {
                       Text(
                         data.name,
                         style: AppTextStyles.restaurantName.copyWith(
+                          height: 1.2,
                           fontSize: 28,
                           color: Colors.white.withOpacity(isClosed ? 0.4 : 1),
                           shadows: [
@@ -138,13 +140,16 @@ class HistoryScreen extends StatelessWidget {
                             ),
                           ],
                         ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
                       ),
+                      const SizedBox(height: 5),
                       Row(
                         children: [
                           Text(
                             '${data.cuisine.join(' | ')} · ',
                             style: AppTextStyles.restaurantDetails.copyWith(
-                              fontSize: 16,
+                              fontSize: 14,
                               color: Colors.white.withOpacity(
                                 isClosed ? 0.6 : 1,
                               ),
@@ -153,7 +158,7 @@ class HistoryScreen extends StatelessWidget {
                           Text(
                             '${data.getPriceSymbol()} ',
                             style: AppTextStyles.restaurantDetails.copyWith(
-                              fontSize: 16,
+                              fontSize: 14,
                               fontWeight: FontWeight.bold,
                               color: Colors.white.withOpacity(
                                 isClosed ? 0.6 : 1,
@@ -163,7 +168,7 @@ class HistoryScreen extends StatelessWidget {
                           Text(
                             ' · ${RestaurantService.instance.getDistance(data)} กม.',
                             style: AppTextStyles.restaurantDetails.copyWith(
-                              fontSize: 16,
+                              fontSize: 14,
                               color: Colors.white.withOpacity(
                                 isClosed ? 0.6 : 1,
                               ),
@@ -171,13 +176,15 @@ class HistoryScreen extends StatelessWidget {
                           ),
                         ],
                       ),
-                      const SizedBox(height: 2),
+                      const SizedBox(height: 4),
                       Text(
                         data.description,
                         style: AppTextStyles.restaurantDetails.copyWith(
-                          fontSize: 14,
+                          fontSize: 12,
                           color: Colors.white.withOpacity(isClosed ? 0.6 : 1),
                         ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),

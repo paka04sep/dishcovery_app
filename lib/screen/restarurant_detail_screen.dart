@@ -1,5 +1,6 @@
 import 'dart:ui';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:dishcovery_app/models/restaurant_details_model.dart';
 import 'package:dishcovery_app/screen/restaurant_map_screen.dart';
 import 'package:dishcovery_app/utils/image_viewer.dart';
@@ -9,6 +10,9 @@ import 'package:flutter/material.dart';
 import '../constants/app_constants.dart';
 import '../models/restaurant_model.dart';
 import '../services/restaurant_service.dart';
+import 'package:dishcovery_app/screen/restaurant_reviews_screen.dart';
+import 'package:intl/intl.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class RestaurantDetailScreen extends StatefulWidget {
   final RestaurantCardData restaurant;
@@ -90,6 +94,9 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                       const Center(child: CircularProgressIndicator()),
                       const SizedBox(height: 30),
                     ],
+
+                    if (details != null) _buildReviewSection(details),
+
                     _buildHighlightedMenu(details?.menuItems ?? []),
                     // 4. ส่วนรายการเมนูและราคา (Dynamic Menu Section)
                     if (details != null && details.menuCategories.isNotEmpty)
@@ -723,12 +730,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                 constraints: const BoxConstraints(),
                 padding: const EdgeInsets.symmetric(horizontal: 6),
               ),
-              IconButton(
-                icon: const Icon(Icons.share, color: Colors.black, size: 22),
-                onPressed: () {},
-                constraints: const BoxConstraints(),
-                padding: const EdgeInsets.symmetric(horizontal: 6),
-              ),
+              _buildShareDropdownSticky(data),
             ],
           ),
         ),
@@ -777,7 +779,7 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
                       _showFavoriteConfirmation(context, data.id, isFav),
                 ),
                 const SizedBox(width: 8),
-                _buildFloatingIcon(icon: Icons.share, onTap: () {}),
+                _buildShareDropdownFloating(data),
               ],
             ),
           ],
@@ -887,6 +889,482 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
               ],
             ),
           ),
+        );
+      },
+    );
+  }
+
+  Widget _buildShareDropdownSticky(RestaurantCardData data) {
+    return PopupMenuButton<int>(
+      icon: const Icon(Icons.share_outlined, color: Colors.black, size: 22),
+      offset: const Offset(0, 55),
+      onSelected: (value) {
+        if (value == 1) {
+          _showReviewModal(context, data.id);
+        } else if (value == 2) {
+          // Share logic
+        }
+      },
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          value: 1,
+          child: Text(
+            'รีวิวร้านนี้',
+            style: AppTextStyles.restaurantInDetails.copyWith(
+              color: Colors.black87,
+            ),
+          ),
+        ),
+        PopupMenuItem(
+          value: 2,
+          child: Text(
+            'แชร์ร้านนี้',
+            style: AppTextStyles.restaurantInDetails.copyWith(
+              color: Colors.black87,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildShareDropdownFloating(RestaurantCardData data) {
+    return Theme(
+      data: Theme.of(context).copyWith(
+        splashColor: Colors.transparent,
+        highlightColor: Colors.transparent,
+      ),
+      child: PopupMenuButton<int>(
+        offset: const Offset(0, 50),
+        onSelected: (value) {
+          if (value == 1) {
+            _showReviewModal(context, data.id);
+          } else if (value == 2) {
+            // Share logic
+          }
+        },
+        itemBuilder: (context) => [
+          PopupMenuItem(
+            value: 1,
+            child: Text(
+              'รีวิวร้านนี้',
+              style: AppTextStyles.restaurantInDetails.copyWith(
+                color: Colors.black87,
+              ),
+            ),
+          ),
+          PopupMenuItem(
+            value: 2,
+            child: Text(
+              'แชร์ร้านนี้',
+              style: AppTextStyles.restaurantInDetails.copyWith(
+                color: Colors.black87,
+              ),
+            ),
+          ),
+        ],
+        child: Container(
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.8),
+            shape: BoxShape.circle,
+            boxShadow: [
+              BoxShadow(color: Colors.black.withOpacity(0.1), blurRadius: 8),
+            ],
+          ),
+          child: const Icon(
+            Icons.share_outlined,
+            color: Colors.black,
+            size: 20,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildReviewSection(RestaurantDetailsData details) {
+    return FutureBuilder<List<ReviewModel>>(
+      future: RestaurantService.instance.getReviews(details.id),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final reviews = snapshot.data ?? [];
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              child: Text(
+                'รีวิวร้านอาหารนี้',
+                style: AppTextStyles.restaurantHeaderDetails.copyWith(),
+              ),
+            ),
+            const SizedBox(height: 12),
+            if (reviews.isEmpty)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: GestureDetector(
+                  onTap: () => _showReviewModal(context, details.id),
+                  child: Container(
+                    height: 120,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade100,
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: Colors.grey.shade300,
+                        style: BorderStyle.solid,
+                      ),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.add_circle_outline,
+                          size: 36,
+                          color: Colors.amber.shade700,
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'คุณเป็นคนแรกที่รีวิวร้านนี้',
+                          style: AppTextStyles.restaurantInDetails.copyWith(
+                            color: Colors.black54,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              )
+            else
+              SizedBox(
+                height: 160,
+                child: ListView.builder(
+                  scrollDirection: Axis.horizontal,
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  itemCount: reviews.length > 3 ? 4 : reviews.length,
+                  itemBuilder: (context, index) {
+                    if (index == 3) {
+                      return GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  RestaurantReviewsScreen(restaurant: details),
+                            ),
+                          );
+                        },
+                        child: Container(
+                          width: 100,
+                          margin: const EdgeInsets.only(right: 12),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.05),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                            border: Border.all(color: Colors.grey.shade100),
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            'ดูทั้งหมด\n(${reviews.length})',
+                            textAlign: TextAlign.center,
+                            style: AppTextStyles.restaurantInDetails.copyWith(
+                              color: Colors.black87,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+
+                    final review = reviews[index];
+                    return Container(
+                      width: 240,
+                      margin: const EdgeInsets.only(right: 12),
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                        border: Border.all(color: Colors.grey.shade100),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              CircleAvatar(
+                                radius: 12,
+                                backgroundColor: Colors.grey.shade200,
+                                backgroundImage: review.userPhotoUrl != null
+                                    ? NetworkImage(review.userPhotoUrl!)
+                                    : null,
+                                child: review.userPhotoUrl == null
+                                    ? const Icon(
+                                        Icons.person,
+                                        size: 16,
+                                        color: Colors.grey,
+                                      )
+                                    : null,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  review.userName.isNotEmpty
+                                      ? review.userName
+                                      : 'Anonymous',
+                                  style: AppTextStyles.restaurantInDetails
+                                      .copyWith(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14,
+                                        color: Colors.black,
+                                      ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Divider(
+                            color: Colors.grey.shade200,
+                            height: 1,
+                            thickness: 1,
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: List.generate(5, (starIndex) {
+                              return Icon(
+                                starIndex < review.rating
+                                    ? Icons.star_rounded
+                                    : Icons.star_border_rounded,
+                                color: Colors.amber,
+                                size: 16,
+                              );
+                            }),
+                          ),
+                          const SizedBox(height: 8),
+                          Expanded(
+                            child: Text(
+                              review.comment,
+                              style: AppTextStyles.restaurantInDetails.copyWith(
+                                fontSize: 13,
+                                color: Colors.black87,
+                              ),
+                              maxLines: 3,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            DateFormat('dd MMM yyyy').format(review.createdAt),
+                            style: AppTextStyles.restaurantInDetails.copyWith(
+                              fontSize: 11,
+                              color: Colors.grey,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            const SizedBox(height: 30),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showReviewModal(BuildContext context, String restaurantId) {
+    double _rating = 0.0;
+    final TextEditingController _commentController = TextEditingController();
+    bool _isSubmitting = false;
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(20),
+              ),
+              title: Text(
+                'รีวิวร้านอาหาร',
+                style: AppTextStyles.restaurantInDetails.copyWith(
+                  fontSize: 20,
+                  color: Colors.black,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(5, (index) {
+                        return IconButton(
+                          icon: Icon(
+                            index < _rating
+                                ? Icons.star_rounded
+                                : Icons.star_border_rounded,
+                            color: Colors.amber,
+                            size: 32,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _rating = index + 1.0;
+                            });
+                          },
+                        );
+                      }),
+                    ),
+                    const SizedBox(height: 16),
+                    TextField(
+                      controller: _commentController,
+                      maxLines: 4,
+                      decoration: InputDecoration(
+                        hintText: 'แชร์ประสบการณ์ของคุณ...',
+                        hintStyle: AppTextStyles.restaurantInDetails.copyWith(
+                          color: Colors.grey,
+                        ),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.grey.shade300),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.amber.shade700),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actionsAlignment: MainAxisAlignment.center,
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(ctx),
+                  child: Text(
+                    'ยกเลิก',
+                    style: AppTextStyles.restaurantInDetails.copyWith(
+                      color: Colors.grey,
+                    ),
+                  ),
+                ),
+                ElevatedButton(
+                  onPressed: _isSubmitting || _rating == 0.0
+                      ? null
+                      : () async {
+                          setState(() => _isSubmitting = true);
+                          final user = FirebaseAuth.instance.currentUser;
+                          final userModel =
+                              RestaurantService.instance.userModel;
+
+                          String userName = 'User';
+                          if (userModel?.username != null &&
+                              userModel!.username!.isNotEmpty) {
+                            userName = userModel.username!;
+                          } else if (user != null) {
+                            userName =
+                                user.displayName ??
+                                user.email?.split('@')[0] ??
+                                'User';
+                          }
+
+                          final profilePhoto =
+                              userModel?.profilePictureUrl ?? user?.photoURL;
+
+                          final review = ReviewModel(
+                            id: FirebaseFirestore.instance
+                                .collection('restaurants')
+                                .doc()
+                                .id, // Generate random ID for locally
+                            userId: user?.uid ?? 'guest',
+                            userName: userName,
+                            userPhotoUrl: profilePhoto,
+                            rating: _rating,
+                            comment: _commentController.text.trim(),
+                            createdAt: DateTime.now(),
+                          );
+                          try {
+                            await RestaurantService.instance.addReview(
+                              restaurantId,
+                              review,
+                            );
+                            if (context.mounted) {
+                              Navigator.pop(ctx);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'รีวิวสำเร็จแล้ว',
+                                    style: AppTextStyles.restaurantInDetails,
+                                  ),
+                                  duration: Duration(milliseconds: 1500),
+                                ),
+                              );
+                              // Using setState of root to rebuild
+                              this.setState(() {});
+                            }
+                          } catch (e) {
+                            if (context.mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(content: Text('เกิดข้อผิดพลาด: $e')),
+                              );
+                              setState(() => _isSubmitting = false);
+                            }
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.black,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                  ),
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : Text(
+                          'ยืนยัน',
+                          style: AppTextStyles.restaurantInDetails.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                ),
+              ],
+            );
+          },
         );
       },
     );

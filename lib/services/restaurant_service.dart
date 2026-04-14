@@ -1340,4 +1340,77 @@ class RestaurantService extends ChangeNotifier {
     }
     notifyListeners();
   }
+
+  // --- Review Methods ---
+
+  Future<void> addReview(String restaurantId, ReviewModel review) async {
+    try {
+      final db = FirebaseFirestore.instance;
+      final restaurantRef = db.collection('restaurants').doc(restaurantId);
+      final reviewRef = restaurantRef.collection('reviews').doc(review.id);
+
+      await db.runTransaction((transaction) async {
+        final restaurantSnap = await transaction.get(restaurantRef);
+        if (!restaurantSnap.exists) {
+          throw Exception("Restaurant does not exist");
+        }
+
+        final data = restaurantSnap.data() as Map<String, dynamic>;
+        int currentCount = (data['reviewCount'] as num?)?.toInt() ?? 0;
+        double currentRating = (data['rating'] as num?)?.toDouble() ?? 0.0;
+
+        double newRating = ((currentRating * currentCount) + review.rating) / (currentCount + 1);
+        int newCount = currentCount + 1;
+
+        transaction.set(reviewRef, review.toJson());
+        transaction.update(restaurantRef, {
+          'rating': double.parse(newRating.toStringAsFixed(1)),
+          'reviewCount': newCount,
+        });
+      });
+
+      // Optimistically update local data
+      final index = _restaurants.indexWhere((r) => r.id == restaurantId);
+      if (index != -1) {
+        final current = _restaurants[index];
+        
+        final currentCount = current.reviewCount;
+        final currentRating = current.rating;
+        double newRating = ((currentRating * currentCount) + review.rating) / (currentCount + 1);
+        int newCount = currentCount + 1;
+
+        if (current is RestaurantDetailsData) {
+          _restaurants[index] = current.copyWith(
+            rating: double.parse(newRating.toStringAsFixed(1)),
+            reviewCount: newCount,
+          );
+        } else {
+          _restaurants[index] = current.copyWith(
+            rating: double.parse(newRating.toStringAsFixed(1)),
+            reviewCount: newCount,
+          );
+        }
+        notifyListeners();
+      }
+    } catch (e) {
+      if (kDebugMode) print("Error adding review: $e");
+      rethrow;
+    }
+  }
+
+  Future<List<ReviewModel>> getReviews(String restaurantId) async {
+    try {
+      final snapshot = await FirebaseFirestore.instance
+          .collection('restaurants')
+          .doc(restaurantId)
+          .collection('reviews')
+          .orderBy('createdAt', descending: true)
+          .get();
+
+      return snapshot.docs.map((doc) => ReviewModel.fromFirestore(doc.data(), doc.id)).toList();
+    } catch (e) {
+      if (kDebugMode) print("Error fetching reviews: $e");
+      return [];
+    }
+  }
 }

@@ -73,6 +73,8 @@ class UserModel {
   final DateTime? lastActiveAt;
   final List<String> ownedRestaurantIds;
   final bool isBusinessMode;
+  final String? username;
+  final String? profilePictureUrl;
 
   UserModel({
     required this.uid,
@@ -87,6 +89,8 @@ class UserModel {
     this.lastActiveAt,
     this.ownedRestaurantIds = const [],
     this.isBusinessMode = false,
+    this.username,
+    this.profilePictureUrl,
   });
 
   factory UserModel.fromFirestore(DocumentSnapshot doc) {
@@ -118,6 +122,8 @@ class UserModel {
       lastActiveAt: parseTimestamp(data['lastActiveAt']),
       ownedRestaurantIds: List<String>.from(data['ownedRestaurantIds'] ?? []),
       isBusinessMode: data['isBusinessMode'] as bool? ?? false,
+      username: data['username'] as String?,
+      profilePictureUrl: data['profilePictureUrl'] as String?,
     );
   }
 
@@ -135,6 +141,8 @@ class UserModel {
       'lastActiveAt': lastActiveAt,
       'ownedRestaurantIds': ownedRestaurantIds,
       'isBusinessMode': isBusinessMode,
+      if (username != null) 'username': username,
+      if (profilePictureUrl != null) 'profilePictureUrl': profilePictureUrl,
     };
   }
 }
