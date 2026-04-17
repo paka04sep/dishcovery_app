@@ -19,12 +19,19 @@ if (localPropertiesFile.exists()) {
     localProperties.load(FileInputStream(localPropertiesFile))
 }
 
-val mapsApiKey: String = localProperties.getProperty("MAPS_API_KEY") ?: ""
+val env = Properties().apply {
+    val envFile = project.rootProject.file("../.env")
+    if (envFile.exists()) {
+        load(FileInputStream(envFile))
+    }
+}
+
+val mapsApiKey: String = env.getProperty("MAPS_API_KEY") ?: ""
 
 android {
     namespace = "com.example.dishcovery_app"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    ndkVersion = flutter.ndkVersion 
 
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
@@ -48,7 +55,7 @@ android {
             mapOf(
                 "MAPS_API_KEY" to mapsApiKey
             )
-        )
+        )   
     }
 
     buildTypes {
