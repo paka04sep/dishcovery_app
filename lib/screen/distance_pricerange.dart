@@ -1,5 +1,6 @@
 import 'package:dishcovery_app/constants/app_constants.dart';
 import 'package:dishcovery_app/constants/gradient_text.dart';
+import 'package:dishcovery_app/constants/app_init_screen.dart';
 import 'package:dishcovery_app/screen/swipescreen.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -129,11 +130,14 @@ class _DistancePriceRangeScreenState extends State<DistancePriceRangeScreen> {
 
     if (widget.isEditMode) {
       if (mounted) {
+        // Trigger refresh so SwipeScreen re-fetches with new distance/price settings
+        RestaurantService.instance.forceRefreshRecommendations();
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             duration: Duration(seconds: 1),
             content: Text(
-              'บันทึกค่าเรียบร้อยแล้ว!',
+              'บันทึกค่าเรียบร้อยแล้ว! กำลังรีเฟรช...',
               style: AppTextStyles.profileText.copyWith(
                 color: Colors.white,
                 fontWeight: FontWeight.w100,
@@ -142,12 +146,19 @@ class _DistancePriceRangeScreenState extends State<DistancePriceRangeScreen> {
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.pop(context);
+
+        // Navigate to SwipeScreen so user sees fresh recommendations
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const SwipScreen()),
+          (route) => false,
+        );
       }
     } else {
       if (mounted) {
+        // First login: trigger refresh and go through AppInitScreen loading
+        RestaurantService.instance.forceRefreshRecommendations();
         Navigator.of(context).pushReplacement(
-          MaterialPageRoute(builder: (context) => const SwipScreen()),
+          MaterialPageRoute(builder: (context) => const AppInitScreen()),
         );
       }
     }

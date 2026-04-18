@@ -192,16 +192,32 @@ class RestaurantCardData {
       return {};
     }
 
+    // Helper to parse int safely
+    int parseInt(dynamic value, int defaultValue) {
+      if (value == null) return defaultValue;
+      if (value is int) return value;
+      if (value is String) return int.tryParse(value) ?? defaultValue;
+      return defaultValue;
+    }
+
+    // Helper to parse double safely
+    double parseDouble(dynamic value, double defaultValue) {
+      if (value == null) return defaultValue;
+      if (value is num) return value.toDouble();
+      if (value is String) return double.tryParse(value) ?? defaultValue;
+      return defaultValue;
+    }
+
     return RestaurantCardData(
-      id: json['id'] as String,
-      name: json['name'] as String,
+      id: json['id'] as String? ?? '',
+      name: json['name'] as String? ?? 'Unknown',
       cuisine: parseCuisine(json['cuisine']),
-      priceRange: json['priceRange'] as int,
-      rating: (json['rating'] as num).toDouble(),
-      latitude: (json['latitude'] as num).toDouble(),
-      longitude: (json['longitude'] as num).toDouble(),
-      imageUrl: json['imageUrl'] as String,
-      description: json['description'] as String,
+      priceRange: parseInt(json['priceRange'], 1),
+      rating: parseDouble(json['rating'], 0.0),
+      latitude: parseDouble(json['latitude'], 0.0),
+      longitude: parseDouble(json['longitude'], 0.0),
+      imageUrl: json['imageUrl'] as String? ?? '',
+      description: json['description'] as String? ?? '',
       openingHours: parseOpeningHours(json['openingHours']),
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'])

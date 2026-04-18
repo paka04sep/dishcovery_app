@@ -14,6 +14,7 @@ import 'package:dishcovery_app/utils/cuisine_keywords.dart';
 import 'package:dishcovery_app/utils/time_utils.dart';
 import 'dart:io';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:cloud_functions/cloud_functions.dart';
 
 class RestaurantService extends ChangeNotifier {
   // Singleton pattern (Nullable to allow reset)
@@ -46,6 +47,9 @@ class RestaurantService extends ChangeNotifier {
   List<String> _userPreferences = [];
   List<String> _userPriceRangePreferences = [];
   bool _showClosedRestaurants = false;
+
+  // Track ALL swiped IDs in this session to prevent duplicates
+  final Set<String> _sessionSwipedIds = {};
 
   // Store chronological swipe events: [{restaurantId: '...', action: '...', timestamp: DateTime}]
   List<Map<String, dynamic>> _swipeLogs = [];
@@ -177,6 +181,7 @@ class RestaurantService extends ChangeNotifier {
     _userPriceRangePreferences = [];
     _showClosedRestaurants = false;
     _swipeLogs = []; // Clear logs
+    _sessionSwipedIds.clear(); // Clear session tracking
     _isLoadingUser = false;
     _isReady = false;
     _restaurants = [];
@@ -285,17 +290,23 @@ class RestaurantService extends ChangeNotifier {
           }
 
           // Repair missing profile picture from Google
-          if ((!data.containsKey('profilePictureUrl') || data['profilePictureUrl'] == null || (data['profilePictureUrl'] as String).isEmpty) && 
-              user.photoURL != null && user.photoURL!.isNotEmpty) {
-             repairData['profilePictureUrl'] = user.photoURL!;
-             needsRepair = true;
+          if ((!data.containsKey('profilePictureUrl') ||
+                  data['profilePictureUrl'] == null ||
+                  (data['profilePictureUrl'] as String).isEmpty) &&
+              user.photoURL != null &&
+              user.photoURL!.isNotEmpty) {
+            repairData['profilePictureUrl'] = user.photoURL!;
+            needsRepair = true;
           }
 
           // Repair missing username from Google
-          if ((!data.containsKey('username') || data['username'] == null || (data['username'] as String).isEmpty) && 
-              user.displayName != null && user.displayName!.isNotEmpty) {
-             repairData['username'] = user.displayName!;
-             needsRepair = true;
+          if ((!data.containsKey('username') ||
+                  data['username'] == null ||
+                  (data['username'] as String).isEmpty) &&
+              user.displayName != null &&
+              user.displayName!.isNotEmpty) {
+            repairData['username'] = user.displayName!;
+            needsRepair = true;
           }
 
           if (needsRepair) {
@@ -395,6 +406,14 @@ class RestaurantService extends ChangeNotifier {
     _userPriceRangePreferences = priceRanges;
     _showClosedRestaurants = showClosedRestaurants;
     notifyListeners();
+  }
+
+  // ฟังก์ชันเพื่อให้ปุ่ม Refresh สามารถสับเปลี่ยนร้านที่อัลกอริทึมจัดไว้นำมาแสดงใหม่
+  void forceRefreshRecommendations() {
+    _isManualRefresh = true;
+    _swipableCache.clear();
+    _sessionSwipedIds.clear(); // Reset session tracking on manual refresh
+    _fetchNextBatch();
   }
 
   // Getters for different states
@@ -715,69 +734,83 @@ class RestaurantService extends ChangeNotifier {
     }
   }
 
+  List<RestaurantCardData> _swipableCache = [];
+  bool _isFetchingBatch = false;
+  bool _isManualRefresh = false;
+
+  bool get isFetchingBatch => _isFetchingBatch;
+  bool get isManualRefresh => _isManualRefresh;
+
   List<RestaurantCardData> get swipableRestaurants {
-    List<RestaurantCardData> filtered = _restaurants
-        .where((r) => getRestaurantStatus(r.id) == SwipeStatus.none)
-        .toList();
-
-    // Filter by Distance
-    if (_userMaxDistance < 50.0) {
-      filtered = filtered
-          .where((r) => getDistance(r) <= _userMaxDistance)
-          .toList();
+    if (_swipableCache.isEmpty && !_isFetchingBatch && _userModel != null) {
+      _fetchNextBatch();
     }
+    return _swipableCache;
+  }
 
-    // Filter by Preferences (Cuisine)
-    if (_userPreferences.isNotEmpty) {
-      filtered = filtered.where((r) {
-        for (final pref in _userPreferences) {
-          final keywords = CuisineUtils.getKeywords(pref);
-          for (final keyword in keywords) {
-            // Check if any of the restaurant's cuisines contain the keyword
-            for (final c in r.cuisine) {
-              if (c.contains(keyword) || c == 'อาหารทั่วไป') {
-                return true;
-              }
-            }
-          }
+  Future<void> _fetchNextBatch() async {
+    if (_isFetchingBatch) return;
+    _isFetchingBatch = true;
+    notifyListeners(); // Optionally trigger UI to show loading if we want, or just quietly load in bg
+
+    try {
+      Position? position;
+      if (_lastKnownLat == 0.0 && _lastKnownLng == 0.0) {
+        position = await _getCurrentLocation();
+        if (position != null) {
+          _lastKnownLat = position.latitude;
+          _lastKnownLng = position.longitude;
         }
-        return false;
+      }
+
+      // Build comprehensive exclude list to prevent ANY duplicates
+      final Set<String> excludeSet = {};
+      // 1. From user history (persisted)
+      excludeSet.addAll(_userModel?.history.yum ?? []);
+      excludeSet.addAll(_userModel?.history.passed ?? []);
+      excludeSet.addAll(_userModel?.history.fav ?? []);
+      // 2. From session tracking (covers race condition where history hasn't synced yet)
+      excludeSet.addAll(_sessionSwipedIds);
+      // 3. From current swipe queue
+      excludeSet.addAll(_swipableCache.map((r) => r.id));
+      final List<String> excludeIds = excludeSet.toList();
+
+      final HttpsCallable callable = FirebaseFunctions.instance.httpsCallable(
+        'getRecommendedBatch',
+      );
+      final result = await callable.call({
+        'latitude': _lastKnownLat,
+        'longitude': _lastKnownLng,
+        'excludeIds': excludeIds,
+        'preferences': _userPreferences,
+        'maxDistance': _userMaxDistance,
+        'priceRangePreference': _userPriceRangePreferences,
+        'showClosedRestaurants': _showClosedRestaurants,
+      });
+
+      final List<dynamic> batchData = result.data['restaurants'] ?? [];
+
+      List<RestaurantCardData> newBatch = batchData.map((data) {
+        // use fromJson passing mapped data
+        return RestaurantCardData.fromJson(Map<String, dynamic>.from(data));
       }).toList();
-      if (kDebugMode)
-        print("Debug: After Preference Filter: ${filtered.length}");
-    } else {
-      if (kDebugMode) print("Debug: No User Preferences, skipping filter.");
-    }
 
-    // Filter by Price Range
-    if (_userPriceRangePreferences.isNotEmpty) {
-      filtered = filtered.where((r) {
-        return _userPriceRangePreferences.any((priceRange) {
-          final prefix = priceRange.split(' ').first; // e.g. '฿', '฿฿', '฿฿฿'
-          final requiredPriceInt = prefix.length;
-          return r.priceRange == requiredPriceInt;
-        });
-      }).toList();
-    }
+      // OPTIONAL NEW FILTER: closed
+      if (!_showClosedRestaurants) {
+        newBatch = newBatch.where((r) {
+          final status = TimeUtils.getRestaurantStatus(r.openingHours);
+          return status != RestaurantStatus.closed;
+        }).toList();
+      }
 
-    // Sort by Recommendation Score
-    if (_userModel != null) {
-      // Update profile based on current history
-      _recommendationEngine.updateUserTasteProfile(_userModel!, _restaurants);
-      // Rank
-      filtered = _recommendationEngine.rankRestaurants(filtered, _userModel!);
+      _swipableCache = newBatch;
+    } catch (e) {
+      if (kDebugMode) print("Error fetching batch from Firebase: $e");
+    } finally {
+      _isFetchingBatch = false;
+      _isManualRefresh = false;
+      notifyListeners();
     }
-
-    // NEW: Filter out "Closed" restaurants
-    // "ร้านที่ปิดจะไม่แสดงที่หน้า swipescreen.dart"
-    if (!_showClosedRestaurants) {
-      filtered = filtered.where((r) {
-        final status = TimeUtils.getRestaurantStatus(r.openingHours);
-        return status != RestaurantStatus.closed;
-      }).toList();
-    }
-
-    return filtered;
   }
 
   // Get History Sorted by Time (Newest First)
@@ -843,7 +876,11 @@ class RestaurantService extends ChangeNotifier {
   }
 
   // Update status (Swipe Action)
-  Future<void> swipeRestaurant(String id, SwipeStatus newStatus) async {
+  Future<void> swipeRestaurant(
+    String id,
+    SwipeStatus newStatus, {
+    int dwellTime = 0,
+  }) async {
     if (newStatus == SwipeStatus.none) return;
 
     final currentUser = FirebaseAuth.instance.currentUser;
@@ -884,6 +921,17 @@ class RestaurantService extends ChangeNotifier {
         _userModel!.history.passed.remove(id);
         _userModel!.history.fav.remove(id);
 
+        // Track this swipe in session to prevent re-fetch
+        _sessionSwipedIds.add(id);
+
+        // Remove from current batch cache
+        _swipableCache.removeWhere((r) => r.id == id);
+
+        // Pre-fetch next batch if running low
+        if (_swipableCache.length < 3 && !_isFetchingBatch) {
+          _fetchNextBatch();
+        }
+
         // Add to new list
         String actionStr = '';
         switch (newStatus) {
@@ -903,18 +951,18 @@ class RestaurantService extends ChangeNotifier {
             break;
         }
 
-        // Optimistic Update Swipe Logs (Add to Top)
+        // Optimistic Update Swipe Logs
         _swipeLogs.insert(0, {
           'restaurantId': id,
           'action': actionStr,
-          'timestamp': DateTime.now(), // Local time for immediate UI update
+          'timestamp': DateTime.now(),
         });
       }
 
       notifyListeners();
     }
 
-    // 2. Persist to Firestore
+    // 2. Persist to Firestore via Cloud Functions
     final user = FirebaseAuth.instance.currentUser;
     if (user != null && swipedRestaurant != null) {
       await _recordSwipeToFirestore(
@@ -922,6 +970,7 @@ class RestaurantService extends ChangeNotifier {
         swipedRestaurant,
         newStatus,
         oldStatus,
+        dwellTime,
       );
     }
   }
@@ -931,93 +980,34 @@ class RestaurantService extends ChangeNotifier {
     RestaurantCardData restaurant,
     SwipeStatus newStatus,
     SwipeStatus oldStatus,
+    int dwellTime,
   ) async {
-    final db = FirebaseFirestore.instance;
-    final userRef = db.collection('users').doc(uid);
-    final swipeRef = userRef.collection('swipes').doc(); // Auto ID
-
-    String action = '';
-    String newHistoryField = '';
-    String newStatsField = '';
-
-    String? oldHistoryField;
-    String? oldStatsField;
-
-    // Determine New Fields
-    switch (newStatus) {
-      case SwipeStatus.yum:
-        action = 'yum';
-        newHistoryField = 'history.yum';
-        newStatsField = 'stats.yums';
-        break;
-      case SwipeStatus.pass:
-        action = 'pass';
-        newHistoryField = 'history.passed';
-        newStatsField = 'stats.passes';
-        break;
-      case SwipeStatus.fav:
-        action = 'fav';
-        newHistoryField = 'history.fav';
-        newStatsField = 'stats.fav';
-        break;
-      default:
-        return;
-    }
-
-    // Determine Old Fields
-    switch (oldStatus) {
-      case SwipeStatus.yum:
-        oldHistoryField = 'history.yum';
-        oldStatsField = 'stats.yums';
-        break;
-      case SwipeStatus.pass:
-        oldHistoryField = 'history.passed';
-        oldStatsField = 'stats.passes';
-        break;
-      case SwipeStatus.fav:
-        oldHistoryField = 'history.fav';
-        oldStatsField = 'stats.fav';
-        break;
-      default:
-        break;
-    }
-
-    if (newStatus == oldStatus) return;
-
     try {
-      await db.runTransaction((transaction) async {
-        transaction.set(swipeRef, {
-          'restaurantId': restaurant.id,
-          'action': action,
-          'timestamp': FieldValue.serverTimestamp(),
-          'restaurantSnapshot': {
-            'name': restaurant.name,
-            'cuisine': restaurant.cuisine,
-            'priceRange': restaurant.priceRange,
-          },
-        });
+      String action = '';
+      if (newStatus == SwipeStatus.yum)
+        action = 'yum';
+      else if (newStatus == SwipeStatus.pass)
+        action = 'pass';
+      else if (newStatus == SwipeStatus.fav)
+        action = 'fav';
 
-        Map<String, dynamic> updateData = {
-          'lastActiveAt': FieldValue.serverTimestamp(),
-        };
+      if (action.isEmpty || newStatus == oldStatus) return;
 
-        updateData[newHistoryField] = FieldValue.arrayUnion([restaurant.id]);
-        updateData[newStatsField] = FieldValue.increment(1);
-
-        if (oldHistoryField != null && oldStatsField != null) {
-          updateData[oldHistoryField] = FieldValue.arrayRemove([restaurant.id]);
-          updateData[oldStatsField] = FieldValue.increment(-1);
-        } else {
-          updateData['stats.totalSwipes'] = FieldValue.increment(1);
-        }
-
-        transaction.update(userRef, updateData);
+      final HttpsCallable callable = FirebaseFunctions.instance.httpsCallable(
+        'recordSwipeAction',
+      );
+      await callable.call({
+        'restaurantId': restaurant.id,
+        'action': action,
+        'dwellTime': dwellTime,
       });
 
       if (kDebugMode)
-        print("Recorded swipe: $action (from $oldStatus) for ${restaurant.id}");
+        print(
+          "Recorded swipe: $action (dwell: $dwellTime s) for ${restaurant.id} via Function",
+        );
     } catch (e) {
-      if (kDebugMode) print("Error recording swipe: $e");
+      if (kDebugMode) print("Error recording swipe via Function: $e");
     }
   }
 
@@ -1064,6 +1054,11 @@ class RestaurantService extends ChangeNotifier {
         'history.yum': [],
         'history.passed': [],
         'stats': updatedStats.toMap(),
+        'tasteProfile': {
+          'categories': {},
+          'priceRange': {},
+          'timeAffinity': {},
+        },
         'lastActiveAt': FieldValue.serverTimestamp(),
       });
 
@@ -1375,7 +1370,9 @@ class RestaurantService extends ChangeNotifier {
         int currentCount = (data['reviewCount'] as num?)?.toInt() ?? 0;
         double currentRating = (data['rating'] as num?)?.toDouble() ?? 0.0;
 
-        double newRating = ((currentRating * currentCount) + review.rating) / (currentCount + 1);
+        double newRating =
+            ((currentRating * currentCount) + review.rating) /
+            (currentCount + 1);
         int newCount = currentCount + 1;
 
         transaction.set(reviewRef, review.toJson());
@@ -1389,10 +1386,12 @@ class RestaurantService extends ChangeNotifier {
       final index = _restaurants.indexWhere((r) => r.id == restaurantId);
       if (index != -1) {
         final current = _restaurants[index];
-        
+
         final currentCount = current.reviewCount;
         final currentRating = current.rating;
-        double newRating = ((currentRating * currentCount) + review.rating) / (currentCount + 1);
+        double newRating =
+            ((currentRating * currentCount) + review.rating) /
+            (currentCount + 1);
         int newCount = currentCount + 1;
 
         if (current is RestaurantDetailsData) {
@@ -1414,7 +1413,11 @@ class RestaurantService extends ChangeNotifier {
     }
   }
 
-  Future<void> updateReview(String restaurantId, ReviewModel review, double oldRating) async {
+  Future<void> updateReview(
+    String restaurantId,
+    ReviewModel review,
+    double oldRating,
+  ) async {
     try {
       final db = FirebaseFirestore.instance;
       final restaurantRef = db.collection('restaurants').doc(restaurantId);
@@ -1432,7 +1435,9 @@ class RestaurantService extends ChangeNotifier {
 
         double newRating = currentRating;
         if (currentCount > 0) {
-          newRating = ((currentRating * currentCount) - oldRating + review.rating) / currentCount;
+          newRating =
+              ((currentRating * currentCount) - oldRating + review.rating) /
+              currentCount;
           if (newRating < 0) newRating = 0.0;
         }
 
@@ -1442,7 +1447,7 @@ class RestaurantService extends ChangeNotifier {
           'userName': review.userName,
           'userPhotoUrl': review.userPhotoUrl,
         });
-        
+
         transaction.update(restaurantRef, {
           'rating': double.parse(newRating.toStringAsFixed(1)),
         });
@@ -1454,9 +1459,11 @@ class RestaurantService extends ChangeNotifier {
         final current = _restaurants[index];
         final currentCount = current.reviewCount;
         double newRating = current.rating;
-        
+
         if (currentCount > 0) {
-          newRating = ((current.rating * currentCount) - oldRating + review.rating) / currentCount;
+          newRating =
+              ((current.rating * currentCount) - oldRating + review.rating) /
+              currentCount;
           if (newRating < 0) newRating = 0.0;
         }
 
@@ -1495,10 +1502,11 @@ class RestaurantService extends ChangeNotifier {
 
         int newCount = currentCount - 1;
         if (newCount < 0) newCount = 0;
-        
+
         double newRating = 0.0;
         if (newCount > 0) {
-          newRating = ((currentRating * currentCount) - review.rating) / newCount;
+          newRating =
+              ((currentRating * currentCount) - review.rating) / newCount;
           if (newRating < 0) newRating = 0.0;
         }
 
@@ -1516,10 +1524,11 @@ class RestaurantService extends ChangeNotifier {
         int currentCount = current.reviewCount;
         int newCount = currentCount - 1;
         if (newCount < 0) newCount = 0;
-        
+
         double newRating = 0.0;
         if (newCount > 0) {
-          newRating = ((current.rating * currentCount) - review.rating) / newCount;
+          newRating =
+              ((current.rating * currentCount) - review.rating) / newCount;
           if (newRating < 0) newRating = 0.0;
         }
 
@@ -1551,7 +1560,9 @@ class RestaurantService extends ChangeNotifier {
           .orderBy('createdAt', descending: true)
           .get();
 
-      return snapshot.docs.map((doc) => ReviewModel.fromFirestore(doc.data(), doc.id)).toList();
+      return snapshot.docs
+          .map((doc) => ReviewModel.fromFirestore(doc.data(), doc.id))
+          .toList();
     } catch (e) {
       if (kDebugMode) print("Error fetching reviews: $e");
       return [];

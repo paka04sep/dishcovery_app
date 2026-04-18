@@ -66,7 +66,9 @@ class _AppInitScreenState extends State<AppInitScreen>
 
     // Initial check in case it's already ready
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (RestaurantService.instance.isReady && !_isExiting) {
+      if (RestaurantService.instance.isReady &&
+          !RestaurantService.instance.isFetchingBatch &&
+          !_isExiting) {
         _isExiting = true;
         _playExitAnimation();
       }
@@ -76,7 +78,9 @@ class _AppInitScreenState extends State<AppInitScreen>
   void _onServiceUpdate() {
     if (!mounted) return;
 
-    if (RestaurantService.instance.isReady && !_isExiting) {
+    if (RestaurantService.instance.isReady &&
+        !RestaurantService.instance.isFetchingBatch &&
+        !_isExiting) {
       _isExiting = true;
       _playExitAnimation();
     }

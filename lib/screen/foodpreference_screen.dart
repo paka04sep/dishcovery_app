@@ -1,6 +1,7 @@
 import 'package:dishcovery_app/constants/app_constants.dart';
 import 'package:dishcovery_app/constants/gradient_text.dart';
 import 'package:dishcovery_app/screen/distance_pricerange.dart';
+import 'package:dishcovery_app/screen/swipescreen.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -188,11 +189,14 @@ class _FoodPreferenceScreenState extends State<FoodPreferenceScreen> {
 
     if (widget.isEditMode) {
       if (mounted) {
+        // Trigger refresh so SwipeScreen re-fetches with new preferences
+        RestaurantService.instance.forceRefreshRecommendations();
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             duration: Duration(seconds: 1),
             content: Text(
-              'บันทึกค่าเรียบร้อยแล้ว!',
+              'บันทึกค่าเรียบร้อยแล้ว! กำลังรีเฟรช...',
               style: AppTextStyles.profileText.copyWith(
                 color: Colors.white,
                 fontWeight: FontWeight.w100,
@@ -201,7 +205,12 @@ class _FoodPreferenceScreenState extends State<FoodPreferenceScreen> {
             backgroundColor: Colors.green,
           ),
         );
-        Navigator.pop(context);
+
+        // Navigate to SwipeScreen so user sees the fresh recommendations
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const SwipScreen()),
+          (route) => false,
+        );
       }
     } else {
       // นำทางไปยังหน้า DistancePriceRangeScreen

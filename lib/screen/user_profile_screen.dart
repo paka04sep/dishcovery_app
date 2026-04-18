@@ -393,6 +393,7 @@ class UserProfileScreen extends StatelessWidget {
           TextButton(
             onPressed: () async {
               Navigator.pop(context);
+              RestaurantService.reset();
               await AuthService().signOut();
 
               if (context.mounted) {

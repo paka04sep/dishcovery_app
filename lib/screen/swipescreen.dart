@@ -39,12 +39,18 @@ class _SwipScreenState extends State<SwipScreen>
   // เพิ่มตัวแปรเช็คว่าปัดหมดหรือยังเพื่อให้แสดงผลทันที
   bool _isFinished = false;
 
+  // สำหรับจับเวลา Dwell Time
+  DateTime? _cardAppearanceTime;
+
+  bool _wasLoading = false;
+
   @override
   void initState() {
     super.initState();
+    _cardAppearanceTime = DateTime.now();
     // restaurantCards = RestaurantService.instance.swipableRestaurants;
     RestaurantService.instance.addListener(_onServiceUpdate); // Add listener
-    restaurantCards = RestaurantService.instance.swipableRestaurants;
+    restaurantCards = List.from(RestaurantService.instance.swipableRestaurants);
     _buttonAnimationController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 300),
@@ -116,7 +122,7 @@ class _SwipScreenState extends State<SwipScreen>
   void _loadRestaurants() {
     final swipable = RestaurantService.instance.swipableRestaurants;
     setState(() {
-      restaurantCards = swipable;
+      restaurantCards = List.from(swipable);
       _isFinished =
           restaurantCards.isEmpty; // ถ้าโหลดมาแล้วว่างเลยให้ set finished
     });
@@ -135,82 +141,34 @@ class _SwipScreenState extends State<SwipScreen>
   void _onServiceUpdate() {
     if (mounted) {
       final freshSwipable = RestaurantService.instance.swipableRestaurants;
+
+      if (_wasLoading) {
+        setState(() {
+          restaurantCards = List.from(freshSwipable);
+          _isFinished = restaurantCards.isEmpty;
+          _wasLoading = false;
+        });
+        return;
+      }
+
       final allRestaurants = RestaurantService.instance.restaurants;
 
       // New Robust Logic:
-      // 1. Preserve "History" (Swiped Cards) to keep indices stable for CardSwiper.
-      // 2. Preserve "Current Card" (The one being looked at) so It doesn't switch mid-view.
-      // 3. Replace "Future" (Next cards) with the latest 'freshSwipable' (which is re-ranked).
+      // We ONLY append new items to the swiper queue. We never remove or alter the start of the list.
+      // This prevents CardSwiper from skipping indexing.
 
-      // Step A: Separate previously swiped/processed cards from 'restaurantCards'
-      final historyAndCurrent = <RestaurantCardData>[];
-
-      // Find the first card that hasn't been swiped yet (User is likely viewing this)
-      int? firstUnswipedIndex;
-      for (int i = 0; i < restaurantCards.length; i++) {
-        final status = RestaurantService.instance.getRestaurantStatus(
-          restaurantCards[i].id,
-        );
-        if (status == SwipeStatus.none) {
-          firstUnswipedIndex = i;
-          break;
-        }
-      }
-
-      if (firstUnswipedIndex != null) {
-        // Keep everything up to and including the current card
-        historyAndCurrent.addAll(
-          restaurantCards.sublist(0, firstUnswipedIndex + 1),
-        );
-      } else {
-        // All cards swiped? Just keep them all.
-        historyAndCurrent.addAll(restaurantCards);
-      }
-
-      // Update details of preserved cards (in case of data changes)
-      final preservedList = historyAndCurrent.map((card) {
-        return allRestaurants.firstWhere(
-          (r) => r.id == card.id,
-          orElse: () => card,
-        );
-      }).toList();
-
-      // Step B: Build the Future List from freshSwipable
-      // Exclude cards that are already in 'preservedList' to avoid duplicates
-      final Set<String> preservedIds = preservedList.map((e) => e.id).toSet();
-      final futureList = freshSwipable
-          .where((r) => !preservedIds.contains(r.id))
+      final currentIds = restaurantCards.map((r) => r.id).toSet();
+      final toAdd = freshSwipable
+          .where((r) => !currentIds.contains(r.id))
           .toList();
 
-      // Step C: Combine
-      final newCombinedList = [...preservedList, ...futureList];
-
-      // Step D: Update State if different
-      bool isDifferent = false;
-      if (restaurantCards.length != newCombinedList.length) {
-        isDifferent = true;
-      } else {
-        for (int i = 0; i < restaurantCards.length; i++) {
-          if (restaurantCards[i].id != newCombinedList[i].id) {
-            isDifferent = true;
-            break;
-          }
-        }
-      }
-
-      // Initial load edge case
-      if (restaurantCards.isEmpty && freshSwipable.isNotEmpty) {
-        isDifferent = true;
-      }
-
-      if (isDifferent) {
-        // debugPrint("DEBUG: SwipeScreen Queue Updated with Re-ranked Data");
+      if (toAdd.isNotEmpty) {
         setState(() {
-          restaurantCards = newCombinedList;
-          _isFinished = restaurantCards.isEmpty;
+          restaurantCards.addAll(toAdd);
+          _isFinished = false; // Add new cards so it's not finished
         });
       } else {
-        // Just update content
+        // Just update content of existing cards in case details changed
         setState(() {
           restaurantCards = restaurantCards.map((card) {
             return allRestaurants.firstWhere(
@@ -253,10 +211,17 @@ class _SwipScreenState extends State<SwipScreen>
       newStatus = SwipeStatus.fav;
     }
 
+    int dwellTime = 0;
+    if (_cardAppearanceTime != null) {
+      dwellTime = DateTime.now().difference(_cardAppearanceTime!).inSeconds;
+    }
+    _cardAppearanceTime = DateTime.now(); // รีเซ็ตเวลาให้การ์ดใบถัดไป
+
     if (newStatus != SwipeStatus.none) {
       RestaurantService.instance.swipeRestaurant(
         restaurantCards[previousIndex].id,
         newStatus,
+        dwellTime: dwellTime,
       );
     }
 
@@ -275,7 +240,7 @@ class _SwipScreenState extends State<SwipScreen>
     String text;
     Color color;
 
-    // 💡 แก้ไข: ใช้ right สำหรับ YUM และ up สำหรับ FAV!
+    // แก้ไข: ใช้ right สำหรับ YUM และ up สำหรับ FAV!
     if (direction == CardSwiperDirection.right) {
       text = 'YUM!';
       color = Colors.green.withOpacity(0.8);
@@ -305,7 +270,10 @@ class _SwipScreenState extends State<SwipScreen>
     final double appBarHeight =
         MediaQuery.of(context).padding.top + kToolbarHeight;
 
-    if (!RestaurantService.instance.isReady) {
+    if (!RestaurantService.instance.isReady ||
+        (RestaurantService.instance.isFetchingBatch &&
+            RestaurantService.instance.isManualRefresh)) {
+      _wasLoading = true;
       return const AppInitScreen();
     }
 

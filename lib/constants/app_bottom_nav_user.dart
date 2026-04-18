@@ -1,3 +1,4 @@
+import 'package:dishcovery_app/services/restaurant_service.dart';
 import 'package:flutter/material.dart';
 import '../screen/history_screen.dart';
 import '../screen/swipescreen.dart';
@@ -38,6 +39,9 @@ class AppBottomNav extends StatelessWidget {
                   context,
                   MaterialPageRoute(builder: (_) => const SwipScreen()),
                 );
+              } else {
+                // อัลกอริทึมรีเฟรช: สุ่มลำดับรายการใหม่เพื่อให้ได้ร้านใหม่ๆ ที่ตรงข้ามไปมา
+                RestaurantService.instance.forceRefreshRecommendations();
               }
             },
           ),

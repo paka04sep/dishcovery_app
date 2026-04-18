@@ -45,7 +45,13 @@ app.*.map.json
 /android/app/release
 
 .env
-functions
+functions/node_modules
+
+# functions
+functions/node_modules
+functions/*.local
+functions/serviceAccountKey.json
+functions/setAdmin.js
 
 # macOS
 **/Flutter/ephemeral/
@@ -63,3 +69,5 @@ functions
 **/linux/flutter/generated_plugin_registrant.cc
 **/linux/flutter/generated_plugin_registrant.h
 **/linux/flutter/generated_plugins.cmake
+
+ 
