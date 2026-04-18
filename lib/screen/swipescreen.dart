@@ -187,21 +187,24 @@ class _SwipScreenState extends State<SwipScreen>
     int? currentIndex,
     CardSwiperDirection direction,
   ) {
+    // FIX: reject bottom swipe — เปิด down ไว้ใน CardSwiper เพื่อแก้ gesture lock
+    // แต่ไม่ให้ปัดลงล่างจริงๆ → return false เพื่อ cancel และเด้งกลับ
+    if (direction == CardSwiperDirection.bottom) {
+      return false;
+    }
+
     debugPrint(
       'Card ${restaurantCards[previousIndex].name} swiped to: ${direction.name}',
     );
-    // Logic การบันทึก/ส่งข้อมูลหลังการปัดเสร็จสิ้น
-    // ...
     SwipeStatus newStatus = SwipeStatus.none;
 
     if (direction == CardSwiperDirection.right) {
       newStatus = SwipeStatus.yum;
-      // Navigate to detail as before
       Navigator.push(
         context,
         MaterialPageRoute(
           builder: (context) => RestaurantDetailScreen(
-            restaurant: restaurantCards[previousIndex], // ส่งข้อมูลร้านที่ปัดไป
+            restaurant: restaurantCards[previousIndex],
           ),
         ),
       );
@@ -215,7 +218,7 @@ class _SwipScreenState extends State<SwipScreen>
     if (_cardAppearanceTime != null) {
       dwellTime = DateTime.now().difference(_cardAppearanceTime!).inSeconds;
     }
-    _cardAppearanceTime = DateTime.now(); // รีเซ็ตเวลาให้การ์ดใบถัดไป
+    _cardAppearanceTime = DateTime.now();
 
     if (newStatus != SwipeStatus.none) {
       RestaurantService.instance.swipeRestaurant(
@@ -328,12 +331,17 @@ class _SwipScreenState extends State<SwipScreen>
                       cardsCount: restaurantCards.length,
                       onSwipe: _onSwipe,
                       isLoop: false,
+                      // FIX: อนุญาต down ด้วยเพื่อป้องกัน gesture lock
+                      // เวลาจับมุมล่างแล้ว touch jitter ดัน top เป็นบวก
+                      // → reject bottom swipe ใน _onSwipe แทน
                       allowedSwipeDirection: const AllowedSwipeDirection.only(
                         left: true,
                         right: true,
                         up: true,
+                        down: true,
                       ),
-                      //
+                      maxAngle: 20, // ลดจาก default 30 ให้หมุนอ่อนลง
+                      threshold: 40, // ลดจาก 50 ให้ swipe ง่ายขึ้น
                       numberOfCardsDisplayed: restaurantCards.length >= 2
                           ? 2
                           : 1,
@@ -429,323 +437,333 @@ class _SwipScreenState extends State<SwipScreen>
     required double percentX,
     required double percentY,
   }) {
-    // ----------------------------------------------------
-    // Interactive Animation Logic
-    // ----------------------------------------------------
-    final double rotate = percentX.clamp(-0.5, 0.5) / 2;
-    final double threshold =
-        0.2; // จุดที่ Overlay เริ่มแสดง (ลดลงเพื่อให้แสดงเร็วขึ้น)
+    // ============================================================
+    // Overlay Progress — ใช้ smoothstep curve
+    // ============================================================
+    const double threshold = 0.18;
+    final bool isVerticalSwipe = percentY.abs() > percentX.abs();
 
-    // Logic ป้องกันการแสดงซ้อนกัน (Priority: Vertical > Horizontal)
-    bool isVerticalSwipe = percentY.abs() > percentX.abs();
+    double smoothStep(double x) {
+      final t = x.clamp(0.0, 1.0);
+      return t * t * (3.0 - 2.0 * t);
+    }
 
-    // คำนวณ Opacity และ Progress ตามทิศทางที่เด่นชัดที่สุด
     double yumProgress = 0.0;
     double passProgress = 0.0;
     double favProgress = 0.0;
 
     if (isVerticalSwipe) {
-      // ถ้าปัดขึ้นเป็นหลัก
       if (percentY < 0) {
-        favProgress = (percentY.abs() / threshold).clamp(0.0, 1.0);
+        favProgress = smoothStep(percentY.abs() / threshold);
       }
     } else {
-      // ถ้าปัดซ้าย/ขวาเป็นหลัก
-      if (percentX > 0) {
-        yumProgress = (percentX / threshold).clamp(0.0, 1.0);
-      } else if (percentX < 0) {
-        passProgress = (percentX.abs() / threshold).clamp(0.0, 1.0);
-      }
+      if (percentX > 0) yumProgress = smoothStep(percentX / threshold);
+      if (percentX < 0) passProgress = smoothStep(percentX.abs() / threshold);
     }
 
-    // ----------------------------------------------------
+    // ============================================================
+    // Dynamic Direction Shadow — เงาเปลี่ยนสีตามทิศทางที่ปัด
+    // ============================================================
+    final double swipeIntensity = (percentX.abs() + percentY.abs() * 0.5).clamp(
+      0.0,
+      1.0,
+    );
+    final double shadowBlur = 10 + swipeIntensity * 18;
+    final double shadowSpread = 1 + swipeIntensity * 3;
 
-    return Transform.rotate(
-      angle: rotate,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20.0),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 10,
-              spreadRadius: 1,
+    // คำนวณสีเงาตามทิศทาง
+    Color shadowColor;
+    if (yumProgress > passProgress &&
+        yumProgress > favProgress &&
+        yumProgress > 0.05) {
+      // ปัดขวา = เขียวอ่อน
+      shadowColor = Color.lerp(
+        Colors.black.withOpacity(0.25),
+        const Color(0xFF4CAF50).withOpacity(0.4),
+        (yumProgress * 0.6).clamp(0.0, 1.0),
+      )!;
+    } else if (passProgress > yumProgress &&
+        passProgress > favProgress &&
+        passProgress > 0.05) {
+      // ปัดซ้าย = แดงอ่อน
+      shadowColor = Color.lerp(
+        Colors.black.withOpacity(0.25),
+        const Color(0xFFE53935).withOpacity(0.4),
+        (passProgress * 0.6).clamp(0.0, 1.0),
+      )!;
+    } else if (favProgress > 0.05) {
+      // ปัดขึ้น = ทองอ่อน
+      shadowColor = Color.lerp(
+        Colors.black.withOpacity(0.25),
+        const Color(0xFFFFC107).withOpacity(0.4),
+        (favProgress * 0.6).clamp(0.0, 1.0),
+      )!;
+    } else {
+      shadowColor = Colors.black.withOpacity(0.25);
+    }
+
+    // ไม่ต้อง Transform.rotate เอง — CardSwiper จัดการ rotation ให้แล้ว
+    // เพิ่ม ValueKey เพื่อให้ Flutter รู้ว่าเป็นการ์ดคนละใบกัน
+    // ป้องกัน Animation ของการ์ดเก่าติดไปหน้าการ์ดใหม่ (Ghosting overlay)
+    return Container(
+      key: ValueKey(data.id),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20.0),
+        boxShadow: [
+          BoxShadow(
+            color: shadowColor,
+            blurRadius: shadowBlur,
+            spreadRadius: shadowSpread,
+            offset: Offset(
+              percentX.clamp(-1.0, 1.0) * 4,
+              6 + swipeIntensity * 4,
             ),
-          ],
-        ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(20.0),
-          child: Stack(
-            children: [
-              // 1. รูปภาพและ Gradient
-              Positioned.fill(
-                child: data.imageUrl.startsWith('http')
-                    ? Image.network(
-                        data.imageUrl,
-                        fit: BoxFit.cover,
-                        loadingBuilder: (context, child, loadingProgress) {
-                          if (loadingProgress == null) return child;
-                          return Container(
-                            color: Colors.grey.shade300,
-                            child: const Center(
-                              child: CircularProgressIndicator(),
-                            ),
-                          );
-                        },
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          color: Colors.grey.shade600,
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20.0),
+        child: Stack(
+          children: [
+            // 1. รูปภาพและ Gradient
+            Positioned.fill(
+              child: data.imageUrl.startsWith('http')
+                  ? Image.network(
+                      data.imageUrl,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          color: Colors.grey.shade300,
                           child: const Center(
-                            child: Icon(
-                              Icons.broken_image,
-                              color: Colors.white,
-                              size: 40,
-                            ),
+                            child: CircularProgressIndicator(),
                           ),
-                        ),
-                      )
-                    : Image.asset(
-                        data.imageUrl,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) => Container(
-                          color: Colors.grey.shade600,
-                          child: const Center(
-                            child: Text(
-                              "No Image",
-                              style: TextStyle(color: Colors.white),
-                            ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: Colors.grey.shade600,
+                        child: const Center(
+                          child: Icon(
+                            Icons.broken_image,
+                            color: Colors.white,
+                            size: 40,
                           ),
                         ),
                       ),
-              ),
-              Positioned.fill(
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        Colors.transparent,
-                        Colors.black.withOpacity(0.8),
-                      ],
-                      begin: Alignment.topCenter,
-                      end: Alignment.bottomCenter,
-                      stops: const [0.3, 0.9],
+                    )
+                  : Image.asset(
+                      data.imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) => Container(
+                        color: Colors.grey.shade600,
+                        child: const Center(
+                          child: Text(
+                            "No Image",
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ),
                     ),
+            ),
+            Positioned.fill(
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.transparent, Colors.black.withOpacity(0.8)],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    stops: const [0.3, 0.9],
                   ),
                 ),
               ),
+            ),
 
-              // 2. Pulse Status Widget (Top Right)
-              Positioned(
-                top: 15,
-                right: 15,
-                child: PulseStatusWidget(
-                  status: TimeUtils.getRestaurantStatus(data.openingHours),
-                ),
+            // 2. Pulse Status Widget (Top Right)
+            Positioned(
+              top: 15,
+              right: 15,
+              child: PulseStatusWidget(
+                status: TimeUtils.getRestaurantStatus(data.openingHours),
               ),
+            ),
 
-              // 3. Interactive Overlays (YUM, PASS, FAV)
-              // YUM Overlay (สีเขียว, ขวา)
-              if (yumProgress > 0)
-                _buildSwipeOverlay(
-                  text: 'YUM!',
-                  color: Colors.green,
-                  progress: yumProgress,
-                  alignment: Alignment.center,
-                  angle: -0.2,
-                ),
+            // 3. Interactive Overlays (YUM, PASS, FAV)
+            // ใช้ AnimatedOpacity + AnimatedScale แทน raw widget
+            // เพื่อให้มี time-based interpolation ที่นุ่มนวล
+            _buildSwipeOverlay(
+              text: 'YUM!',
+              color: const Color(0xFF4CAF50),
+              progress: yumProgress,
+              position: const Alignment(-0.85, -0.78),
+              angle: -0.30,
+            ),
+            _buildSwipeOverlay(
+              text: 'PASS',
+              color: const Color(0xFFE53935),
+              progress: passProgress,
+              position: const Alignment(0.85, -0.78),
+              angle: 0.30,
+            ),
+            _buildSwipeOverlay(
+              text: '★ FAV',
+              color: const Color(0xFFFFC107),
+              progress: favProgress,
+              position: const Alignment(0.0, -0.5),
+              angle: 0.0,
+            ),
 
-              // PASS Overlay (สีแดง, ซ้าย)
-              if (passProgress > 0)
-                _buildSwipeOverlay(
-                  text: 'PASS',
-                  color: Colors.red,
-                  progress: passProgress,
-                  alignment: Alignment.center,
-                  angle: 0.2,
-                ),
+            // 4. รายละเอียดร้านอาหาร
+            Positioned(
+              left: 20,
+              right: 20,
+              bottom: 115, // ถ้าด้านล่างมีปุ่มกดเว้นระยะนี้ไว้ถือว่าโอเคครับ
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // --- แถวที่ 1: ชื่อร้าน และ Badge เรตติ้ง ---
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // ใช้ Expanded ครอบชื่อร้าน เพื่อให้ตัดคำเมื่อยาวเกิน 2 บรรทัด
+                      Expanded(
+                        child: AutoSizeText(
+                          data.name,
+                          style: AppTextStyles.restaurantName.copyWith(
+                            height: 1.2, // ปรับระยะบรรทัดให้พอดี
+                          ),
+                          maxLines: 2,
+                          minFontSize: 14,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
 
-              // FAV Overlay (สีเหลือง, บน)
-              if (favProgress > 0)
-                _buildSwipeOverlay(
-                  text: 'FAV!',
-                  color: Colors.amber,
-                  progress: favProgress,
-                  alignment: Alignment.center,
-                  angle: 0.0,
-                ),
-
-              // 4. รายละเอียดร้านอาหาร
-              Positioned(
-                left: 20,
-                right: 20,
-                bottom: 115, // ถ้าด้านล่างมีปุ่มกดเว้นระยะนี้ไว้ถือว่าโอเคครับ
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // --- แถวที่ 1: ชื่อร้าน และ Badge เรตติ้ง ---
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // ใช้ Expanded ครอบชื่อร้าน เพื่อให้ตัดคำเมื่อยาวเกิน 2 บรรทัด
-                        Expanded(
-                          child: AutoSizeText(
-                            data.name,
-                            style: AppTextStyles.restaurantName.copyWith(
-                              height: 1.2, // ปรับระยะบรรทัดให้พอดี
-                            ),
-                            maxLines: 2,
-                            minFontSize: 14,
-                            overflow: TextOverflow.ellipsis,
+                      // Rating Badge (กล่องเรตติ้งดูพรีเมียมและเป็นระเบียบ)
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.amber.shade400,
+                            width: 1,
                           ),
                         ),
-                        const SizedBox(width: 12),
-
-                        // Rating Badge (กล่องเรตติ้งดูพรีเมียมและเป็นระเบียบ)
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.5),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.star_rounded,
                               color: Colors.amber.shade400,
-                              width: 1,
+                              size: 18,
                             ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.star_rounded,
-                                color: Colors.amber.shade400,
-                                size: 18,
+                            const SizedBox(width: 4),
+                            Text(
+                              (data.reviewCount == 0 || data.rating == 0.0)
+                                  ? "N/A ยังไม่มีรีวิว"
+                                  : data.rating.toString(),
+                              style: AppTextStyles.restaurantDetails.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
                               ),
-                              const SizedBox(width: 4),
-                              Text(
-                                (data.reviewCount == 0 || data.rating == 0.0)
-                                    ? "N/A ยังไม่มีรีวิว"
-                                    : data.rating.toString(),
-                                style: AppTextStyles.restaurantDetails.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-
-                    // --- แถวที่ 2: ประเภท · ราคา · ระยะทาง ---
-                    // จับรวบเป็น Text เดียวแล้วใช้ Expanded กันล้น เผื่อของกินหลายประเภท
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            '${data.cuisine.join(', ')} • ${data.getPriceSymbol()} • ${RestaurantService.instance.getDistance(data)} km',
-                            style: AppTextStyles.restaurantDetails.copyWith(
-                              color: Colors.grey.shade300,
-                              fontWeight: FontWeight.w500,
                             ),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                          ),
+                          ],
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
 
-                    // --- แถวที่ 3: คำอธิบายร้าน ---
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            '"${data.description}"',
-                            style: AppTextStyles.restaurantDetails.copyWith(
-                              fontSize: 14,
-                              fontStyle: FontStyle.italic,
-                              color: Colors.white70,
-                            ),
-                            maxLines:
-                                2, // ให้โควตา 2 บรรทัดจะอ่านง่ายกว่าบรรทัดเดียวครับ
-                            overflow: TextOverflow.ellipsis,
+                  // --- แถวที่ 2: ประเภท · ราคา · ระยะทาง ---
+                  // จับรวบเป็น Text เดียวแล้วใช้ Expanded กันล้น เผื่อของกินหลายประเภท
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '${data.cuisine.join(', ')} • ${data.getPriceSymbol()} • ${RestaurantService.instance.getDistance(data)} km',
+                          style: AppTextStyles.restaurantDetails.copyWith(
+                            color: Colors.grey.shade300,
+                            fontWeight: FontWeight.w500,
                           ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                      ],
-                    ),
-                  ],
-                ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+
+                  // --- แถวที่ 3: คำอธิบายร้าน ---
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          '"${data.description}"',
+                          style: AppTextStyles.restaurantDetails.copyWith(
+                            fontSize: 14,
+                            fontStyle: FontStyle.italic,
+                            color: Colors.white70,
+                          ),
+                          maxLines:
+                              2, // ให้โควตา 2 บรรทัดจะอ่านง่ายกว่าบรรทัดเดียวครับ
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
 
   // Widget ย่อยสำหรับสร้าง Overlay Text สำหรับการปัด
+  // ใช้ AnimatedOpacity + AnimatedScale เพื่อให้ transition
+  // มีความ smooth แบบ time-based ไม่กระโดดตามนิ้ว
   Widget _buildSwipeOverlay({
     required String text,
     required Color color,
-    required double progress, // รับค่า Progress (0.0 - 1.0) แทน Opacity
-    required Alignment alignment,
+    required double progress, // 0.0 – 1.0
+    required Alignment position,
     required double angle,
   }) {
-    // คำนวณ Scale: เริ่มจาก 0.5 ไปถึง 1.5
-    final double scale = 0.5 + (progress * 1.0);
+    final double t = progress.clamp(0.0, 1.0);
+    final double eased = t * t * (3.0 - 2.0 * t); // smoothstep
 
-    // คำนวณ Opacity: เริ่มจาก 0 ไป 1 (แต่ให้เริ่มเห็นเร็วหน่อย)
-    final double opacity = (progress * 1.5).clamp(0.0, 1.0);
+    // Glow intensity ตาม progress
+    final double glowSpread = eased * 5.0;
+    final double glowBlur = 8.0 + eased * 18.0;
 
-    // คำนวณ Glow (Shadow): ยิ่ง Progress เยอะ ยิ่งฟุ้ง
-    final double blurRadius = 10 + (progress * 40);
-    final double spreadRadius = 2 + (progress * 10);
-
+    // IgnorePointer เพื่อไม่ block gesture
     return Positioned.fill(
-      child: Opacity(
-        opacity: opacity,
+      child: IgnorePointer(
         child: Align(
-          alignment: alignment,
-          child: Transform.rotate(
-            angle: angle,
-            child: Transform.scale(
-              scale: scale,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 20,
-                  vertical: 10,
-                ),
-                decoration: BoxDecoration(
-                  // พื้นหลังโปร่งใส แต่มีขอบและเงาเรืองแสง
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(15),
-                  border: Border.all(color: color, width: 4),
-                  boxShadow: [
-                    BoxShadow(
-                      color: color.withOpacity(0.6 * opacity),
-                      blurRadius: blurRadius,
-                      spreadRadius: spreadRadius,
-                    ),
-                  ],
-                ),
-                child: Text(
-                  text,
-                  style: TextStyle(
-                    color: color, // ตัวหนังสือสีเดียวกับธีม (หรือจะเอาขาวก็ได้)
-                    fontSize: 48,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 3,
-                    shadows: [
-                      Shadow(
-                        color: Colors.black.withOpacity(0.5),
-                        blurRadius: 5,
-                        offset: const Offset(2, 2),
-                      ),
-                    ],
-                  ),
+          alignment: position,
+          child: AnimatedOpacity(
+            opacity: t < 0.01 ? 0.0 : eased, // ถ้าแทบไม่ปัด ให้ดับสนิททันที
+            duration: const Duration(
+              milliseconds: 100,
+            ), // เร็วขึ้นเล็กน้อยเพื่อความไว
+            curve: Curves.easeOut,
+            child: Transform.rotate(
+              angle: angle,
+              child: AnimatedScale(
+                scale: t < 0.01 ? 0.8 : (0.80 + eased * 0.20),
+                duration: const Duration(milliseconds: 100),
+                curve: Curves.easeOutCubic,
+                child: _SwipeLabel(
+                  text: text,
+                  color: color,
+                  glowBlur: glowBlur,
+                  glowSpread: glowSpread,
+                  opacity: eased,
                 ),
               ),
             ),
@@ -781,6 +799,69 @@ class _SwipScreenState extends State<SwipScreen>
       child: IconButton(
         icon: Icon(icon, color: color, size: size * 0.8),
         onPressed: onPressed,
+      ),
+    );
+  }
+}
+
+class _SwipeLabel extends StatelessWidget {
+  const _SwipeLabel({
+    required this.text,
+    required this.color,
+    required this.glowBlur,
+    required this.glowSpread,
+    required this.opacity,
+  });
+
+  final String text;
+  final Color color;
+  final double glowBlur;
+  final double glowSpread;
+  final double opacity;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
+      decoration: BoxDecoration(
+        // Fill โปร่งใสเล็กน้อย ให้ตัวอักษรอ่านง่ายขึ้น
+        color: color.withOpacity(0.12 * opacity),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: color, width: 3.5),
+        boxShadow: [
+          // Inner glow (ทำให้ขอบดูเรืองแสง)
+          BoxShadow(
+            color: color.withOpacity(0.45 * opacity),
+            blurRadius: glowBlur,
+            spreadRadius: glowSpread,
+          ),
+          // Outer soft shadow
+          BoxShadow(
+            color: Colors.black.withOpacity(0.25),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Text(
+        text,
+        style: TextStyle(
+          // ใช้สีขาว + stroke สี theme เพื่อให้อ่านง่ายบนทุกพื้นหลัง
+          color: Colors.white,
+          fontSize: 40,
+          fontWeight: FontWeight.w900,
+          letterSpacing: 4,
+          shadows: [
+            // Drop shadow ด้านล่าง
+            Shadow(
+              color: Colors.black.withOpacity(0.6),
+              blurRadius: 4,
+              offset: const Offset(1, 2),
+            ),
+            // Colored glow รอบตัวหนังสือ
+            Shadow(color: color.withOpacity(0.8), blurRadius: 12),
+          ],
+        ),
       ),
     );
   }
