@@ -130,8 +130,7 @@ class _DistancePriceRangeScreenState extends State<DistancePriceRangeScreen> {
 
     if (widget.isEditMode) {
       if (mounted) {
-        // Trigger refresh so SwipeScreen re-fetches with new distance/price settings
-        RestaurantService.instance.forceRefreshRecommendations();
+        // SwipeScreen will automatically re-fetch via the active listener in the service
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(

@@ -404,8 +404,11 @@ class RestaurantService extends ChangeNotifier {
   }
 
   void updateCuisinePreferences(List<String> prefs) {
+    if (prefs.join(',') == _userPreferences.join(',')) return;
     _userPreferences = prefs;
-    notifyListeners();
+    
+    // When preferences change, force a regenerate to get relevant food
+    forceRegenerateFeed();
   }
 
   void updateDistanceAndPriceRange(
@@ -413,18 +416,43 @@ class RestaurantService extends ChangeNotifier {
     List<String> priceRanges,
     bool showClosedRestaurants,
   ) {
+    if (_userMaxDistance == distance && 
+        _userPriceRangePreferences.join(',') == priceRanges.join(',') && 
+        _showClosedRestaurants == showClosedRestaurants) return;
+
     _userMaxDistance = distance;
     _userPriceRangePreferences = priceRanges;
     _showClosedRestaurants = showClosedRestaurants;
-    notifyListeners();
+    
+    // Changing filters means the cache might be invalid or insufficient
+    forceRegenerateFeed();
+  }
+
+  void forceRegenerateFeed({bool clearSessionSwipes = false}) {
+    if (clearSessionSwipes) {
+      _sessionSwipedIds.clear();
+    }
+    _hasNoMoreData = false;
+    _swipableCache.clear();
+    if (!_isFetchingBatch) {
+      _fetchNextBatch(forceGenerate: true);
+    } else {
+      notifyListeners();
+    }
   }
 
   // ฟังก์ชันเพื่อให้ปุ่ม Refresh สามารถสับเปลี่ยนร้านที่อัลกอริทึมจัดไว้นำมาแสดงใหม่
   void forceRefreshRecommendations() {
     _isManualRefresh = true;
     _hasNoMoreData = false; // CRITICAL: Reset so fetch can proceed again
+    
+    // ย้ายร้านปัจจุบันเข้า _sessionSwipedIds เพื่อกันไม่ออกมาซ้ำกันทันที
+    for (var r in _swipableCache) {
+      _sessionSwipedIds.add(r.id);
+    }
+    
     _swipableCache.clear();
-    _sessionSwipedIds.clear(); // Reset session tracking on manual refresh
+    // ไม่ clear _sessionSwipedIds แล้ว เพื่อให้การดึงครั้งต่อไปรู้สึก "ใหม่" จริงๆ (เอาจาก Cache ถัดไป)
     if (!_isFetchingBatch) {
       _fetchNextBatch();
     }
@@ -772,7 +800,7 @@ class RestaurantService extends ChangeNotifier {
     return _swipableCache;
   }
 
-  Future<void> _fetchNextBatch() async {
+  Future<void> _fetchNextBatch({bool forceGenerate = false}) async {
     if (_isFetchingBatch) return;
     _isFetchingBatch = true;
     notifyListeners(); // Optionally trigger UI to show loading if we want, or just quietly load in bg
@@ -789,33 +817,66 @@ class RestaurantService extends ChangeNotifier {
 
       // Build comprehensive exclude list to prevent ANY duplicates
       final Set<String> excludeSet = {};
-      // 1. From user history (persisted)
       excludeSet.addAll(_userModel?.history.yum ?? []);
       excludeSet.addAll(_userModel?.history.passed ?? []);
       excludeSet.addAll(_userModel?.history.fav ?? []);
-      // 2. From session tracking (covers race condition where history hasn't synced yet)
       excludeSet.addAll(_sessionSwipedIds);
-      // 3. From current swipe queue
       excludeSet.addAll(_swipableCache.map((r) => r.id));
       final List<String> excludeIds = excludeSet.toList();
 
-      final HttpsCallable callable = FirebaseFunctions.instance.httpsCallable(
-        'getRecommendedBatch',
-      );
-      final result = await callable.call({
-        'latitude': _lastKnownLat,
-        'longitude': _lastKnownLng,
-        'excludeIds': excludeIds,
-        'preferences': _userPreferences,
-        'maxDistance': _userMaxDistance,
-        'priceRangePreference': _userPriceRangePreferences,
-        'showClosedRestaurants': _showClosedRestaurants,
-      });
+      final db = FirebaseFirestore.instance;
+      final currentUser = FirebaseAuth.instance.currentUser;
+      
+      List<dynamic> batchData = [];
+      bool needGenerate = forceGenerate;
+      
+      if (!forceGenerate && currentUser != null) {
+        // 1. Check local cached feed (1 Read)
+        final feedDoc = await db.collection('userFeeds').doc(currentUser.uid).get();
+        if (feedDoc.exists) {
+          final data = feedDoc.data();
+          if (data != null && data.containsKey('batch') && (data['batch'] as List).isNotEmpty) {
+            final feedBatch = List<dynamic>.from(data['batch']);
+            // Filter out items already swiped or in history
+            batchData = feedBatch.where((item) {
+              final id = item['id'] as String?;
+              if (id == null) return false;
+              return !excludeIds.contains(id);
+            }).toList();
+            
+            // If the remaining valid items in cache are sufficient, don't generate!
+            if (batchData.length >= 5) {
+              needGenerate = false;
+            }
+          }
+        }
+      }
 
-      final List<dynamic> batchData = result.data['restaurants'] ?? [];
+      // 2. Generate new feed if cache is depleted
+      if (needGenerate) {
+        if (kDebugMode) print("DEBUG: Calling getRecommendedBatch to refill feed cache!");
+        final HttpsCallable callable = FirebaseFunctions.instance.httpsCallable(
+          'getRecommendedBatch',
+        );
+        final result = await callable.call({
+          'latitude': _lastKnownLat,
+          'longitude': _lastKnownLng,
+          'excludeIds': excludeIds,
+          'preferences': _userPreferences,
+          'maxDistance': _userMaxDistance,
+          'priceRangePreference': _userPriceRangePreferences,
+          'showClosedRestaurants': _showClosedRestaurants,
+        });
 
-      List<RestaurantCardData> newBatch = batchData.map((data) {
-        // use fromJson passing mapped data
+        // The Cloud Function already saved this entire batch to `userFeeds`, 
+        // so it will be available for the NEXT read without calling this again!
+        batchData = result.data['restaurants'] ?? [];
+      }
+
+      // 3. Take up to 10 for the current session (The UI batch)
+      final sessionBatch = batchData.take(10).toList();
+
+      List<RestaurantCardData> newBatch = sessionBatch.map((data) {
         return RestaurantCardData.fromJson(Map<String, dynamic>.from(data));
       }).toList();
 
@@ -958,7 +1019,7 @@ class RestaurantService extends ChangeNotifier {
         _swipableCache.removeWhere((r) => r.id == id);
 
         // Pre-fetch next batch if running low
-        if (_swipableCache.length < 3 && !_isFetchingBatch) {
+        if (_swipableCache.isEmpty && !_isFetchingBatch) {
           _fetchNextBatch();
         }
 
@@ -1121,8 +1182,7 @@ class RestaurantService extends ChangeNotifier {
 
       if (kDebugMode) print("Swipe data reset successfully.");
 
-      forceRefreshRecommendations();
-      notifyListeners();
+      forceRegenerateFeed(clearSessionSwipes: true);
     } catch (e) {
       if (kDebugMode) print("Error resetting swipe data: $e");
       rethrow;

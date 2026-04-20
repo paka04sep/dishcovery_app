@@ -228,16 +228,74 @@ exports.getRecommendedBatch = onCall({ region: "us-central1" }, async (request) 
 
   const categoryScores = tasteProfile.categories || {};
   let topUserCategories = Object.keys(categoryScores).filter(k => categoryScores[k] > 0);
-
-  const snapshot = await db.collection("restaurants").where("status", "==", "approved").limit(30).get();
   
+  // Create a combined list of categories for querying (preferences + top history)
+  let combinedCategories = new Set([...prefKeywords, ...topUserCategories]);
+  const categoriesToQuery = Array.from(combinedCategories).slice(0, 10);
+
   let candidates = [];
-  snapshot.forEach(doc => {
-    // Only exclude IDs from this session / locally so we don't repeat in the same run
-    if (!excludeIds.includes(doc.id)) {
-      candidates.push({ id: doc.id, ...doc.data() });
-    }
-  });
+  const pickedIds = new Set(excludeIds);
+
+  // 1. Personalized Query (~15 reads limit 30)
+  if (categoriesToQuery.length > 0) {
+    try {
+      const pSnap = await db.collection("restaurants")
+        .where("cuisine", "array-contains-any", categoriesToQuery)
+        .limit(30)
+        .get();
+        
+      pSnap.forEach(doc => {
+        const data = doc.data();
+        if (data.status === "approved" && !pickedIds.has(doc.id)) {
+          candidates.push({ id: doc.id, ...data });
+          pickedIds.add(doc.id);
+        }
+      });
+    } catch (e) { console.error("Personalized Query Error:", e); }
+  }
+
+  // 2. Trending Query (~10 reads limit 20)
+  try {
+      const tSnap = await db.collection("restaurants")
+          .orderBy("engagementStats.trendingScore", "desc")
+          .limit(20)
+          .get();
+      
+      tSnap.forEach(doc => {
+          const data = doc.data();
+          if (data.status === "approved" && !pickedIds.has(doc.id)) {
+            candidates.push({ id: doc.id, ...data });
+            pickedIds.add(doc.id);
+          }
+      });
+  } catch (e) { console.error("Trending Query Error:", e); }
+
+  // 3. Discovery Query (~10 reads limit 20)
+  try {
+      const dSnap = await db.collection("restaurants")
+          .orderBy("createdAt", "desc")
+          .limit(20)
+          .get();
+          
+      dSnap.forEach(doc => {
+          const data = doc.data();
+          if (data.status === "approved" && !pickedIds.has(doc.id)) {
+            candidates.push({ id: doc.id, ...data });
+            pickedIds.add(doc.id);
+          }
+      });
+  } catch (e) { console.error("Discovery Query Error:", e); }
+
+  // Fallback if no candidates were found due to index failures or empty DB
+  if (candidates.length === 0) {
+      const fallbackSnap = await db.collection("restaurants").where("status", "==", "approved").limit(20).get();
+      fallbackSnap.forEach(doc => {
+          if (!pickedIds.has(doc.id)) {
+            candidates.push({ id: doc.id, ...doc.data() });
+            pickedIds.add(doc.id);
+          }
+      });
+  }
 
   function getDistance(lat1, lon1, lat2, lon2) {
     if (!lat1 || !lon1 || !lat2 || !lon2) return 999;
@@ -266,11 +324,6 @@ exports.getRecommendedBatch = onCall({ region: "us-central1" }, async (request) 
   }
   candidates = distFiltered;
 
-  // NOTE: Price Range is now a SOFT BOOST, not a hard filter.
-  // This ensures cuisine-matched restaurants always appear even if their
-  // price doesn't exactly match the user's preference.
-  // Priority: Cuisine Preference (+15) > Price Range Match (+5) > Distance (penalty)
-
   const PREFERENCE_BOOST = 15; // High boost for explicit cuisine preference match
   const PRICE_MATCH_BOOST = 5; // Moderate boost for matching price range
 
@@ -278,39 +331,26 @@ exports.getRecommendedBatch = onCall({ region: "us-central1" }, async (request) 
     let score = 0;
     const rCuisines = r.cuisine || [];
 
-    // === Explicit Preference Boost (HIGHEST PRIORITY) ===
-    // If any restaurant cuisine matches keywords from user preferences, boost significantly
+    // === Explicit Preference Boost ===
     let prefMatched = false;
     if (prefKeywords.size > 0) {
       for (const c of rCuisines) {
-        if (prefKeywords.has(c)) {
-          prefMatched = true;
-          break;
-        }
-        // Also check partial match (e.g. cuisine "อาหารญี่ปุ่น" contains keyword "ญี่ปุ่น")
+        if (prefKeywords.has(c)) { prefMatched = true; break; }
         for (const kw of prefKeywords) {
-          if (c.includes(kw) || kw.includes(c)) {
-            prefMatched = true;
-            break;
-          }
+          if (c.includes(kw) || kw.includes(c)) { prefMatched = true; break; }
         }
         if (prefMatched) break;
       }
     }
-    if (prefMatched) {
-      score += PREFERENCE_BOOST;
-    }
+    if (prefMatched) score += PREFERENCE_BOOST;
 
-    // === Price Range Match (SOFT BOOST, not a filter) ===
+    // === Price Range Match ===
     if (allowedPriceRanges.size > 0) {
       const rPrice = r.priceRange || 1;
-      if (allowedPriceRanges.has(rPrice)) {
-        score += PRICE_MATCH_BOOST; // Bonus for matching price range
-      }
-      // No penalty for non-matching — just no bonus
+      if (allowedPriceRanges.has(rPrice)) score += PRICE_MATCH_BOOST;
     }
 
-    // === Taste Profile (implicit history) ===
+    // === Taste Profile ===
     rCuisines.forEach(c => {
       if (categoryScores[c]) score += categoryScores[c];
     });
@@ -330,44 +370,42 @@ exports.getRecommendedBatch = onCall({ region: "us-central1" }, async (request) 
     return { ...r, _personalScore: score, _dist: dist, _trend: trend, _prefMatch: prefMatched };
   });
 
-  // 1. Personalized (7)
-  let personalizedCandidates = [...candidates].sort((a, b) => b._personalScore - a._personalScore);
-  const personalized = personalizedCandidates.slice(0, 7);
-  const pickedIds = new Set(personalized.map(p => p.id));
-
-  // 2. Discovery (2)
-  let discoveryCandidates = candidates.filter(r => {
-    if (pickedIds.has(r.id)) return false;
-    const rCuisines = r.cuisine || [];
-    return !rCuisines.some(c => topUserCategories.includes(c));
-  });
-  discoveryCandidates.sort(() => 0.5 - Math.random());
-  
-  let discovery = discoveryCandidates.slice(0, 2);
-  discovery.forEach(d => pickedIds.add(d.id));
-  
-  if (discovery.length < 2) {
-    const fallback = candidates.filter(c => !pickedIds.has(c.id)).sort(() => 0.5 - Math.random());
-    const needed = 2 - discovery.length;
-    discovery.push(...fallback.slice(0, needed));
-    fallback.slice(0, needed).forEach(d => pickedIds.add(d.id));
-  }
-
-  // 3. Trending (1)
-  let trendingCandidates = candidates.filter(r => !pickedIds.has(r.id));
-  trendingCandidates.sort((a, b) => b._trend - a._trend);
-  const trending = trendingCandidates.slice(0, 1);
-  trending.forEach(t => pickedIds.add(t.id));
-
-  let finalBatch = [...personalized, ...discovery, ...trending];
-
-  // Sort final batch: preference-matched restaurants first, then by personalScore desc
-  finalBatch.sort((a, b) => {
-    // Preference matches first
+  // Re-split final candidates based on score/category for the Feed
+  // We already selected them via different queries, but they are mixed in the `candidates` array now.
+  candidates.sort((a, b) => {
     if (a._prefMatch && !b._prefMatch) return -1;
     if (!a._prefMatch && b._prefMatch) return 1;
-    // Then by personalScore
     return b._personalScore - a._personalScore;
+  });
+
+  const finalBatchIds = new Set();
+  let finalBatch = [];
+
+  // Get Top 15 Personalized
+  const personalized = candidates.slice(0, 15);
+  personalized.forEach(p => {
+    if (!finalBatchIds.has(p.id)) {
+      finalBatch.push(p);
+      finalBatchIds.add(p.id);
+    }
+  });
+
+  // Add Discovery (Random from remainder)
+  const remaining = candidates.filter(c => !finalBatchIds.has(c.id));
+  remaining.sort(() => 0.5 - Math.random());
+  const discovery = remaining.slice(0, 5);
+  discovery.forEach(d => {
+    finalBatch.push(d);
+    finalBatchIds.add(d.id);
+  });
+
+  // Add Trending (Highest trend from remainder)
+  const stillRemaining = remaining.filter(c => !finalBatchIds.has(c.id));
+  stillRemaining.sort((a, b) => b._trend - a._trend);
+  const trending = stillRemaining.slice(0, 5);
+  trending.forEach(t => {
+    finalBatch.push(t);
+    finalBatchIds.add(t.id);
   });
   
   finalBatch = finalBatch.map(r => {
@@ -377,6 +415,12 @@ exports.getRecommendedBatch = onCall({ region: "us-central1" }, async (request) 
     delete r._prefMatch;
     return r;
   });
+
+  // Save the precomputed batch to userFeeds
+  await db.collection("userFeeds").doc(uid).set({
+    batch: finalBatch,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp()
+  }, { merge: true });
 
   return { restaurants: finalBatch };
 });

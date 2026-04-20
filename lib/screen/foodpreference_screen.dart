@@ -189,8 +189,7 @@ class _FoodPreferenceScreenState extends State<FoodPreferenceScreen> {
 
     if (widget.isEditMode) {
       if (mounted) {
-        // Trigger refresh so SwipeScreen re-fetches with new preferences
-        RestaurantService.instance.forceRefreshRecommendations();
+        // SwipeScreen will automatically re-fetch via the active listener in the service
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
