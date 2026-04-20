@@ -88,10 +88,10 @@ class RestaurantService extends ChangeNotifier {
 
     // CRM: Toggle for Mock Data vs Real Data
     if (AppConfig.useMockData) {
-      if (kDebugMode) print("DEBUG: Using Mock Data + Firestore");
+      if (kDebugMode) print("DEBUG: Using Firestore");
 
       // Process Mock Data
-      List<RestaurantCardData> mockList = mockRestaurants;
+      // List<RestaurantCardData> mockList = mockRestaurants;
 
       // Process Firestore Data (Merge with Mock)
       List<RestaurantCardData> firestoreList = [];
@@ -168,6 +168,12 @@ class RestaurantService extends ChangeNotifier {
         // 3. Fetch Swipe Logs for Chronological History
         await _fetchSwipeLogs();
 
+        // 4. Trigger initial recommendation batch fetch
+        // (Moved from swipableRestaurants getter to prevent fetch from build())
+        if (_swipableCache.isEmpty && !_isFetchingBatch && !_hasNoMoreData) {
+          _fetchNextBatch();
+        }
+
         // Finish loading
         _isLoadingUser = false;
         notifyListeners(); // UI should show content
@@ -176,12 +182,15 @@ class RestaurantService extends ChangeNotifier {
   }
 
   void clearUserData() {
+    // Flush any pending swipe actions before clearing
+    _flushPendingSwipes();
     _userModel = null;
     _userPreferences = [];
     _userPriceRangePreferences = [];
     _showClosedRestaurants = false;
     _swipeLogs = []; // Clear logs
     _sessionSwipedIds.clear(); // Clear session tracking
+    _pendingSwipeActions.clear(); // Clear pending batch
     _isLoadingUser = false;
     _isReady = false;
     _restaurants = [];
@@ -192,6 +201,8 @@ class RestaurantService extends ChangeNotifier {
 
   @override
   void dispose() {
+    // Flush pending swipes before shutdown
+    _flushPendingSwipes();
     _authSubscription?.cancel();
     super.dispose();
   }
@@ -411,9 +422,14 @@ class RestaurantService extends ChangeNotifier {
   // ฟังก์ชันเพื่อให้ปุ่ม Refresh สามารถสับเปลี่ยนร้านที่อัลกอริทึมจัดไว้นำมาแสดงใหม่
   void forceRefreshRecommendations() {
     _isManualRefresh = true;
+    _hasNoMoreData = false; // CRITICAL: Reset so fetch can proceed again
     _swipableCache.clear();
     _sessionSwipedIds.clear(); // Reset session tracking on manual refresh
-    _fetchNextBatch();
+    if (!_isFetchingBatch) {
+      _fetchNextBatch();
+    }
+    // Always notify so UI transitions to AppInitScreen immediately
+    notifyListeners();
   }
 
   // Getters for different states
@@ -737,14 +753,22 @@ class RestaurantService extends ChangeNotifier {
   List<RestaurantCardData> _swipableCache = [];
   bool _isFetchingBatch = false;
   bool _isManualRefresh = false;
+  bool _hasNoMoreData = false;
+
+  // === Batch Swipe Queue ===
+  // Accumulate swipe actions locally, flush to Cloud Function in batch
+  static const int _swipeBatchSize = 5; // Flush every N swipes
+  final List<Map<String, dynamic>> _pendingSwipeActions = [];
+  bool _isFlushingSwipes = false;
 
   bool get isFetchingBatch => _isFetchingBatch;
   bool get isManualRefresh => _isManualRefresh;
+  bool get hasNoMoreData => _hasNoMoreData;
 
+  // Pure getter — does NOT trigger fetching.
+  // Initial fetch is triggered by auth listener after login.
+  // Subsequent fetches are triggered by swipe threshold (< 3 cards remaining).
   List<RestaurantCardData> get swipableRestaurants {
-    if (_swipableCache.isEmpty && !_isFetchingBatch && _userModel != null) {
-      _fetchNextBatch();
-    }
     return _swipableCache;
   }
 
@@ -804,8 +828,14 @@ class RestaurantService extends ChangeNotifier {
       }
 
       _swipableCache = newBatch;
+      if (newBatch.isEmpty) {
+        _hasNoMoreData = true;
+      } else {
+        _hasNoMoreData = false;
+      }
     } catch (e) {
       if (kDebugMode) print("Error fetching batch from Firebase: $e");
+      _hasNoMoreData = true; // Prevent infinite fetch loop on error
     } finally {
       _isFetchingBatch = false;
       _isManualRefresh = false;
@@ -962,54 +992,69 @@ class RestaurantService extends ChangeNotifier {
       notifyListeners();
     }
 
-    // 2. Persist to Firestore via Cloud Functions
-    final user = FirebaseAuth.instance.currentUser;
-    if (user != null && swipedRestaurant != null) {
-      await _recordSwipeToFirestore(
-        user.uid,
-        swipedRestaurant,
-        newStatus,
-        oldStatus,
-        dwellTime,
-      );
+    // 2. Queue swipe action for batch persist (instead of firing API per swipe)
+    if (swipedRestaurant != null) {
+      String actionStr = '';
+      if (newStatus == SwipeStatus.yum)
+        actionStr = 'yum';
+      else if (newStatus == SwipeStatus.pass)
+        actionStr = 'pass';
+      else if (newStatus == SwipeStatus.fav)
+        actionStr = 'fav';
+
+      if (actionStr.isNotEmpty && newStatus != oldStatus) {
+        _pendingSwipeActions.add({
+          'restaurantId': swipedRestaurant.id,
+          'action': actionStr,
+          'dwellTime': dwellTime,
+        });
+
+        if (kDebugMode)
+          print(
+            "Queued swipe: $actionStr for ${swipedRestaurant.id} (queue: ${_pendingSwipeActions.length}/$_swipeBatchSize)",
+          );
+
+        // Flush when batch is full
+        if (_pendingSwipeActions.length >= _swipeBatchSize) {
+          _flushPendingSwipes();
+        }
+      }
     }
   }
 
-  Future<void> _recordSwipeToFirestore(
-    String uid,
-    RestaurantCardData restaurant,
-    SwipeStatus newStatus,
-    SwipeStatus oldStatus,
-    int dwellTime,
-  ) async {
+  /// Flush all pending swipe actions to Cloud Function in a single batch call.
+  /// Called when: batch is full (5), user leaves screen, app pauses, logout.
+  Future<void> _flushPendingSwipes() async {
+    if (_pendingSwipeActions.isEmpty || _isFlushingSwipes) return;
+    _isFlushingSwipes = true;
+
+    // Take a snapshot of pending actions and clear the queue
+    final actionsToFlush = List<Map<String, dynamic>>.from(
+      _pendingSwipeActions,
+    );
+    _pendingSwipeActions.clear();
+
     try {
-      String action = '';
-      if (newStatus == SwipeStatus.yum)
-        action = 'yum';
-      else if (newStatus == SwipeStatus.pass)
-        action = 'pass';
-      else if (newStatus == SwipeStatus.fav)
-        action = 'fav';
-
-      if (action.isEmpty || newStatus == oldStatus) return;
-
       final HttpsCallable callable = FirebaseFunctions.instance.httpsCallable(
-        'recordSwipeAction',
+        'recordSwipeActionsBatch',
       );
-      await callable.call({
-        'restaurantId': restaurant.id,
-        'action': action,
-        'dwellTime': dwellTime,
-      });
+      await callable.call({'actions': actionsToFlush});
 
       if (kDebugMode)
         print(
-          "Recorded swipe: $action (dwell: $dwellTime s) for ${restaurant.id} via Function",
+          "Flushed ${actionsToFlush.length} swipe actions in batch via Cloud Function",
         );
     } catch (e) {
-      if (kDebugMode) print("Error recording swipe via Function: $e");
+      if (kDebugMode) print("Error flushing swipe batch: $e");
+      // On failure, re-queue the actions so they aren't lost
+      _pendingSwipeActions.insertAll(0, actionsToFlush);
+    } finally {
+      _isFlushingSwipes = false;
     }
   }
+
+  /// Public method to force flush pending swipes (called from UI lifecycle)
+  Future<void> flushPendingSwipes() => _flushPendingSwipes();
 
   // Optional: Reset all data
   void resetData() {

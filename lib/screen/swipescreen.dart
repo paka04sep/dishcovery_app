@@ -25,7 +25,7 @@ class SwipScreen extends StatefulWidget {
 }
 
 class _SwipScreenState extends State<SwipScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final CardSwiperController _controller = CardSwiperController();
 
   // เก็บ Animation Controller สำหรับการกดปุ่ม
@@ -47,6 +47,7 @@ class _SwipScreenState extends State<SwipScreen>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this); // Lifecycle observer
     _cardAppearanceTime = DateTime.now();
     // restaurantCards = RestaurantService.instance.swipableRestaurants;
     RestaurantService.instance.addListener(_onServiceUpdate); // Add listener
@@ -121,12 +122,24 @@ class _SwipScreenState extends State<SwipScreen>
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this); // Remove lifecycle observer
+    // Flush any remaining swipe actions before leaving
+    RestaurantService.instance.flushPendingSwipes();
     _controller.dispose();
     _buttonAnimationController.dispose();
     RestaurantService.instance.removeListener(
       _onServiceUpdate,
     ); // Remove listener
     super.dispose();
+  }
+
+  /// Flush pending swipes when app goes to background or is detached
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.paused ||
+        state == AppLifecycleState.detached) {
+      RestaurantService.instance.flushPendingSwipes();
+    }
   }
 
   void _onServiceUpdate() {
@@ -153,6 +166,11 @@ class _SwipScreenState extends State<SwipScreen>
             restaurantCards = List.from(freshSwipable);
             _isFinished = false;
           });
+        } else {
+          // CRITICAL: Even when no new data, we MUST call setState
+          // so the widget rebuilds and re-evaluates isFetchingBatch.
+          // Without this, skeleton loading gets stuck forever.
+          setState(() {});
         }
       } else {
         // User is still swiping. Safely append to avoid breaking indexing.
@@ -325,7 +343,10 @@ class _SwipScreenState extends State<SwipScreen>
             Padding(
               padding: EdgeInsets.only(top: appBarHeight, bottom: 10),
               child: (_isFinished || restaurantCards.isEmpty)
-                  ? _buildEmptyState()
+                  ? (RestaurantService.instance.isFetchingBatch &&
+                            !RestaurantService.instance.isManualRefresh
+                        ? _buildSkeletonCard()
+                        : _buildEmptyState())
                   : CardSwiper(
                       controller: _controller,
                       cardsCount: restaurantCards.length,
@@ -408,6 +429,97 @@ class _SwipScreenState extends State<SwipScreen>
       ),
       // bottomNavigationBar: _buildBottomNavBar(context),
       bottomNavigationBar: const AppBottomNav(currentIndex: 1),
+    );
+  }
+
+  Widget _buildSkeletonCard() {
+    return Container(
+      width: double.infinity,
+      height: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20.0),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            spreadRadius: 2,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(20.0),
+        child: Stack(
+          children: [
+            // Background Placeholder
+            Container(color: Colors.grey.shade100),
+            // Spinner in the center
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const CircularProgressIndicator(color: AppColors.primaryBlue),
+                  const SizedBox(height: 20),
+                  Text(
+                    "กำลังค้นหาร้านเด็ด...",
+                    style: AppTextStyles.profileText.copyWith(
+                      color: Colors.grey.shade600,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // Fake Bottom Details
+            Positioned(
+              left: 20,
+              right: 20,
+              bottom: 115,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    height: 24,
+                    width: 200,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    height: 16,
+                    width: 150,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    height: 14,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    height: 14,
+                    width: 250,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 

@@ -1,53 +1,5 @@
-const { onObjectFinalized } = require("firebase-functions/v2/storage");
 const admin = require("firebase-admin");
-const { getDownloadURL } = require("firebase-admin/storage");
-
 admin.initializeApp();
-
-exports.onRestaurantImageUpload = onObjectFinalized(
-  { region: "us-central1" },
-  async (event) => {
-    const object = event.data;
-    if (!object?.name) return;
-
-    console.log("File uploaded:", object.name);
-
-    // restaurant/res_0001/main/hero.jpg
-    const parts = object.name.split("/");
-    if (parts.length < 4) return;
-
-    const root = parts[0];        // restaurant
-    const restaurantId = parts[1]; // res_0001
-    const folder = parts[2];       // main | gallery | menu
-
-    if (root !== "restaurant") return;
-
-    const bucket = admin.storage().bucket(object.bucket);
-    const file = bucket.file(object.name);
-    const downloadURL = await getDownloadURL(file);
-
-    console.log("Download URL:", downloadURL);
-
-    const ref = admin.firestore()
-      .collection("restaurants")
-      .doc(restaurantId);
-
-    if (folder === "main") {
-      await ref.update({
-        imageUrl: downloadURL,
-      });
-    }
-
-    if (folder === "gallery") {
-      await ref.update({
-        galleryImages: admin.firestore.FieldValue.arrayUnion(downloadURL),
-      });
-    }
-
-    console.log("Firestore updated:", restaurantId, folder);
-  }
-);
-
 const { onCall } = require("firebase-functions/v2/https");
 
 // Helper to calculate score based on action & dwell time
@@ -277,7 +229,7 @@ exports.getRecommendedBatch = onCall({ region: "us-central1" }, async (request) 
   const categoryScores = tasteProfile.categories || {};
   let topUserCategories = Object.keys(categoryScores).filter(k => categoryScores[k] > 0);
 
-  const snapshot = await db.collection("restaurants").where("status", "==", "approved").get();
+  const snapshot = await db.collection("restaurants").where("status", "==", "approved").limit(30).get();
   
   let candidates = [];
   snapshot.forEach(doc => {
@@ -427,4 +379,137 @@ exports.getRecommendedBatch = onCall({ region: "us-central1" }, async (request) 
   });
 
   return { restaurants: finalBatch };
+});
+
+// 3. Batch Swipe Actions — Process multiple swipes in a single call
+exports.recordSwipeActionsBatch = onCall({ region: "us-central1" }, async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) throw new Error("Unauthorized");
+
+  const { actions = [] } = request.data;
+  if (!Array.isArray(actions) || actions.length === 0) {
+    return { success: true, processed: 0 };
+  }
+
+  // Safety cap: max 20 actions per batch
+  const batch = actions.slice(0, 20);
+  const db = admin.firestore();
+  const userRef = db.collection("users").doc(uid);
+
+  await db.runTransaction(async (t) => {
+    const userDoc = await t.get(userRef);
+    if (!userDoc.exists) return;
+
+    const userData = userDoc.data();
+    const tasteProfile = userData.tasteProfile || { categories: {}, priceRange: {}, timeAffinity: {} };
+    if (!tasteProfile.categories) tasteProfile.categories = {};
+    if (!tasteProfile.priceRange) tasteProfile.priceRange = {};
+    if (!tasteProfile.timeAffinity) tasteProfile.timeAffinity = {};
+
+    const history = userData.history || { yum: [], passed: [], fav: [] };
+    if (!history.yum) history.yum = [];
+    if (!history.passed) history.passed = [];
+    if (!history.fav) history.fav = [];
+
+    const stats = userData.stats || { yums: 0, passes: 0, totalSwipes: 0 };
+
+    // Pre-fetch all restaurant docs needed
+    const restaurantRefs = batch.map(a => db.collection("restaurants").doc(a.restaurantId));
+    const restaurantDocs = await Promise.all(restaurantRefs.map(ref => t.get(ref)));
+    const restaurantMap = {};
+    restaurantDocs.forEach((doc, i) => {
+      if (doc.exists) restaurantMap[batch[i].restaurantId] = { ref: restaurantRefs[i], data: doc.data() };
+    });
+
+    // Process each action
+    for (const item of batch) {
+      const { restaurantId, action, dwellTime = 0 } = item;
+      if (!restaurantId || !action) continue;
+
+      const resEntry = restaurantMap[restaurantId];
+      if (!resEntry) continue;
+
+      const resData = resEntry.data;
+      const baseScore = calculateSwipeScore(action, dwellTime);
+
+      // Update taste profile
+      const cuisines = resData.cuisine || [];
+      cuisines.forEach(c => {
+        tasteProfile.categories[c] = (tasteProfile.categories[c] || 0) + baseScore;
+      });
+
+      const priceStr = resData.priceRange?.toString() || "1";
+      tasteProfile.priceRange[priceStr] = (tasteProfile.priceRange[priceStr] || 0) + baseScore;
+
+      const hour = new Date().getHours();
+      let timeKey = "other";
+      if (hour >= 5 && hour < 11) timeKey = "morning";
+      else if (hour >= 11 && hour < 14) timeKey = "lunch";
+      else if (hour >= 14 && hour < 17) timeKey = "afternoon";
+      else if (hour >= 17 && hour < 22) timeKey = "dinner";
+      else timeKey = "late_night";
+      tasteProfile.timeAffinity[timeKey] = (tasteProfile.timeAffinity[timeKey] || 0) + baseScore;
+
+      // Update history arrays
+      history.yum = history.yum.filter(id => id !== restaurantId);
+      history.passed = history.passed.filter(id => id !== restaurantId);
+      history.fav = history.fav.filter(id => id !== restaurantId);
+
+      stats.totalSwipes += 1;
+      if (action === 'yum') {
+        history.yum.unshift(restaurantId);
+        stats.yums += 1;
+      } else if (action === 'pass') {
+        history.passed.unshift(restaurantId);
+        stats.passes += 1;
+      } else if (action === 'fav') {
+        history.fav.unshift(restaurantId);
+        stats.yums += 1;
+      }
+
+      // Log to subcollection
+      const swipeRef = userRef.collection("swipes").doc();
+      t.set(swipeRef, {
+        restaurantId,
+        action,
+        timestamp: admin.firestore.FieldValue.serverTimestamp()
+      });
+
+      // Update restaurant engagement
+      let engagement = resData.engagementStats || {
+        totalViews: 0, totalYums: 0, totalPasses: 0, totalFavs: 0, totalDwellTime: 0,
+        trendingScore: 0.0, lastTrendingUpdate: Date.now()
+      };
+
+      engagement.totalViews += 1;
+      engagement.totalDwellTime += dwellTime;
+      if (action === "yum") engagement.totalYums += 1;
+      else if (action === "pass") engagement.totalPasses += 1;
+      else if (action === "fav") engagement.totalFavs += 1;
+
+      const now = Date.now();
+      const lastUpdate = engagement.lastTrendingUpdate || now;
+      const daysPassed = (now - lastUpdate) / (1000 * 60 * 60 * 24);
+      let currentTrending = engagement.trendingScore || 0;
+      if (daysPassed > 0) {
+        currentTrending = currentTrending * Math.pow(0.5, daysPassed / 3);
+      }
+      if (action === "yum") currentTrending += 2;
+      if (action === "fav") currentTrending += 3;
+      if (dwellTime > 3) currentTrending += 0.5;
+      engagement.trendingScore = currentTrending;
+      engagement.lastTrendingUpdate = now;
+
+      t.update(resEntry.ref, { engagementStats: engagement });
+    }
+
+    // Commit user updates once
+    t.update(userRef, {
+      tasteProfile,
+      history,
+      stats
+    });
+  });
+
+  return { success: true, processed: batch.length };
 });

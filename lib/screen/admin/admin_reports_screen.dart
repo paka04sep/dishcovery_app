@@ -160,7 +160,7 @@ class AdminReportsScreen extends StatelessWidget {
   }
 }
 
-class AdminReportListScreen extends StatelessWidget {
+class AdminReportListScreen extends StatefulWidget {
   final String title;
   final String? reporterRole;
   final String statusFilter;
@@ -172,8 +172,63 @@ class AdminReportListScreen extends StatelessWidget {
     required this.statusFilter,
   });
 
+  @override
+  State<AdminReportListScreen> createState() => _AdminReportListScreenState();
+}
+
+class _AdminReportListScreenState extends State<AdminReportListScreen> {
+  List<ReportModel> _reports = [];
+  bool _isLoading = true;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchReports();
+  }
+
+  Future<void> _fetchReports() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
+    try {
+      Query<Map<String, dynamic>> query = FirebaseFirestore.instance.collection(
+        'reports',
+      );
+
+      if (widget.reporterRole != null) {
+        query = query.where('reporterRole', isEqualTo: widget.reporterRole);
+      }
+      query = query.where('status', isEqualTo: widget.statusFilter);
+
+      final snapshot = await query.get(); // One-time fetch instead of .snapshots()
+
+      final reports = snapshot.docs
+          .map((doc) => ReportModel.fromFirestore(doc.data(), doc.id))
+          .toList();
+
+      // Sort locally to avoid Firestore Composite Index requirement
+      reports.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+      if (mounted) {
+        setState(() {
+          _reports = reports;
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _error = e.toString();
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
   Future<void> _updateReportStatus(
-    BuildContext context,
     String reportId,
     String newStatus,
   ) async {
@@ -182,13 +237,15 @@ class AdminReportListScreen extends StatelessWidget {
           .collection('reports')
           .doc(reportId)
           .update({'status': newStatus});
-      if (context.mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('อัปเดตสถานะรายงานแล้ว ( $newStatus )')),
         );
+        // Re-fetch after action
+        _fetchReports();
       }
     } catch (e) {
-      if (context.mounted) {
+      if (mounted) {
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('เกิดข้อผิดพลาด: $e')));
@@ -198,20 +255,11 @@ class AdminReportListScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Query<Map<String, dynamic>> query = FirebaseFirestore.instance.collection(
-      'reports',
-    );
-
-    if (reporterRole != null) {
-      query = query.where('reporterRole', isEqualTo: reporterRole);
-    }
-    query = query.where('status', isEqualTo: statusFilter);
-
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9F9),
       appBar: AppBar(
         title: Text(
-          title,
+          widget.title,
           style: const TextStyle(
             color: Colors.black,
             fontWeight: FontWeight.bold,
@@ -221,48 +269,33 @@ class AdminReportListScreen extends StatelessWidget {
         elevation: 0,
         iconTheme: const IconThemeData(color: Colors.black),
       ),
-      body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-        stream: query.snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-
-          if (snapshot.hasError) {
-            return Center(
-              child: Text(
-                "Error: ${snapshot.error}",
-                textAlign: TextAlign.center,
-              ),
-            );
-          }
-
-          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-            return const Center(child: Text("ไม่มีข้อมูลรายงาน"));
-          }
-
-          final reports = snapshot.data!.docs
-              .map((doc) => ReportModel.fromFirestore(doc.data(), doc.id))
-              .toList();
-
-          // Sort locally to avoid Firestore Composite Index requirement
-          reports.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: reports.length,
-            itemBuilder: (context, index) {
-              final report = reports[index];
-              return _ReportCard(
-                report: report,
-                onUpdateStatus: (String reportId, String status) {
-                  _updateReportStatus(context, reportId, status);
-                },
-              );
-            },
-          );
-        },
-      ),
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _error != null
+              ? Center(
+                  child: Text(
+                    "Error: $_error",
+                    textAlign: TextAlign.center,
+                  ),
+                )
+              : _reports.isEmpty
+                  ? const Center(child: Text("ไม่มีข้อมูลรายงาน"))
+                  : RefreshIndicator(
+                      onRefresh: _fetchReports,
+                      child: ListView.builder(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _reports.length,
+                        itemBuilder: (context, index) {
+                          final report = _reports[index];
+                          return _ReportCard(
+                            report: report,
+                            onUpdateStatus: (String reportId, String status) {
+                              _updateReportStatus(reportId, status);
+                            },
+                          );
+                        },
+                      ),
+                    ),
     );
   }
 }
