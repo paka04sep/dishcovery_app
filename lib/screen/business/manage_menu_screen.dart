@@ -615,11 +615,32 @@ class _ManageMenuScreenState extends State<ManageMenuScreen> {
                                     )
                                     .length;
                                 if (recCount >= 6) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
+                                  showDialog(
+                                    context: context,
+                                    builder: (_) => AlertDialog(
+                                      title: Text(
+                                        'ขออภัย',
+                                        style: AppTextStyles.profileText
+                                            .copyWith(fontSize: 18),
+                                      ),
                                       content: Text(
                                         'เลือกเมนูแนะนำได้สูงสุด 6 เมนู',
+                                        style: AppTextStyles.profileText
+                                            .copyWith(
+                                              fontSize: 16,
+                                              color: Colors.grey[800],
+                                            ),
                                       ),
+                                      actions: [
+                                        TextButton(
+                                          onPressed: () =>
+                                              Navigator.pop(context),
+                                          child: Text(
+                                            'ตกลง',
+                                            style: AppTextStyles.profileText,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   );
                                   return;

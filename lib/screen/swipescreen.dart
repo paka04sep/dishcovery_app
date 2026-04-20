@@ -119,15 +119,6 @@ class _SwipScreenState extends State<SwipScreen>
     );
   }
 
-  void _loadRestaurants() {
-    final swipable = RestaurantService.instance.swipableRestaurants;
-    setState(() {
-      restaurantCards = List.from(swipable);
-      _isFinished =
-          restaurantCards.isEmpty; // ถ้าโหลดมาแล้วว่างเลยให้ set finished
-    });
-  }
-
   @override
   void dispose() {
     _controller.dispose();
@@ -154,29 +145,38 @@ class _SwipScreenState extends State<SwipScreen>
       final allRestaurants = RestaurantService.instance.restaurants;
 
       // New Robust Logic:
-      // We ONLY append new items to the swiper queue. We never remove or alter the start of the list.
-      // This prevents CardSwiper from skipping indexing.
-
-      final currentIds = restaurantCards.map((r) => r.id).toSet();
-      final toAdd = freshSwipable
-          .where((r) => !currentIds.contains(r.id))
-          .toList();
-
-      if (toAdd.isNotEmpty) {
-        setState(() {
-          restaurantCards.addAll(toAdd);
-          _isFinished = false; // Add new cards so it's not finished
-        });
+      // If the user finished swiping the previous batch, we MUST completely reset the queue
+      // so the new cards start at index 0 without dragging along old, swiped cards.
+      if (_isFinished) {
+        if (freshSwipable.isNotEmpty) {
+          setState(() {
+            restaurantCards = List.from(freshSwipable);
+            _isFinished = false;
+          });
+        }
       } else {
-        // Just update content of existing cards in case details changed
-        setState(() {
-          restaurantCards = restaurantCards.map((card) {
-            return allRestaurants.firstWhere(
-              (r) => r.id == card.id,
-              orElse: () => card,
-            );
-          }).toList();
-        });
+        // User is still swiping. Safely append to avoid breaking indexing.
+        final currentIds = restaurantCards.map((r) => r.id).toSet();
+        final toAdd = freshSwipable
+            .where((r) => !currentIds.contains(r.id))
+            .toList();
+
+        if (toAdd.isNotEmpty) {
+          setState(() {
+            restaurantCards.addAll(toAdd);
+            // _isFinished is already false, so we don't need to update it
+          });
+        } else {
+          // Just update content of existing cards in case details changed
+          setState(() {
+            restaurantCards = restaurantCards.map((card) {
+              return allRestaurants.firstWhere(
+                (r) => r.id == card.id,
+                orElse: () => card,
+              );
+            }).toList();
+          });
+        }
       }
     }
   }

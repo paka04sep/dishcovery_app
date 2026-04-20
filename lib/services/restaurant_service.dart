@@ -1076,6 +1076,7 @@ class RestaurantService extends ChangeNotifier {
 
       if (kDebugMode) print("Swipe data reset successfully.");
 
+      forceRefreshRecommendations();
       notifyListeners();
     } catch (e) {
       if (kDebugMode) print("Error resetting swipe data: $e");
