@@ -928,21 +928,21 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
             ],
           ),
         ),
-        PopupMenuItem(
-          value: 2,
-          child: Row(
-            children: [
-              Image.asset('assets/icons/share.png', width: 24, height: 24),
-              SizedBox(width: 12),
-              Text(
-                'แชร์ร้านนี้',
-                style: AppTextStyles.restaurantInDetails.copyWith(
-                  color: Colors.black87,
-                ),
-              ),
-            ],
-          ),
-        ),
+        // PopupMenuItem(
+        //   value: 2,
+        //   child: Row(
+        //     children: [
+        //       Image.asset('assets/icons/share.png', width: 24, height: 24),
+        //       SizedBox(width: 12),
+        //       Text(
+        //         'แชร์ร้านนี้',
+        //         style: AppTextStyles.restaurantInDetails.copyWith(
+        //           color: Colors.black87,
+        //         ),
+        //       ),
+        //     ],
+        //   ),
+        // ),
       ],
     );
   }
@@ -982,21 +982,21 @@ class _RestaurantDetailScreenState extends State<RestaurantDetailScreen> {
               ],
             ),
           ),
-          PopupMenuItem(
-            value: 2,
-            child: Row(
-              children: [
-                Image.asset('assets/icons/share.png', width: 24, height: 24),
-                SizedBox(width: 12),
-                Text(
-                  'แชร์ร้านนี้',
-                  style: AppTextStyles.restaurantInDetails.copyWith(
-                    color: Colors.black87,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          // PopupMenuItem(
+          //   value: 2,
+          //   child: Row(
+          //     children: [
+          //       Image.asset('assets/icons/share.png', width: 24, height: 24),
+          //       SizedBox(width: 12),
+          //       Text(
+          //         'แชร์ร้านนี้',
+          //         style: AppTextStyles.restaurantInDetails.copyWith(
+          //           color: Colors.black87,
+          //         ),
+          //       ),
+          //     ],
+          //   ),
+          // ),
         ],
         child: Container(
           padding: const EdgeInsets.all(10),

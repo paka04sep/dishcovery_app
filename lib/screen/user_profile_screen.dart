@@ -3,6 +3,7 @@ import 'package:dishcovery_app/constants/app_constants.dart';
 import 'package:dishcovery_app/screen/favorite_screen.dart';
 import 'package:dishcovery_app/screen/helpcenter_screen.dart';
 import 'package:dishcovery_app/screen/swipescreen.dart';
+import 'package:dishcovery_app/screen/user_profile_dashboard.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:dishcovery_app/services/auth_service.dart';
 import 'package:flutter/material.dart';
@@ -200,7 +201,15 @@ class UserProfileScreen extends StatelessWidget {
                           label: "สไตล์การกินของคุณ",
 
                           icon: Icons.insert_chart_outlined,
-                          onTap: () {},
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const UserDashboardScreen(),
+                              ),
+                            );
+                          },
                         ),
                       ),
 

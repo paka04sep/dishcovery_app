@@ -197,7 +197,7 @@ function parsePriceRangeStrings(priceRangeStrings) {
 }
 
 // 2. The Batch Engine (Get Recommendations)
-exports.getRecommendedBatch = onCall({ region: "us-central1" }, async (request) => {
+exports.getRecommendedBatch = onCall({ region: "us-central1", enforceAppCheck: false }, async (request) => {
   const uid = request.auth?.uid;
   if (!uid) throw new Error("Unauthorized");
 
