@@ -41,7 +41,7 @@ class AppBottomNav extends StatelessWidget {
                 );
               } else {
                 // อัลกอริทึมรีเฟรช: สุ่มลำดับรายการใหม่เพื่อให้ได้ร้านใหม่ๆ ที่ตรงข้ามไปมา
-                RestaurantService.instance.forceRefreshRecommendations();
+                // RestaurantService.instance.forceRefreshRecommendations();
               }
             },
           ),
