@@ -348,8 +348,9 @@ class ReviewModel {
       comment: data['comment'] as String? ?? '',
       createdAt: data['createdAt'] != null
           ? (data['createdAt'] is Timestamp
-              ? (data['createdAt'] as Timestamp).toDate()
-              : DateTime.tryParse(data['createdAt'].toString()) ?? DateTime.now())
+                ? (data['createdAt'] as Timestamp).toDate()
+                : DateTime.tryParse(data['createdAt'].toString()) ??
+                      DateTime.now())
           : DateTime.now(),
     );
   }
@@ -398,8 +399,9 @@ class ReportModel {
       reason: data['reason'] as String? ?? '',
       createdAt: data['createdAt'] != null
           ? (data['createdAt'] is Timestamp
-              ? (data['createdAt'] as Timestamp).toDate()
-              : DateTime.tryParse(data['createdAt'].toString()) ?? DateTime.now())
+                ? (data['createdAt'] as Timestamp).toDate()
+                : DateTime.tryParse(data['createdAt'].toString()) ??
+                      DateTime.now())
           : DateTime.now(),
       status: data['status'] as String? ?? 'pending',
     );
